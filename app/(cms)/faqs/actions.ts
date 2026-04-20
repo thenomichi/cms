@@ -109,7 +109,7 @@ export async function toggleFaqActive(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbUpdate(id, { is_active: isActive });
-    await logActivity({ table_name: "trip_faqs", record_id: id, action: "TOGGLE", new_values: { is_active: isActive } });
+    await logActivity({ table_name: "trip_faqs", record_id: id, action: "UPDATE", new_values: { is_active: isActive } });
     revalidatePath("/faqs");
     const slug = await getTripSlug(tripId ?? null);
     if (slug) await revalidateTrip(slug);

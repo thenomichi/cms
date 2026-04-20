@@ -16,6 +16,7 @@ export async function getActivityLog(limit = 50): Promise<ActivityLogEntry[]> {
   const { data, error } = await db
     .from("audit_log")
     .select("*")
+    .eq("performed_by", "cms-admin")
     .order("created_at", { ascending: false })
     .limit(limit);
 

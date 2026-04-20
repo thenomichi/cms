@@ -232,7 +232,7 @@ export async function toggleTripFieldAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleTripField(tripId, field, value);
-    await logActivity({ table_name: "trips", record_id: tripId, action: "TOGGLE", new_values: { [field]: value } });
+    await logActivity({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { [field]: value } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {

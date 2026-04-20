@@ -191,7 +191,7 @@ export async function toggleGalleryFeaturedAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleGalleryFeatured(id, value);
-    await logActivity({ table_name: "trip_gallery", record_id: id, action: "TOGGLE", new_values: { is_featured: value } });
+    await logActivity({ table_name: "trip_gallery", record_id: id, action: "UPDATE", new_values: { is_featured: value } });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {
@@ -205,7 +205,7 @@ export async function toggleGalleryCoverAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleGalleryCover(tripId, galleryId);
-    await logActivity({ table_name: "trip_gallery", record_id: galleryId, action: "TOGGLE", new_values: { is_cover: true, trip_id: tripId } });
+    await logActivity({ table_name: "trip_gallery", record_id: galleryId, action: "UPDATE", new_values: { is_cover: true, trip_id: tripId } });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {

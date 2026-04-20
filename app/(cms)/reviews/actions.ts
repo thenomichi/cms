@@ -97,7 +97,7 @@ export async function toggleReviewField(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbToggle(id, field, value);
-    await logActivity({ table_name: "reviews", record_id: id, action: "TOGGLE", new_values: { [field]: value } });
+    await logActivity({ table_name: "reviews", record_id: id, action: "UPDATE", new_values: { [field]: value } });
     revalidatePath("/reviews");
     await revalidateHome();
     return { success: true };

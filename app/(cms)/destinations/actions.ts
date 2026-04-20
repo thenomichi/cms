@@ -86,7 +86,7 @@ export async function toggleDestinationActive(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbUpdate(id, { is_active: isActive });
-    await logActivity({ table_name: "destinations", record_id: id, action: "TOGGLE", new_values: { is_active: isActive } });
+    await logActivity({ table_name: "destinations", record_id: id, action: "UPDATE", new_values: { is_active: isActive } });
     revalidatePath("/destinations");
     await revalidateHome();
     return { success: true };
