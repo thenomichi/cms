@@ -12,6 +12,7 @@ import {
   type ExclusionInput,
 } from "@/lib/db/trip-inclusions";
 import { revalidateTrip } from "@/lib/revalidate";
+import { logActivity } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Shared form-data parsing
@@ -115,6 +116,7 @@ export async function createTripAction(
       payload.exclusions,
     );
 
+    await logActivity({ table_name: "trips", record_id: tripId, action: "INSERT", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -184,6 +186,7 @@ export async function updateTripAction(
       payload.exclusions,
     );
 
+    await logActivity({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -205,6 +208,7 @@ export async function deleteTripAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteTrip(tripId);
+    await logActivity({ table_name: "trips", record_id: tripId, action: "DELETE" });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -228,6 +232,7 @@ export async function toggleTripFieldAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleTripField(tripId, field, value);
+    await logActivity({ table_name: "trips", record_id: tripId, action: "TOGGLE", new_values: { [field]: value } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {

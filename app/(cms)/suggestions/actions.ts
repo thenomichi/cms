@@ -7,6 +7,7 @@ import {
   deleteSuggestion,
 } from "@/lib/db/suggestions";
 import type { DbCustomizedTripRequest } from "@/lib/types";
+import { logActivity } from "@/lib/audit";
 
 export async function fetchSuggestions(
   status?: string,
@@ -20,6 +21,7 @@ export async function updateSuggestionStatusAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await updateSuggestionStatus(id, status);
+    await logActivity({ table_name: "customized_trip_requests", record_id: id, action: "UPDATE", new_values: { status } });
     revalidatePath("/suggestions");
     return { success: true };
   } catch (err) {
@@ -32,6 +34,7 @@ export async function deleteSuggestionAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteSuggestion(id);
+    await logActivity({ table_name: "customized_trip_requests", record_id: id, action: "DELETE" });
     revalidatePath("/suggestions");
     return { success: true };
   } catch (err) {

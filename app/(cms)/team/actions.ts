@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/team";
 import { revalidateAbout } from "@/lib/revalidate";
 import type { DbTeamMember } from "@/lib/types";
+import { logActivity } from "@/lib/audit";
 
 export async function fetchTeamMembers(): Promise<DbTeamMember[]> {
   return getTeamMembers();
@@ -18,7 +19,8 @@ export async function createTeamMemberAction(
   payload: Omit<DbTeamMember, "member_id" | "user_id" | "created_at" | "updated_at">,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    await createTeamMember(payload);
+    const member = await createTeamMember(payload);
+    await logActivity({ table_name: "team_members", record_id: member.member_id, action: "INSERT", new_values: { full_name: payload.full_name, role: payload.role } });
     revalidatePath("/team");
     await revalidateAbout();
     return { success: true };
@@ -33,6 +35,7 @@ export async function updateTeamMemberAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await updateTeamMember(id, payload);
+    await logActivity({ table_name: "team_members", record_id: id, action: "UPDATE", new_values: { full_name: payload.full_name, role: payload.role } });
     revalidatePath("/team");
     await revalidateAbout();
     return { success: true };
@@ -46,6 +49,7 @@ export async function deleteTeamMemberAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteTeamMember(id);
+    await logActivity({ table_name: "team_members", record_id: id, action: "DELETE" });
     revalidatePath("/team");
     await revalidateAbout();
     return { success: true };

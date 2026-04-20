@@ -10,6 +10,7 @@ import {
   toggleReviewField as dbToggle,
 } from "@/lib/db/reviews";
 import { revalidateHome } from "@/lib/revalidate";
+import { logActivity } from "@/lib/audit";
 
 export async function createReview(
   formData: Record<string, unknown>,
@@ -35,6 +36,7 @@ export async function createReview(
       display_order: displayOrder,
     });
 
+    await logActivity({ table_name: "reviews", record_id: id, action: "INSERT", new_values: { reviewer_name: parsed.data.reviewer_name } });
     revalidatePath("/reviews");
     await revalidateHome();
     return { success: true };
@@ -65,6 +67,7 @@ export async function updateReview(
       display_order: displayOrder,
     });
 
+    await logActivity({ table_name: "reviews", record_id: id, action: "UPDATE", new_values: { reviewer_name: parsed.data.reviewer_name } });
     revalidatePath("/reviews");
     await revalidateHome();
     return { success: true };
@@ -78,6 +81,7 @@ export async function deleteReview(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbDelete(id);
+    await logActivity({ table_name: "reviews", record_id: id, action: "DELETE" });
     revalidatePath("/reviews");
     await revalidateHome();
     return { success: true };
@@ -93,6 +97,7 @@ export async function toggleReviewField(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbToggle(id, field, value);
+    await logActivity({ table_name: "reviews", record_id: id, action: "TOGGLE", new_values: { [field]: value } });
     revalidatePath("/reviews");
     await revalidateHome();
     return { success: true };
