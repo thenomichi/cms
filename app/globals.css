@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  /* ── Brand ── */
+  --rust: #C94B1A;
+  --rust-d: #A83A12;
+  --rust-l: #E85E2A;
+  --rust-tint: #FDF1EB;
+  --rust-tint2: #FAE3D7;
+
+  /* ── Ink (dark) ── */
+  --ink: #1A1814;
+  --ink2: #2E2B26;
+  --ink3: #4B4741;
+
+  /* ── Neutrals ── */
+  --mid: #7C7670;
+  --fog: #B0AAA2;
+  --line: #E9E5DF;
+  --line2: #F2EFE9;
+  --bg: #FFFFFF;
+  --bg2: #FAFAF7;
+  --bg3: #F5F2EC;
+
+  /* ── Semantic ── */
+  --green: #1A6B3A;
+  --green-bg: #E4F5EC;
+  --red: #C0392B;
+  --red-bg: #FDECEA;
+  --blue: #1A5276;
+  --blue-bg: #EBF5FB;
+  --amber: #92400E;
+  --amber-bg: #FEF3C7;
+  --purple: #6B21A8;
+  --purple-bg: #F3E8FF;
+
+  /* ── Layout ── */
+  --sidebar-w: 240px;
+}
+
+@theme inline {
+  --color-rust: var(--rust);
+  --color-rust-d: var(--rust-d);
+  --color-rust-l: var(--rust-l);
+  --color-rust-tint: var(--rust-tint);
+  --color-rust-tint2: var(--rust-tint2);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-ink3: var(--ink3);
+  --color-mid: var(--mid);
+  --color-fog: var(--fog);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-surface: var(--bg);
+  --color-surface2: var(--bg2);
+  --color-surface3: var(--bg3);
+  --color-sem-green: var(--green);
+  --color-sem-green-bg: var(--green-bg);
+  --color-sem-red: var(--red);
+  --color-sem-red-bg: var(--red-bg);
+  --color-sem-blue: var(--blue);
+  --color-sem-blue-bg: var(--blue-bg);
+  --color-sem-amber: var(--amber);
+  --color-sem-amber-bg: var(--amber-bg);
+  --color-sem-purple: var(--purple);
+  --color-sem-purple-bg: var(--purple-bg);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg2);
+  color: var(--ink);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--fog); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--mid); }

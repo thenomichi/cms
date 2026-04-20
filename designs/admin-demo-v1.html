@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nomichi CMS — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rust:#C94B1A; --rust-d:#A83A12; --rust-tint:#FDF1EB; --rust-tint2:#FAE3D7;
+  --ink:#1A1814; --ink2:#2E2B26; --ink3:#4B4741;
+  --mid:#7C7670; --fog:#B0AAA2;
+  --line:#E9E5DF; --line2:#F2EFE9;
+  --bg:#FFFFFF; --bg2:#FAFAF7; --bg3:#F5F2EC;
+  --green:#1A6B3A; --green-bg:#E4F5EC;
+  --red:#C0392B; --red-bg:#FDECEA;
+  --blue:#1A5276; --blue-bg:#EBF5FB;
+  --amber:#92620A; --amber-bg:#FEF3C7;
+  --purple:#5B2D8E; --purple-bg:#F3EEF9;
+  --sw:240px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg2);color:var(--ink);font-size:14px;overflow-x:hidden}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none}
+input,textarea,select{font-family:'Inter',sans-serif;outline:none}
+
+/* LAYOUT */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sw);background:#16120E;color:#fff;position:fixed;top:0;left:0;bottom:0;z-index:200;display:flex;flex-direction:column;overflow-y:auto}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:62px;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.content{flex:1;padding:28px;max-width:1300px}
+
+/* SIDEBAR */
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:12px}
+.sb-logo{width:36px;height:36px;background:var(--rust);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;flex-shrink:0;letter-spacing:-.02em}
+.sb-name{font-weight:700;font-size:15px;letter-spacing:-.02em}
+.sb-tag{font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;margin-top:1px}
+.sb-section{padding:16px 20px 5px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25)}
+.sb-item{display:flex;align-items:center;gap:11px;padding:11px 20px;color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;border-left:3px solid transparent;font-size:13.5px;font-weight:500}
+.sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.sb-item.active{background:rgba(201,75,26,.18);color:#fff;border-left-color:var(--rust)}
+.sb-item .ic{font-size:16px;width:20px;text-align:center}
+.sb-badge{margin-left:auto;background:var(--rust);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;min-width:20px;text-align:center}
+.sb-footer{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,.07)}
+.sb-user-name{font-weight:600;font-size:13px;color:rgba(255,255,255,.85)}
+.sb-user-email{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+.sb-logout{margin-top:10px;width:100%;padding:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.sb-logout:hover{background:rgba(255,255,255,.1);color:#fff}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--rust);color:#fff}
+.btn-primary:hover{background:var(--rust-d);transform:translateY(-1px)}
+.btn-secondary{background:var(--bg3);color:var(--ink2);border:1px solid var(--line)}
+.btn-secondary:hover{background:var(--line)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid #f5c6c6}
+.btn-danger:hover{background:#f5c6c6}
+.btn-success{background:var(--green-bg);color:var(--green);border:1px solid #b7e4ca}
+.btn-amber{background:var(--amber-bg);color:var(--amber);border:1px solid #fde68a}
+.btn-purple{background:var(--purple-bg);color:var(--purple);border:1px solid #d6c5f0}
+.btn-sm{padding:6px 13px;font-size:12px}
+.btn-icon{padding:7px 9px;background:var(--bg3);border:1px solid var(--line);color:var(--ink3);border-radius:7px}
+.btn-icon:hover{background:var(--line)}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:22px;cursor:pointer;transition:all .2s}
+.stat-card:hover{border-color:var(--rust);transform:translateY(-2px);box-shadow:0 6px 24px rgba(201,75,26,.1)}
+.stat-icon{font-size:26px;margin-bottom:12px}
+.stat-num{font-size:34px;font-weight:800;color:var(--ink);letter-spacing:-.04em;line-height:1}
+.stat-label{font-size:12px;color:var(--mid);font-weight:500;margin-top:6px}
+.stat-sub{margin-top:10px}
+
+/* TABLE */
+.table-wrap{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.table-header{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.table-title{font-size:15px;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);background:var(--bg2);border-bottom:1px solid var(--line)}
+td{padding:13px 16px;border-bottom:1px solid var(--line2);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.td-actions{display:flex;gap:6px}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700}
+.pill-green{background:var(--green-bg);color:var(--green)}
+.pill-red{background:var(--red-bg);color:var(--red)}
+.pill-rust{background:var(--rust-tint2);color:var(--rust)}
+.pill-blue{background:var(--blue-bg);color:var(--blue)}
+.pill-gray{background:var(--bg3);color:var(--mid);border:1px solid var(--line)}
+.pill-amber{background:var(--amber-bg);color:var(--amber)}
+.pill-purple{background:var(--purple-bg);color:var(--purple)}
+
+/* TOGGLE */
+.tog{position:relative;width:38px;height:22px;display:inline-block;cursor:pointer;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-track{position:absolute;inset:0;background:var(--line);border-radius:100px;transition:background .2s}
+.tog input:checked+.tog-track{background:var(--rust)}
+.tog-thumb{position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.tog input:checked~.tog-thumb{transform:translateX(16px)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(4px)}
+.modal{background:var(--bg);border-radius:18px;width:100%;max-width:820px;box-shadow:0 24px 80px rgba(0,0,0,.22)}
+.modal-lg{max-width:1020px}
+.modal-hdr{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:700}
+.modal-close{background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:18px;color:var(--mid);cursor:pointer}
+.modal-close:hover{color:var(--ink)}
+.modal-body{padding:26px}
+.modal-foot{padding:18px 26px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+
+/* TABS */
+.tabs{display:flex;gap:2px;padding:4px;background:var(--bg3);border-radius:10px;width:fit-content;margin-bottom:22px}
+.tab{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--mid);transition:all .15s;border:none;background:none}
+.tab.active{background:var(--bg);color:var(--ink);box-shadow:0 1px 5px rgba(0,0,0,.09)}
+
+/* FORM */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.05em;text-transform:uppercase}
+.field input,.field select,.field textarea{padding:10px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:14px;color:var(--ink);background:var(--bg);transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--rust)}
+.field textarea{resize:vertical;min-height:90px;line-height:1.6}
+.field-hint{font-size:11px;color:var(--mid)}
+.row-toggle{display:flex;align-items:center;gap:12px}
+.row-toggle label{margin:0;font-size:13px;font-weight:500;color:var(--ink2)}
+
+/* LIST BUILDER */
+.list-builder{display:flex;flex-direction:column;gap:8px}
+.list-row{display:flex;gap:8px;align-items:center}
+.list-inp{flex:1;padding:9px 13px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;color:var(--ink)}
+.list-inp:focus{border-color:var(--rust);outline:none}
+.list-rm{padding:7px 11px;background:var(--red-bg);color:var(--red);border:none;border-radius:7px;cursor:pointer;font-size:15px;font-weight:700}
+
+/* ITIN */
+.itin-day{border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:10px}
+.itin-hdr{background:var(--bg3);padding:13px 16px;display:flex;align-items:center;gap:10px}
+.itin-num{background:var(--rust);color:#fff;font-size:11px;font-weight:800;padding:3px 10px;border-radius:6px;flex-shrink:0}
+.itin-inp{flex:1;padding:7px 11px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;color:var(--ink);background:var(--bg)}
+.itin-inp:focus{border-color:var(--rust);outline:none}
+.itin-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+
+/* CARDS */
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:22px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--mid);margin-bottom:16px}
+
+/* REVIEW CARD */
+.rev-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:18px}
+.rev-stars{color:#F59E0B;font-size:14px;margin-bottom:8px}
+.rev-text{font-size:13px;line-height:1.7;color:var(--ink3);margin-bottom:12px;font-style:italic}
+.rev-foot{display:flex;align-items:center;gap:10px}
+.rev-avatar{width:36px;height:36px;border-radius:50%;background:var(--rust-tint);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;overflow:hidden}
+.rev-avatar img{width:100%;height:100%;object-fit:cover}
+.rev-name{font-size:13px;font-weight:700}
+.rev-meta{font-size:11px;color:var(--mid)}
+.rev-actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+
+/* SUGG */
+.sugg-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:18px;position:relative}
+.sugg-card.new{border-left:3px solid var(--rust)}
+.sugg-row{display:flex;gap:8px;margin-bottom:6px;font-size:13px}
+.sugg-lbl{color:var(--mid);font-weight:500;min-width:90px;flex-shrink:0}
+
+/* GALLERY */
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.gal-item{border-radius:11px;overflow:hidden;background:var(--bg3);position:relative;border:2px solid transparent;transition:border-color .15s}
+.gal-item:hover{border-color:var(--rust)}
+.gal-item img{width:100%;height:120px;object-fit:cover;display:block}
+.gal-info{padding:8px 10px}
+.gal-meta{font-size:11px;color:var(--mid)}
+.gal-actions{position:absolute;top:6px;right:6px;display:flex;gap:4px;opacity:0;transition:opacity .15s}
+.gal-item:hover .gal-actions{opacity:1}
+.gal-btn{background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer}
+
+/* TEAM CARD */
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.team-card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center;position:relative}
+.team-avatar{width:72px;height:72px;border-radius:50%;background:var(--rust-tint);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;border:3px solid var(--line)}
+.team-avatar img{width:100%;height:100%;object-fit:cover}
+.team-name{font-size:15px;font-weight:700;margin-bottom:3px}
+.team-role{font-size:12px;color:var(--rust);font-weight:600;margin-bottom:10px}
+.team-bio{font-size:12px;color:var(--mid);line-height:1.7;margin-bottom:12px}
+.team-actions{display:flex;gap:6px;justify-content:center}
+.team-inactive{opacity:.5}
+
+/* TRIP THUMB */
+.trip-thumb{width:46px;height:36px;border-radius:7px;object-fit:cover;background:var(--bg3);flex-shrink:0}
+
+/* SECTION HEAD */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:wrap}
+.sec-title{font-size:21px;font-weight:800;letter-spacing:-.03em}
+.sec-sub{font-size:13px;color:var(--mid);margin-top:2px}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.search-inp{padding:9px 14px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;color:var(--ink);background:var(--bg);min-width:220px}
+.search-inp:focus{border-color:var(--rust);outline:none}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--ink);color:#fff;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:9px;animation:tin .25s ease;max-width:320px}
+.toast.ok{background:#1A6B3A}
+.toast.err{background:#C0392B}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* MISC */
+.divider{border:none;border-top:1px solid var(--line);margin:20px 0}
+.empty{text-align:center;padding:52px 20px;color:var(--mid)}
+.empty-icon{font-size:44px;margin-bottom:12px}
+.upload-zone{border:2px dashed var(--line);border-radius:12px;padding:30px;text-align:center;cursor:pointer;background:var(--bg2);transition:all .2s}
+.upload-zone:hover{border-color:var(--rust);background:var(--rust-tint)}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+// ── SAMPLE DATA ────────────────────────────────────────────────────────
+const DB = {
+  trips: [
+    { id:1, name:'Ladakh Expedition', slug:'ladakh', location:'Ladakh, India', flag:'🇮🇳', duration:{days:9,nights:8}, basePrice:58998, originalPrice:68000, tripType:'community', tags:['adventure','mountains'], month:'jun', totalSlots:16, bookedSlots:12, coverImage:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:4.9, reviewCount:124, overview:'An epic journey through the Land of High Passes.', highlights:['Camp at Pangong Tso under a sky full of stars','Cross Khardung La — one of the world\'s highest motorable passes','Explore Nubra Valley'], inclusions:['All accommodation','Meals: Breakfast + Dinner daily','Leh airport pickup and drop','Inner line permits'], exclusions:['Flights to/from Leh','Travel insurance'], itinerary:[{day:1,title:'Arrive Leh — Acclimatisation',description:'Land in Leh. Rest and acclimatise.',meals:'Dinner',accommodation:'Hotel Grand Dragon'},{day:2,title:'Leh Local Sightseeing',description:'Visit Leh Palace, Shanti Stupa.',meals:'Breakfast + Dinner',accommodation:'Hotel Grand Dragon'}] },
+    { id:2, name:'Meghalaya Wonder', slug:'meghalaya', location:'Meghalaya, India', flag:'🇮🇳', duration:{days:7,nights:6}, basePrice:32500, originalPrice:38000, tripType:'community', tags:['nature','caves','waterfalls'], month:'oct', totalSlots:14, bookedSlots:9, coverImage:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:4.8, reviewCount:89, overview:'Discover the abode of clouds.', highlights:['Trek to Double Decker Living Root Bridge','Swim in the electric-blue Dawki river'], inclusions:['All accommodation','Meals: Breakfast + Dinner','Guwahati airport transfers'], exclusions:['Flights','Lunch'], itinerary:[{day:1,title:'Arrive Guwahati → Shillong',description:'Pick up from Guwahati airport.',meals:'Dinner',accommodation:'Hotel Polo Towers'}] },
+    { id:3, name:'Bali Bliss', slug:'bali', location:'Bali, Indonesia', flag:'🇮🇩', duration:{days:8,nights:7}, basePrice:75000, originalPrice:88000, tripType:'exclusive', tags:['beach','culture','international'], month:'flex', totalSlots:12, bookedSlots:7, coverImage:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:4.95, reviewCount:62, overview:'A curated Bali experience.', highlights:['Sunrise at Tegalalang Rice Terraces','Private cooking class'], inclusions:['7 nights boutique hotels','Breakfast + 3 dinners'], exclusions:['International flights','Lunch'], itinerary:[] },
+    { id:4, name:'Spiti Valley Circuit', slug:'spiti', location:'Himachal Pradesh, India', flag:'🇮🇳', duration:{days:10,nights:9}, basePrice:42000, originalPrice:null, tripType:'custom', tags:['adventure','offbeat','mountains'], month:'aug', totalSlots:10, bookedSlots:3, coverImage:'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400', isActive:false, isFeatured:false, showOnHomepage:false, isVisible:false, avgRating:0, reviewCount:0, overview:'The road less travelled.', highlights:['Key Monastery at sunrise','Chandratal Lake camping'], inclusions:['All stays','All meals'], exclusions:['Flights','Personal gear'], itinerary:[] }
+  ],
+  reviews: [
+    { id:1, name:'Priya Sharma', location:'Mumbai', tripLocation:'Ladakh', rating:5, reviewText:'Nomichi made Ladakh the trip of my life. Pangong Tso at 4am was something I\'ll never forget.', profileImage:'', isApproved:true, isFeatured:true, showOnHomepage:true, displayOrder:1, createdAt:'2025-11-12' },
+    { id:2, name:'Arjun Mehta', location:'Bangalore', tripLocation:'Meghalaya', rating:5, reviewText:'The root bridge trek destroyed my legs and healed my soul. Dawki river is genuinely the most beautiful place I\'ve ever seen.', profileImage:'', isApproved:true, isFeatured:true, showOnHomepage:true, displayOrder:2, createdAt:'2025-10-24' },
+    { id:3, name:'Rhea D\'Souza', location:'Goa', tripLocation:'Bali', rating:5, reviewText:'Nomichi\'s curation is on a completely different level. The boutique hotels, the private cooking class — felt like a luxury retreat.', profileImage:'', isApproved:true, isFeatured:false, showOnHomepage:true, displayOrder:3, createdAt:'2025-09-08' },
+    { id:4, name:'Karan Joshi', location:'Delhi', tripLocation:'Ladakh', rating:4, reviewText:'Amazing experience overall. A bit of altitude sickness on Day 2 but the team was super supportive.', profileImage:'', isApproved:false, isFeatured:false, showOnHomepage:false, displayOrder:4, createdAt:'2025-12-01' }
+  ],
+  gallery: [
+    { id:1, url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', alt:'Pangong Tso', tripName:'Ladakh Expedition', isFeatured:true },
+    { id:2, url:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400', alt:'Root Bridge', tripName:'Meghalaya Wonder', isFeatured:false },
+    { id:3, url:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400', alt:'Bali Temple', tripName:'Bali Bliss', isFeatured:true },
+    { id:4, url:'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=400', alt:'Spiti Valley', tripName:'Spiti Valley Circuit', isFeatured:false },
+    { id:5, url:'https://images.unsplash.com/photo-1518684079-3c830dcef090?w=400', alt:'Mountain road', tripName:'Ladakh Expedition', isFeatured:false },
+    { id:6, url:'https://images.unsplash.com/photo-1561553873-e8491a564fd0?w=400', alt:'Village life', tripName:'Meghalaya Wonder', isFeatured:false }
+  ],
+  suggestions: [
+    { id:1, name:'Ananya Rao', email:'ananya@gmail.com', phone:'+91 98765 43210', destination:'Kashmir', tripType:'leisure', groupSize:2, budget:'₹40,000 - ₹60,000', preferredMonth:'April', duration:'7-8 days', message:'Honeymoon trip, want something special and private.', status:'new', isStarred:true, createdAt:'2026-03-20' },
+    { id:2, name:'Rohan Verma', email:'rohan.v@gmail.com', phone:'+91 87654 32109', destination:'Bhutan', tripType:'cultural', groupSize:4, budget:'₹80,000 - ₹1,00,000', preferredMonth:'October', duration:'10 days', message:'Family trip, have elderly parents so need comfortable stays.', status:'viewed', isStarred:false, createdAt:'2026-03-18' },
+    { id:3, name:'Sneha Pillai', email:'sneha.p@gmail.com', phone:'', destination:'Thailand', tripType:'adventure', groupSize:6, budget:'₹55,000 - ₹70,000', preferredMonth:'December', duration:'8-10 days', message:'College friends trip, want adventure + nightlife mix.', status:'contacted', isStarred:true, createdAt:'2026-03-15' },
+    { id:4, name:'Vikram Nair', email:'vikram@gmail.com', phone:'+91 90123 45678', destination:'Andaman Islands', tripType:'beach', groupSize:2, budget:'₹30,000 - ₹45,000', preferredMonth:'January', duration:'5-6 days', message:'', status:'closed', isStarred:false, createdAt:'2026-03-10' }
+  ],
+  faqs: [
+    { id:1, question:'What is included in the trip price?', answer:'All accommodation, meals as specified in the itinerary, transportation within the destination, permits, and a dedicated trip leader are included.', category:'General', displayOrder:1, isActive:true },
+    { id:2, question:'How do I book a trip?', answer:'Click "Suggest Something" or reach out on WhatsApp. We\'ll send you a personalised itinerary and booking link within 24 hours.', category:'Booking', displayOrder:2, isActive:true },
+    { id:3, question:'Is travel insurance mandatory?', answer:'We strongly recommend comprehensive travel insurance covering medical, trip cancellation, and baggage. It is not included in our price.', category:'General', displayOrder:3, isActive:true },
+    { id:4, question:'What is the cancellation policy?', answer:'Cancellations 30+ days before departure: 80% refund. 15–29 days: 50% refund. Less than 15 days: no refund. Date changes accommodated where possible.', category:'Booking', displayOrder:4, isActive:true },
+    { id:5, question:'Are the trips suitable for first-time travellers?', answer:'Absolutely! Our community trips are designed to be beginner-friendly with full support. Just bring your curiosity.', category:'General', displayOrder:5, isActive:false }
+  ],
+  team: [
+    { id:1, name:'Devanshi Ghosh', role:'Founder & Lead Trip Designer', bio:'Former software engineer turned full-time wanderer. Devanshi has travelled to 40+ countries and believes every person deserves at least one life-changing trip.', photo:'', instagram:'@devanshi.wanders', displayOrder:1, isActive:true },
+    { id:2, name:'Rahul Sharma', role:'Ops & Logistics Head', bio:'Ex-travel agent with 10 years of experience. Rahul handles all the behind-the-scenes magic — permits, stays, transport, and contingency plans.', photo:'', instagram:'@rahul.onroute', displayOrder:2, isActive:true },
+    { id:3, name:'Preethi Nair', role:'Community Manager', bio:'The voice behind our Instagram. Preethi curates stories, manages our traveller community, and makes sure every post captures the real spirit of each trip.', photo:'', instagram:'@preethi.frames', displayOrder:3, isActive:true },
+    { id:4, name:'Kabir Mehta', role:'Photography Lead', bio:'Kabir documents every trip with his lens. His photos are what make people say "I need to go here". 10 years of travel photography across 25 countries.', photo:'', instagram:'@kabir.frames', displayOrder:4, isActive:false }
+  ],
+  careers: [
+    { id:1, title:'Trip Leader — Himalayan Region', department:'Operations', location:'Remote + On-Trip (India)', type:'contract', description:'We are looking for experienced, passionate trip leaders to lead our Himalayan batches. You will be the face of Nomichi on the ground — responsible for the safety, experience, and memories of our travellers.', requirements:['Minimum 3 years leading group travel','Wilderness First Aid certified','Fluent in Hindi and English','Strong communication and problem-solving skills'], isOpen:true, createdAt:'2026-03-01' },
+    { id:2, title:'Travel Content Writer', department:'Marketing', location:'Remote', type:'part-time', description:'Create compelling travel content — destination guides, trip diaries, social copy, and email newsletters — that captures the Nomichi voice and inspires people to travel differently.', requirements:['Portfolio of published travel writing','Strong command of English','Familiarity with SEO best practices'], isOpen:true, createdAt:'2026-02-20' },
+    { id:3, title:'Full-Stack Developer', department:'Technology', location:'Remote', type:'full-time', description:'Help us build and improve the Nomichi website and CMS. You\'ll work closely with the founder to ship features, improve performance, and create a seamless booking experience.', requirements:['3+ years with Node.js and React','Experience with MongoDB','Strong eye for clean UI'], isOpen:true, createdAt:'2026-02-10' },
+    { id:4, title:'Social Media Intern', department:'Marketing', location:'Remote', type:'internship', description:'Assist our content team in scheduling posts, engaging with followers, creating Reels, and tracking analytics across Instagram and YouTube.', requirements:['Passion for travel and storytelling','Familiar with Instagram and Canva','Available 20+ hours/week'], isOpen:false, createdAt:'2026-01-15' }
+  ],
+  settings: {
+    showActiveTrips:true, showFeaturedTrips:true, showReviews:true,
+    showGallery:true, showStats:true, showSuggestForm:true,
+    heroHeadline:'Find Your Kind of Travel',
+    heroSubline:'Curated trips for curious wanderers.',
+    phone:'+91 98765 43210', email:'hello@nomichi.com',
+    instagram:'@nomichi.travel', whatsapp:'+91 98765 43210'
+  }
+};
+
+// ── TOAST ──────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const wrap = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='ok'?'✅':type==='err'?'❌':'ℹ️'}</span>${msg}`;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+// ── STATE ──────────────────────────────────────────────────────────────
+let currentPage = 'dashboard';
+let currentAdmin = { name:'Nomichi Admin', email:'admin@nomichi.com', role:'super_admin' };
+
+function render() {
+  document.getElementById('app').innerHTML = buildApp();
+  attachEvents();
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const newSugg = DB.suggestions.filter(s=>s.status==='new').length;
+  const openJobs = DB.careers.filter(c=>c.isOpen).length;
+  const navContent = [
+    { section:'Main' },
+    { id:'dashboard', icon:'🏠', label:'Dashboard' },
+    { id:'trips', icon:'🗺️', label:'Trips' },
+    { section:'Community' },
+    { id:'reviews', icon:'⭐', label:'Reviews' },
+    { id:'suggestions', icon:'💬', label:'Suggestions', badge:newSugg },
+    { section:'Content' },
+    { id:'gallery', icon:'🖼️', label:'Gallery' },
+    { id:'faqs', icon:'❓', label:'FAQs' },
+    { section:'Company' },
+    { id:'team', icon:'👥', label:'Team / About' },
+    { id:'careers', icon:'💼', label:'Careers', badge:openJobs>0?openJobs:null },
+    { section:'System' },
+    { id:'settings', icon:'⚙️', label:'Settings' }
+  ];
+  return `
+    <div class="sidebar">
+      <div class="sb-brand">
+        <div class="sb-logo">N</div>
+        <div><div class="sb-name">Nomichi CMS</div><div class="sb-tag">Admin Panel</div></div>
+      </div>
+      <div style="padding:8px 0;flex:1">
+        ${navContent.map(item=>{
+          if(item.section) return `<div class="sb-section">${item.section}</div>`;
+          return `<div class="sb-item ${currentPage===item.id?'active':''}" onclick="navTo('${item.id}')">
+            <span class="ic">${item.icon}</span>${item.label}
+            ${item.badge?`<span class="sb-badge">${item.badge}</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="sb-footer">
+        <div class="sb-user-name">${currentAdmin.name}</div>
+        <div class="sb-user-email">${currentAdmin.email}</div>
+        <button class="sb-logout" onclick="toast('Logged out','ok')">↩ Sign Out</button>
+      </div>
+    </div>`;
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────
+function buildDashboard() {
+  const activeTrips = DB.trips.filter(t=>t.isActive).length;
+  const pendingReviews = DB.reviews.filter(r=>!r.isApproved).length;
+  const newSugg = DB.suggestions.filter(s=>s.status==='new').length;
+  const openJobs = DB.careers.filter(c=>c.isOpen).length;
+  const activeFaqs = DB.faqs.filter(f=>f.isActive).length;
+  const activeTeam = DB.team.filter(m=>m.isActive).length;
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Dashboard</div><div class="sec-sub">Welcome back, ${currentAdmin.name} 👋</div></div>
+        <button class="btn btn-primary" onclick="navTo('trips')">＋ Add New Trip</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card" onclick="navTo('trips')">
+          <div class="stat-icon">🗺️</div><div class="stat-num">${DB.trips.length}</div>
+          <div class="stat-label">Total Trips</div>
+          <div class="stat-sub"><span class="pill pill-green">${activeTrips} active</span> <span class="pill pill-gray">${DB.trips.length-activeTrips} inactive</span></div>
+        </div>
+        <div class="stat-card" onclick="navTo('reviews')">
+          <div class="stat-icon">⭐</div><div class="stat-num">${DB.reviews.length}</div>
+          <div class="stat-label">Reviews</div>
+          <div class="stat-sub">${pendingReviews>0?`<span class="pill pill-amber">${pendingReviews} pending</span>`:'<span class="pill pill-green">All approved</span>'}</div>
+        </div>
+        <div class="stat-card" onclick="navTo('suggestions')">
+          <div class="stat-icon">💬</div><div class="stat-num">${DB.suggestions.length}</div>
+          <div class="stat-label">Suggestions</div>
+          <div class="stat-sub">${newSugg>0?`<span class="pill pill-rust">${newSugg} new</span>`:'<span class="pill pill-green">All reviewed</span>'}</div>
+        </div>
+        <div class="stat-card" onclick="navTo('gallery')">
+          <div class="stat-icon">🖼️</div><div class="stat-num">${DB.gallery.length}</div>
+          <div class="stat-label">Gallery Images</div>
+          <div class="stat-sub"><span class="pill pill-blue">${DB.gallery.filter(g=>g.isFeatured).length} featured</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        <div class="stat-card" onclick="navTo('faqs')">
+          <div class="stat-icon">❓</div><div class="stat-num">${DB.faqs.length}</div>
+          <div class="stat-label">FAQs</div>
+          <div class="stat-sub"><span class="pill pill-green">${activeFaqs} live</span> <span class="pill pill-gray">${DB.faqs.length-activeFaqs} hidden</span></div>
+        </div>
+        <div class="stat-card" onclick="navTo('team')">
+          <div class="stat-icon">👥</div><div class="stat-num">${DB.team.length}</div>
+          <div class="stat-label">Team Members</div>
+          <div class="stat-sub"><span class="pill pill-blue">${activeTeam} on About page</span></div>
+        </div>
+        <div class="stat-card" onclick="navTo('careers')">
+          <div class="stat-icon">💼</div><div class="stat-num">${DB.careers.length}</div>
+          <div class="stat-label">Job Listings</div>
+          <div class="stat-sub">${openJobs>0?`<span class="pill pill-green">${openJobs} open</span> <span class="pill pill-gray">${DB.careers.length-openJobs} closed</span>`:'<span class="pill pill-gray">No open roles</span>'}</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">All Trips</span><button class="btn btn-primary btn-sm" onclick="navTo('trips')">Manage Trips →</button></div>
+        <table>
+          <thead><tr><th>Trip</th><th>Type</th><th>Price</th><th>Slots</th><th>Rating</th><th>Status</th></tr></thead>
+          <tbody>${DB.trips.map(t=>`
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><img class="trip-thumb" src="${t.coverImage}" onerror="this.style.display='none'"><div><div style="font-weight:600">${t.name}</div><div style="font-size:11px;color:var(--mid)">/trip/${t.slug}</div></div></div></td>
+              <td><span class="pill ${t.tripType==='exclusive'?'pill-rust':t.tripType==='custom'?'pill-blue':'pill-green'}">${t.tripType}</span></td>
+              <td><strong style="color:var(--rust)">₹${t.basePrice.toLocaleString()}</strong></td>
+              <td><span style="font-size:12px">${t.bookedSlots}/${t.totalSlots} booked</span></td>
+              <td>${t.avgRating?`<span style="color:#F59E0B">★</span> ${t.avgRating}`:'<span style="color:var(--fog)">—</span>'}</td>
+              <td><span class="pill ${t.isActive?'pill-green':'pill-gray'}">${t.isActive?'Active':'Inactive'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── TRIPS ──────────────────────────────────────────────────────────────
+function buildTrips() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Trips</div><div class="sec-sub">${DB.trips.length} total trips</div></div>
+        <button class="btn btn-primary" onclick="openTripModal(null)">＋ New Trip</button>
+      </div>
+      <div class="filter-bar">
+        <input class="search-inp" placeholder="🔍 Search trips..." oninput="filterTrips(this.value)">
+        <button class="btn btn-secondary btn-sm" onclick="setTripFilter('all')">All</button>
+        <button class="btn btn-secondary btn-sm" onclick="setTripFilter('community')">Community</button>
+        <button class="btn btn-secondary btn-sm" onclick="setTripFilter('exclusive')">Exclusive</button>
+        <button class="btn btn-secondary btn-sm" onclick="setTripFilter('custom')">Custom</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Trip</th><th>Type</th><th>Price</th><th>Slots</th><th>Active</th><th>Featured</th><th>Homepage</th><th>Actions</th></tr></thead>
+          <tbody id="trips-tbody">${buildTripsRows(DB.trips)}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function buildTripsRows(trips) {
+  if(!trips.length) return `<tr><td colspan="8"><div class="empty"><div class="empty-icon">🗺️</div><p>No trips found</p></div></td></tr>`;
+  return trips.map(t=>`
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px"><img class="trip-thumb" src="${t.coverImage}" onerror="this.style.display='none'"><div><div style="font-weight:600">${t.name}</div><div style="font-size:11px;color:var(--mid)">/trip/${t.slug} · ${t.duration.nights}N/${t.duration.days}D</div></div></div></td>
+      <td><span class="pill ${t.tripType==='exclusive'?'pill-rust':t.tripType==='custom'?'pill-blue':'pill-green'}">${t.tripType}</span></td>
+      <td>${t.originalPrice?`<div style="font-size:11px;color:var(--fog);text-decoration:line-through">₹${t.originalPrice.toLocaleString()}</div>`:''}<strong style="color:var(--rust)">₹${t.basePrice.toLocaleString()}</strong></td>
+      <td><div style="font-size:12px">${t.bookedSlots}/${t.totalSlots}</div><div style="font-size:11px;color:var(--mid)">${t.totalSlots-t.bookedSlots} left</div></td>
+      <td><label class="tog"><input type="checkbox" ${t.isActive?'checked':''} onchange="toggleTrip(${t.id},'isActive',this.checked)"><div class="tog-track"></div><div class="tog-thumb"></div></label></td>
+      <td><label class="tog"><input type="checkbox" ${t.isFeatured?'checked':''} onchange="toggleTrip(${t.id},'isFeatured',this.checked)"><div class="tog-track"></div><div class="tog-thumb"></div></label></td>
+      <td><label class="tog"><input type="checkbox" ${t.showOnHomepage?'checked':''} onchange="toggleTrip(${t.id},'showOnHomepage',this.checked)"><div class="tog-track"></div><div class="tog-thumb"></div></label></td>
+      <td><div class="td-actions"><button class="btn btn-icon btn-sm" onclick="openTripModal(${t.id})">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteTrip(${t.id})">🗑️</button></div></td>
+    </tr>`).join('');
+}
+
+// ── REVIEWS ────────────────────────────────────────────────────────────
+function buildReviews() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Reviews</div><div class="sec-sub">${DB.reviews.length} total · ${DB.reviews.filter(r=>!r.isApproved).length} pending</div></div>
+        <button class="btn btn-primary" onclick="openReviewModal(null)">＋ Add Review</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+        ${DB.reviews.map(r=>`
+          <div class="rev-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+              <div class="rev-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap">
+                <span class="pill ${r.isApproved?'pill-green':'pill-amber'}">${r.isApproved?'Approved':'Pending'}</span>
+                ${r.showOnHomepage?'<span class="pill pill-blue">Homepage</span>':''}
+                ${r.isFeatured?'<span class="pill pill-rust">Featured</span>':''}
+              </div>
+            </div>
+            <p class="rev-text">"${r.reviewText}"</p>
+            <div class="rev-foot"><div class="rev-avatar">👤</div><div><div class="rev-name">${r.name}</div><div class="rev-meta">📍 ${r.tripLocation}${r.location?' · '+r.location:''} · ${r.createdAt}</div></div></div>
+            <div class="rev-actions">
+              <button class="btn btn-sm ${r.isApproved?'btn-secondary':'btn-success'}" onclick="toggleReviewApproval(${r.id})">${r.isApproved?'Unapprove':'✓ Approve'}</button>
+              <button class="btn btn-sm btn-icon" onclick="openReviewModal(${r.id})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteReview(${r.id})">🗑️</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── GALLERY ────────────────────────────────────────────────────────────
+function buildGallery() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Gallery</div><div class="sec-sub">${DB.gallery.length} images</div></div>
+        <button class="btn btn-primary" onclick="uploadImage()">⬆️ Upload Images</button>
+      </div>
+      <div class="upload-zone" onclick="uploadImage()" style="margin-bottom:20px">
+        <div style="font-size:28px;margin-bottom:8px">📁</div>
+        <div style="font-size:13px;color:var(--mid)">Click to upload images or drag & drop here</div>
+        <div style="font-size:11px;color:var(--fog);margin-top:4px">JPEG, PNG, WebP up to 10MB</div>
+      </div>
+      <div class="gallery-grid">
+        ${DB.gallery.map(img=>`
+          <div class="gal-item">
+            <img src="${img.url}" alt="${img.alt}">
+            <div class="gal-info"><div style="font-size:12px;font-weight:600;color:var(--ink2)">${img.alt}</div><div class="gal-meta">${img.tripName}</div>${img.isFeatured?'<span class="pill pill-rust" style="margin-top:4px;font-size:10px">⭐ Featured</span>':''}</div>
+            <div class="gal-actions">
+              <button class="gal-btn" onclick="toggleFeatured(${img.id})">⭐</button>
+              <button class="gal-btn" style="background:rgba(192,57,43,.7)" onclick="deleteImage(${img.id})">🗑️</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── SUGGESTIONS ────────────────────────────────────────────────────────
+function buildSuggestions() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Suggestions</div><div class="sec-sub">"Suggest Something" form submissions · ${DB.suggestions.filter(s=>s.status==='new').length} new</div></div>
+      </div>
+      <div class="filter-bar">
+        ${['all','new','viewed','contacted','closed'].map(s=>`<button class="btn btn-secondary btn-sm" onclick="filterSugg('${s}')" style="text-transform:capitalize">${s==='all'?'All':s}</button>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px" id="sugg-grid">${buildSuggCards(DB.suggestions)}</div>
+    </div>`;
+}
+
+function buildSuggCards(suggestions) {
+  const sc = {new:'pill-rust',viewed:'pill-blue',contacted:'pill-green',closed:'pill-gray'};
+  if(!suggestions.length) return '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💬</div><p>No suggestions found</p></div>';
+  return suggestions.map(s=>`
+    <div class="sugg-card ${s.status==='new'?'new':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div><div style="font-weight:700;font-size:14px">${s.name}</div><div style="font-size:12px;color:var(--mid)">${s.email}${s.phone?' · '+s.phone:''}</div></div>
+        <div style="display:flex;gap:6px;align-items:center"><span class="pill ${sc[s.status]}">${s.status}</span><span style="font-size:18px;cursor:pointer;color:${s.isStarred?'#F59E0B':'var(--fog)'}" onclick="toggleStar(${s.id})">★</span></div>
+      </div>
+      <div class="sugg-row"><span class="sugg-lbl">Destination</span><strong>${s.destination}</strong></div>
+      ${s.budget?`<div class="sugg-row"><span class="sugg-lbl">Budget</span>${s.budget}</div>`:''}
+      <div class="sugg-row"><span class="sugg-lbl">Group size</span>${s.groupSize} ${s.groupSize===1?'person':'people'}</div>
+      ${s.preferredMonth?`<div class="sugg-row"><span class="sugg-lbl">Month</span>${s.preferredMonth}</div>`:''}
+      ${s.message?`<div style="font-size:12px;color:var(--mid);margin-top:10px;padding-top:10px;border-top:1px solid var(--line2);font-style:italic">"${s.message}"</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+        ${s.status!=='viewed'?`<button class="btn btn-sm btn-secondary" onclick="updateSuggStatus(${s.id},'viewed')">Mark Viewed</button>`:''}
+        ${s.status!=='contacted'?`<button class="btn btn-sm btn-success" onclick="updateSuggStatus(${s.id},'contacted')">Mark Contacted</button>`:''}
+        ${s.status!=='closed'?`<button class="btn btn-sm btn-amber" onclick="updateSuggStatus(${s.id},'closed')">Close</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteSugg(${s.id})">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── FAQs ───────────────────────────────────────────────────────────────
+function buildFaqs() {
+  const cats = [...new Set(DB.faqs.map(f=>f.category))];
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">FAQs</div><div class="sec-sub">${DB.faqs.length} questions · ${DB.faqs.filter(f=>f.isActive).length} live on site</div></div>
+        <button class="btn btn-primary" onclick="openFaqModal(null)">＋ Add FAQ</button>
+      </div>
+      <div class="filter-bar">
+        <button class="btn btn-secondary btn-sm" onclick="filterFaqs('all')">All</button>
+        ${cats.map(c=>`<button class="btn btn-secondary btn-sm" onclick="filterFaqs('${c}')">${c}</button>`).join('')}
+      </div>
+      <div class="table-wrap" id="faq-table">${buildFaqTable(DB.faqs)}</div>
+      <div style="margin-top:14px;padding:14px 18px;background:var(--blue-bg);border:1px solid #bee3f8;border-radius:11px;font-size:13px;color:var(--blue)">
+        💡 <strong>Tip:</strong> Use the Display Order field to control the order FAQs appear on your website. Lower numbers appear first.
+      </div>
+    </div>`;
+}
+
+function buildFaqTable(faqs) {
+  if(!faqs.length) return `<div class="empty"><div class="empty-icon">❓</div><p>No FAQs found</p></div>`;
+  return `<table>
+    <thead><tr><th>#</th><th>Question</th><th>Category</th><th>Live</th><th>Actions</th></tr></thead>
+    <tbody>${faqs.map(f=>`
+      <tr>
+        <td style="color:var(--mid);font-size:12px">${f.displayOrder}</td>
+        <td>
+          <div style="font-weight:600;max-width:400px">${f.question}</div>
+          <div style="font-size:12px;color:var(--mid);margin-top:3px;max-width:400px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.answer}</div>
+        </td>
+        <td><span class="pill pill-blue">${f.category}</span></td>
+        <td><label class="tog"><input type="checkbox" ${f.isActive?'checked':''} onchange="toggleFaqActive(${f.id},this.checked)"><div class="tog-track"></div><div class="tog-thumb"></div></label></td>
+        <td><div class="td-actions"><button class="btn btn-icon btn-sm" onclick="openFaqModal(${f.id})">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteFaq(${f.id})">🗑️</button></div></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ── TEAM ───────────────────────────────────────────────────────────────
+function buildTeam() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Team / About</div><div class="sec-sub">${DB.team.length} members · ${DB.team.filter(m=>m.isActive).length} visible on About page</div></div>
+        <button class="btn btn-primary" onclick="openTeamModal(null)">＋ Add Member</button>
+      </div>
+      <div class="team-grid">${buildTeamCards(DB.team)}</div>
+      <div style="margin-top:18px;padding:14px 18px;background:var(--rust-tint);border:1px solid var(--rust-tint2);border-radius:11px;font-size:13px;color:var(--rust-d)">
+        💡 <strong>Tip:</strong> Toggle the visibility switch on each card to show or hide a team member on the About page. Inactive members are shown dimmed.
+      </div>
+    </div>`;
+}
+
+function buildTeamCards(members) {
+  if(!members.length) return `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">👥</div><p>No team members yet</p></div>`;
+  return members.map(m=>`
+    <div class="team-card ${m.isActive?'':'team-inactive'}">
+      <div style="position:absolute;top:14px;right:14px">
+        <label class="tog" title="${m.isActive?'Hide from About page':'Show on About page'}">
+          <input type="checkbox" ${m.isActive?'checked':''} onchange="toggleTeamActive(${m.id},this.checked)">
+          <div class="tog-track"></div><div class="tog-thumb"></div>
+        </label>
+      </div>
+      <div class="team-avatar">${m.photo?`<img src="${m.photo}" alt="${m.name}" onerror="this.parentElement.innerHTML='👤'">`:'👤'}</div>
+      <div class="team-name">${m.name}</div>
+      <div class="team-role">${m.role}</div>
+      <div class="team-bio">${m.bio.length>120?m.bio.substring(0,120)+'...':m.bio}</div>
+      ${m.instagram?`<div style="font-size:12px;color:var(--mid);margin-bottom:12px">📸 ${m.instagram}</div>`:''}
+      <div class="team-actions">
+        <button class="btn btn-sm btn-icon" onclick="openTeamModal(${m.id})">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTeamMember(${m.id})">🗑️</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── CAREERS ────────────────────────────────────────────────────────────
+function buildCareers() {
+  const typeColors = { 'full-time':'pill-green', 'part-time':'pill-blue', 'contract':'pill-amber', 'internship':'pill-purple' };
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Careers</div><div class="sec-sub">${DB.careers.length} listings · ${DB.careers.filter(c=>c.isOpen).length} open positions</div></div>
+        <button class="btn btn-primary" onclick="openCareerModal(null)">＋ Add Job Listing</button>
+      </div>
+      <div class="filter-bar">
+        <button class="btn btn-secondary btn-sm" onclick="filterCareers('all')">All</button>
+        <button class="btn btn-secondary btn-sm" onclick="filterCareers('open')">Open</button>
+        <button class="btn btn-secondary btn-sm" onclick="filterCareers('closed')">Closed</button>
+      </div>
+      <div id="careers-list">${buildCareerCards(DB.careers)}</div>
+    </div>`;
+}
+
+function buildCareerCards(jobs) {
+  const typeColors = { 'full-time':'pill-green', 'part-time':'pill-blue', 'contract':'pill-amber', 'internship':'pill-purple' };
+  if(!jobs.length) return `<div class="empty"><div class="empty-icon">💼</div><p>No job listings found</p></div>`;
+  return jobs.map(j=>`
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:14px;${j.isOpen?'border-left:3px solid var(--rust)':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px">
+            <span style="font-size:16px;font-weight:700">${j.title}</span>
+            <span class="pill ${j.isOpen?'pill-green':'pill-gray'}">${j.isOpen?'● Open':'Closed'}</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+            <span class="pill ${typeColors[j.type]||'pill-gray'}">${j.type}</span>
+            <span class="pill pill-gray">🏢 ${j.department}</span>
+            <span class="pill pill-gray">📍 ${j.location}</span>
+            <span style="font-size:12px;color:var(--fog)">Posted ${j.createdAt}</span>
+          </div>
+          <p style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:12px;max-width:680px">${j.description.length>200?j.description.substring(0,200)+'...':j.description}</p>
+          ${j.requirements&&j.requirements.length?`<div style="font-size:12px;color:var(--mid)"><strong style="color:var(--ink3)">Requirements:</strong>${j.requirements.slice(0,3).map(r=>`<span style="margin-left:8px">· ${r}</span>`).join('')}${j.requirements.length>3?`<span style="margin-left:8px;color:var(--fog)">+${j.requirements.length-3} more</span>`:''}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;flex-shrink:0">
+          <label class="tog" title="Toggle open/closed"><input type="checkbox" ${j.isOpen?'checked':''} onchange="toggleJobOpen(${j.id},this.checked)"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-icon btn-sm" onclick="openCareerModal(${j.id})">✏️</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteJob(${j.id})">🗑️</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────────
+function buildSettings() {
+  const s = DB.settings;
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Site Settings</div><div class="sec-sub">Control homepage visibility and contact info</div></div>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 Save Settings</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-title">Homepage Sections</div>
+          <div class="card-sub">Toggle what appears on your website homepage</div>
+          ${[['showActiveTrips','Show Active Trips section'],['showFeaturedTrips','Show Featured Trips section'],['showReviews','Show Reviews section'],['showGallery','Show Gallery section'],['showStats','Show Stats bar (travellers, trips etc.)'],['showSuggestForm','Show "Suggest Something" form']].map(([key,label])=>`
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line2)">
+              <span style="font-size:13px;font-weight:500">${label}</span>
+              <label class="tog"><input type="checkbox" ${s[key]?'checked':''} onchange="DB.settings.${key}=this.checked"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+            </div>`).join('')}
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">Hero Text</div>
+            <div class="card-sub">The main headline on your homepage</div>
+            <div class="field" style="margin-bottom:12px"><label>Main Headline</label><input value="${s.heroHeadline}" id="heroHeadline"></div>
+            <div class="field"><label>Subline</label><input value="${s.heroSubline}" id="heroSubline"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Contact Info</div>
+            <div class="card-sub">Shown in footer and enquiry buttons</div>
+            <div class="fg" style="gap:12px;margin-top:4px">
+              <div class="field"><label>Phone</label><input value="${s.phone}" id="settPhone"></div>
+              <div class="field"><label>Email</label><input value="${s.email}" id="settEmail"></div>
+              <div class="field"><label>Instagram</label><input value="${s.instagram}" id="settInsta"></div>
+              <div class="field"><label>WhatsApp</label><input value="${s.whatsapp}" id="settWA"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── MODAL: TRIPS ───────────────────────────────────────────────────────
+function openTripModal(id) {
+  const t = id ? DB.trips.find(x=>x.id===id) : { id:null, name:'', slug:'', location:'', flag:'🇮🇳', duration:{days:7,nights:6}, basePrice:'', originalPrice:'', tripType:'community', tags:'', month:'flex', totalSlots:16, overview:'', isActive:true, isFeatured:false, showOnHomepage:false, isVisible:true, highlights:[], inclusions:[], exclusions:[], itinerary:[] };
+  let highlights=[...(t.highlights||[])], inclusions=[...(t.inclusions||[])], exclusions=[...(t.exclusions||[])], itinerary=[...(t.itinerary||[])], activeTab='basic';
+  function renderModal() {
+    document.getElementById('trip-modal-overlay')?.remove();
+    const div=document.createElement('div'); div.id='trip-modal-overlay'; div.className='overlay';
+    div.innerHTML=`<div class="modal modal-lg"><div class="modal-hdr"><span class="modal-title">${id?'Edit Trip: '+t.name:'Add New Trip'}</span><button class="modal-close" onclick="closeModal()">×</button></div><div class="modal-body" style="padding-top:18px"><div class="tabs">${['basic','details','itinerary','inclusions','settings'].map(tab=>`<button class="tab ${activeTab===tab?'active':''}" onclick="switchTripTab('${tab}')" style="text-transform:capitalize">${tab}</button>`).join('')}</div><div id="trip-tab-content">${buildTripTab()}</div></div><div class="modal-foot"><button class="btn btn-secondary" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTrip()">${id?'Save Changes':'Create Trip'}</button></div></div>`;
+    document.body.appendChild(div);
+  }
+  function buildTripTab() {
+    if(activeTab==='basic') return `<div class="fg"><div class="field full"><label>Trip Name *</label><input id="t-name" value="${t.name}" placeholder="e.g. Ladakh Expedition" oninput="if(!${!!id})document.getElementById('t-slug').value=this.value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')"></div><div class="field"><label>Slug *</label><input id="t-slug" value="${t.slug}" placeholder="ladakh"></div><div class="field"><label>Location *</label><input id="t-loc" value="${t.location}" placeholder="Ladakh, India"></div><div class="field"><label>Trip Type *</label><select id="t-type"><option value="community" ${t.tripType==='community'?'selected':''}>Community (Group)</option><option value="exclusive" ${t.tripType==='exclusive'?'selected':''}>Exclusive</option><option value="custom" ${t.tripType==='custom'?'selected':''}>Custom</option></select></div><div class="field"><label>Flag Emoji</label><input id="t-flag" value="${t.flag}" style="font-size:20px"></div><div class="field"><label>Days</label><input id="t-days" type="number" min="1" value="${t.duration.days}"></div><div class="field"><label>Nights</label><input id="t-nights" type="number" min="0" value="${t.duration.nights}"></div><div class="field"><label>Base Price (₹)</label><input id="t-price" type="number" value="${t.basePrice}"></div><div class="field"><label>Original Price (strikethrough)</label><input id="t-oprice" type="number" value="${t.originalPrice||''}"></div><div class="field"><label>Total Slots</label><input id="t-slots" type="number" min="1" value="${t.totalSlots}"></div><div class="field"><label>Month</label><select id="t-month">${['flex','jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].map(m=>`<option value="${m}" ${t.month===m?'selected':''}>${m}</option>`).join('')}</select></div><div class="field full"><label>Cover Image URL</label><input id="t-img" value="${t.coverImage||''}" placeholder="https://images.unsplash.com/..."></div></div>`;
+    if(activeTab==='details') return `<div class="field" style="margin-bottom:16px"><label>Overview</label><textarea id="t-overview" rows="5">${t.overview||''}</textarea></div><div class="field"><label>Highlights</label><div class="list-builder" id="highlights-builder">${highlights.map((h,i)=>`<div class="list-row"><input class="list-inp" value="${h}" onchange="highlights[${i}]=this.value"><button class="list-rm" onclick="highlights.splice(${i},1);refreshHighlights()">×</button></div>`).join('')}<button class="btn btn-secondary btn-sm" onclick="highlights.push('');refreshHighlights()" style="margin-top:4px">+ Add Highlight</button></div></div>`;
+    if(activeTab==='itinerary') return `<div id="itin-builder">${itinerary.map((day,i)=>`<div class="itin-day"><div class="itin-hdr"><span class="itin-num">Day ${day.day}</span><input class="itin-inp" value="${day.title}" placeholder="Day title..." onchange="itinerary[${i}].title=this.value" style="flex:1"><button class="list-rm" onclick="itinerary.splice(${i},1);refreshItin()" style="margin-left:8px">×</button></div><div class="itin-body"><textarea class="list-inp" rows="3" onchange="itinerary[${i}].description=this.value" style="width:100%;padding:9px 12px;border-radius:8px">${day.description||''}</textarea><div class="fg"><input class="list-inp" value="${day.meals||''}" placeholder="Meals" onchange="itinerary[${i}].meals=this.value"><input class="list-inp" value="${day.accommodation||''}" placeholder="Accommodation" onchange="itinerary[${i}].accommodation=this.value"></div></div></div>`).join('')}<button class="btn btn-secondary btn-sm" onclick="itinerary.push({day:itinerary.length+1,title:'',description:'',meals:'',accommodation:''});refreshItin()">+ Add Day</button></div>`;
+    if(activeTab==='inclusions') return `<div class="fg"><div class="field"><label>✅ Inclusions</label><div class="list-builder" id="inc-builder">${inclusions.map((inc,i)=>`<div class="list-row"><input class="list-inp" value="${inc}" onchange="inclusions[${i}]=this.value"><button class="list-rm" onclick="inclusions.splice(${i},1);refreshInc()">×</button></div>`).join('')}<button class="btn btn-secondary btn-sm" onclick="inclusions.push('');refreshInc()" style="margin-top:4px">+ Add</button></div></div><div class="field"><label>❌ Exclusions</label><div class="list-builder" id="exc-builder">${exclusions.map((exc,i)=>`<div class="list-row"><input class="list-inp" value="${exc}" onchange="exclusions[${i}]=this.value"><button class="list-rm" onclick="exclusions.splice(${i},1);refreshExc()">×</button></div>`).join('')}<button class="btn btn-secondary btn-sm" onclick="exclusions.push('');refreshExc()" style="margin-top:4px">+ Add</button></div></div></div>`;
+    if(activeTab==='settings') return `<div class="fg"><div class="row-toggle full"><label class="tog"><input type="checkbox" ${t.isActive?'checked':''} id="t-active"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Active (visible to users)</label></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${t.isFeatured?'checked':''} id="t-featured"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Featured</label></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${t.showOnHomepage?'checked':''} id="t-homepage"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Show on Homepage</label></div><div class="field full"><label>Meta Title (SEO)</label><input id="t-meta-title" value="${t.metaTitle||''}" placeholder="${t.name} | Nomichi"></div><div class="field full"><label>Meta Description</label><textarea id="t-meta-desc" rows="3">${t.metaDescription||''}</textarea></div></div>`;
+  }
+  window.switchTripTab=(tab)=>{activeTab=tab;renderModal();};
+  window.refreshHighlights=()=>{document.getElementById('highlights-builder').innerHTML=highlights.map((h,i)=>`<div class="list-row"><input class="list-inp" value="${h}" onchange="highlights[${i}]=this.value"><button class="list-rm" onclick="highlights.splice(${i},1);refreshHighlights()">×</button></div>`).join('')+`<button class="btn btn-secondary btn-sm" onclick="highlights.push('');refreshHighlights()" style="margin-top:4px">+ Add Highlight</button>`;};
+  window.refreshItin=()=>{activeTab='itinerary';renderModal();};
+  window.refreshInc=()=>{document.getElementById('inc-builder').innerHTML=inclusions.map((inc,i)=>`<div class="list-row"><input class="list-inp" value="${inc}" onchange="inclusions[${i}]=this.value"><button class="list-rm" onclick="inclusions.splice(${i},1);refreshInc()">×</button></div>`).join('')+`<button class="btn btn-secondary btn-sm" onclick="inclusions.push('');refreshInc()" style="margin-top:4px">+ Add</button>`;};
+  window.refreshExc=()=>{document.getElementById('exc-builder').innerHTML=exclusions.map((exc,i)=>`<div class="list-row"><input class="list-inp" value="${exc}" onchange="exclusions[${i}]=this.value"><button class="list-rm" onclick="exclusions.splice(${i},1);refreshExc()">×</button></div>`).join('')+`<button class="btn btn-secondary btn-sm" onclick="exclusions.push('');refreshExc()" style="margin-top:4px">+ Add</button>`;};
+  window.saveTrip=()=>{
+    const name=document.getElementById('t-name')?.value; if(!name){toast('Trip name is required','err');return;}
+    if(id){const trip=DB.trips.find(x=>x.id===id);trip.name=name;trip.slug=document.getElementById('t-slug')?.value||trip.slug;trip.location=document.getElementById('t-loc')?.value||trip.location;trip.tripType=document.getElementById('t-type')?.value||trip.tripType;trip.flag=document.getElementById('t-flag')?.value||trip.flag;trip.duration={days:parseInt(document.getElementById('t-days')?.value)||trip.duration.days,nights:parseInt(document.getElementById('t-nights')?.value)||trip.duration.nights};trip.basePrice=parseFloat(document.getElementById('t-price')?.value)||trip.basePrice;trip.originalPrice=parseFloat(document.getElementById('t-oprice')?.value)||null;trip.totalSlots=parseInt(document.getElementById('t-slots')?.value)||trip.totalSlots;trip.month=document.getElementById('t-month')?.value||trip.month;trip.coverImage=document.getElementById('t-img')?.value||trip.coverImage;trip.overview=document.getElementById('t-overview')?.value||trip.overview;trip.highlights=highlights;trip.inclusions=inclusions;trip.exclusions=exclusions;trip.itinerary=itinerary;trip.isActive=document.getElementById('t-active')?.checked??trip.isActive;trip.isFeatured=document.getElementById('t-featured')?.checked??trip.isFeatured;trip.showOnHomepage=document.getElementById('t-homepage')?.checked??trip.showOnHomepage;toast('Trip updated! ✅');}
+    else{const newId=Math.max(...DB.trips.map(x=>x.id),0)+1;DB.trips.unshift({id:newId,name,slug:document.getElementById('t-slug')?.value||name.toLowerCase().replace(/\s+/g,'-'),location:document.getElementById('t-loc')?.value||'',flag:document.getElementById('t-flag')?.value||'🇮🇳',duration:{days:parseInt(document.getElementById('t-days')?.value)||7,nights:parseInt(document.getElementById('t-nights')?.value)||6},basePrice:parseFloat(document.getElementById('t-price')?.value)||0,originalPrice:parseFloat(document.getElementById('t-oprice')?.value)||null,tripType:document.getElementById('t-type')?.value||'community',tags:[],month:document.getElementById('t-month')?.value||'flex',totalSlots:parseInt(document.getElementById('t-slots')?.value)||16,bookedSlots:0,coverImage:document.getElementById('t-img')?.value||'',isActive:true,isFeatured:false,showOnHomepage:false,isVisible:true,avgRating:0,reviewCount:0,overview:document.getElementById('t-overview')?.value||'',highlights,inclusions,exclusions,itinerary});toast('Trip created! 🎉');}
+    closeModal();navTo('trips');
+  };
+  renderModal();
+}
+
+// ── MODAL: REVIEWS ─────────────────────────────────────────────────────
+function openReviewModal(id) {
+  const r=id?DB.reviews.find(x=>x.id===id):{id:null,name:'',location:'',tripLocation:'',rating:5,reviewText:'',isApproved:true,isFeatured:false,showOnHomepage:false};
+  const div=document.createElement('div'); div.id='rev-modal-overlay'; div.className='overlay';
+  div.innerHTML=`<div class="modal"><div class="modal-hdr"><span class="modal-title">${id?'Edit Review':'Add Review'}</span><button class="modal-close" onclick="document.getElementById('rev-modal-overlay').remove()">×</button></div><div class="modal-body"><div class="fg"><div class="field"><label>Reviewer Name *</label><input id="r-name" value="${r.name}" placeholder="Priya Sharma"></div><div class="field"><label>Reviewer City</label><input id="r-loc" value="${r.location}" placeholder="Mumbai"></div><div class="field"><label>Trip Destination *</label><input id="r-triploc" value="${r.tripLocation}" placeholder="Ladakh"></div><div class="field"><label>Rating *</label><select id="r-rating">${[5,4,3,2,1].map(n=>`<option value="${n}" ${r.rating===n?'selected':''}>${n} Star${n!==1?'s':''}</option>`).join('')}</select></div><div class="field full"><label>Review Text *</label><textarea id="r-text" rows="4">${r.reviewText}</textarea></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${r.isApproved?'checked':''} id="r-approved"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Approved</label></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${r.isFeatured?'checked':''} id="r-featured"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Featured</label></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${r.showOnHomepage?'checked':''} id="r-homepage"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Show on Homepage</label></div></div></div><div class="modal-foot"><button class="btn btn-secondary" onclick="document.getElementById('rev-modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveReview(${id||'null'})">${id?'Save Changes':'Add Review'}</button></div></div>`;
+  document.body.appendChild(div);
+}
+
+// ── MODAL: FAQ ─────────────────────────────────────────────────────────
+function openFaqModal(id) {
+  const f=id?DB.faqs.find(x=>x.id===id):{id:null,question:'',answer:'',category:'General',displayOrder:DB.faqs.length+1,isActive:true};
+  const div=document.createElement('div'); div.id='faq-modal-overlay'; div.className='overlay';
+  div.innerHTML=`<div class="modal"><div class="modal-hdr"><span class="modal-title">${id?'Edit FAQ':'Add FAQ'}</span><button class="modal-close" onclick="document.getElementById('faq-modal-overlay').remove()">×</button></div><div class="modal-body"><div class="fg"><div class="field full"><label>Question *</label><input id="faq-q" value="${f.question.replace(/"/g,'&quot;')}" placeholder="e.g. What is included in the trip price?"></div><div class="field full"><label>Answer *</label><textarea id="faq-a" rows="5" placeholder="Write a clear, helpful answer...">${f.answer}</textarea></div><div class="field"><label>Category</label><select id="faq-cat">${['General','Booking','Safety','Payment','Other'].map(c=>`<option value="${c}" ${f.category===c?'selected':''}>${c}</option>`).join('')}</select></div><div class="field"><label>Display Order</label><input id="faq-order" type="number" min="1" value="${f.displayOrder}"><div class="field-hint">Lower number = appears first</div></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${f.isActive?'checked':''} id="faq-active"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Live on site</label></div></div></div><div class="modal-foot"><button class="btn btn-secondary" onclick="document.getElementById('faq-modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveFaq(${id||'null'})">${id?'Save Changes':'Add FAQ'}</button></div></div>`;
+  document.body.appendChild(div);
+}
+
+// ── MODAL: TEAM ────────────────────────────────────────────────────────
+function openTeamModal(id) {
+  const m=id?DB.team.find(x=>x.id===id):{id:null,name:'',role:'',bio:'',photo:'',instagram:'',displayOrder:DB.team.length+1,isActive:true};
+  const div=document.createElement('div'); div.id='team-modal-overlay'; div.className='overlay';
+  div.innerHTML=`<div class="modal"><div class="modal-hdr"><span class="modal-title">${id?'Edit Team Member':'Add Team Member'}</span><button class="modal-close" onclick="document.getElementById('team-modal-overlay').remove()">×</button></div><div class="modal-body"><div class="fg"><div class="field"><label>Full Name *</label><input id="tm-name" value="${m.name}" placeholder="e.g. Devanshi Ghosh"></div><div class="field"><label>Role / Title *</label><input id="tm-role" value="${m.role}" placeholder="e.g. Founder"></div><div class="field full"><label>Bio</label><textarea id="tm-bio" rows="4" placeholder="A short bio about this person...">${m.bio}</textarea></div><div class="field"><label>Photo URL</label><input id="tm-photo" value="${m.photo}" placeholder="https://..."><div class="field-hint">Link to a profile photo</div></div><div class="field"><label>Instagram Handle</label><input id="tm-insta" value="${m.instagram}" placeholder="@nomichi.travel"></div><div class="field"><label>Display Order</label><input id="tm-order" type="number" min="1" value="${m.displayOrder}"></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${m.isActive?'checked':''} id="tm-active"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Visible on About page</label></div></div></div><div class="modal-foot"><button class="btn btn-secondary" onclick="document.getElementById('team-modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveTeamMember(${id||'null'})">${id?'Save Changes':'Add Member'}</button></div></div>`;
+  document.body.appendChild(div);
+}
+
+// ── MODAL: CAREERS ─────────────────────────────────────────────────────
+function openCareerModal(id) {
+  const j=id?DB.careers.find(x=>x.id===id):{id:null,title:'',department:'Operations',location:'Remote',type:'full-time',description:'',requirements:[],isOpen:true};
+  let reqs=[...(j.requirements||[])];
+  function renderCareerModal() {
+    document.getElementById('career-modal-overlay')?.remove();
+    const div=document.createElement('div'); div.id='career-modal-overlay'; div.className='overlay';
+    div.innerHTML=`<div class="modal modal-lg"><div class="modal-hdr"><span class="modal-title">${id?'Edit Job: '+j.title:'Add Job Listing'}</span><button class="modal-close" onclick="document.getElementById('career-modal-overlay').remove()">×</button></div><div class="modal-body"><div class="fg"><div class="field full"><label>Job Title *</label><input id="job-title" value="${j.title.replace(/"/g,'&quot;')}" placeholder="e.g. Trip Leader"></div><div class="field"><label>Department *</label><select id="job-dept">${['Operations','Marketing','Technology','Finance','Design','Other'].map(d=>`<option value="${d}" ${j.department===d?'selected':''}>${d}</option>`).join('')}</select></div><div class="field"><label>Location</label><input id="job-loc" value="${j.location}" placeholder="Remote / Mumbai"></div><div class="field"><label>Employment Type</label><select id="job-type">${['full-time','part-time','contract','internship'].map(t=>`<option value="${t}" ${j.type===t?'selected':''}>${t.charAt(0).toUpperCase()+t.slice(1)}</option>`).join('')}</select></div><div class="field full"><label>Job Description *</label><textarea id="job-desc" rows="5" placeholder="Describe the role and responsibilities...">${j.description}</textarea></div><div class="field full"><label>Requirements</label><div class="list-builder" id="reqs-builder">${reqs.map((r,i)=>`<div class="list-row"><input class="list-inp" value="${r.replace(/"/g,'&quot;')}" onchange="reqs[${i}]=this.value" placeholder="e.g. 3+ years experience"><button class="list-rm" onclick="reqs.splice(${i},1);refreshReqs()">×</button></div>`).join('')}<button class="btn btn-secondary btn-sm" onclick="reqs.push('');refreshReqs()" style="margin-top:4px">+ Add Requirement</button></div></div><div class="row-toggle full"><label class="tog"><input type="checkbox" ${j.isOpen?'checked':''} id="job-open"><div class="tog-track"></div><div class="tog-thumb"></div></label><label>Position is Open (accepting applications)</label></div></div></div><div class="modal-foot"><button class="btn btn-secondary" onclick="document.getElementById('career-modal-overlay').remove()">Cancel</button><button class="btn btn-primary" onclick="saveJob(${id||'null'})">${id?'Save Changes':'Post Job'}</button></div></div>`;
+    document.body.appendChild(div);
+  }
+  window.refreshReqs=()=>{document.getElementById('reqs-builder').innerHTML=reqs.map((r,i)=>`<div class="list-row"><input class="list-inp" value="${r.replace(/"/g,'&quot;')}" onchange="reqs[${i}]=this.value"><button class="list-rm" onclick="reqs.splice(${i},1);refreshReqs()">×</button></div>`).join('')+`<button class="btn btn-secondary btn-sm" onclick="reqs.push('');refreshReqs()" style="margin-top:4px">+ Add Requirement</button>`;};
+  window.saveJob=(jid)=>{
+    const title=document.getElementById('job-title')?.value, desc=document.getElementById('job-desc')?.value;
+    if(!title||!desc){toast('Job title and description are required','err');return;}
+    if(jid){const job=DB.careers.find(x=>x.id===jid);job.title=title;job.department=document.getElementById('job-dept')?.value||job.department;job.location=document.getElementById('job-loc')?.value||job.location;job.type=document.getElementById('job-type')?.value||job.type;job.description=desc;job.requirements=reqs;job.isOpen=document.getElementById('job-open')?.checked??job.isOpen;toast('Job listing updated! ✅');}
+    else{DB.careers.unshift({id:Math.max(...DB.careers.map(x=>x.id),0)+1,title,department:document.getElementById('job-dept')?.value||'Operations',location:document.getElementById('job-loc')?.value||'Remote',type:document.getElementById('job-type')?.value||'full-time',description:desc,requirements:reqs,isOpen:document.getElementById('job-open')?.checked??true,createdAt:new Date().toISOString().slice(0,10)});toast('Job listing posted! 🎉');}
+    document.getElementById('career-modal-overlay')?.remove();navTo('careers');
+  };
+  renderCareerModal();
+}
+
+// ── ACTIONS ────────────────────────────────────────────────────────────
+window.navTo=(page)=>{currentPage=page;render();};
+window.closeModal=()=>document.getElementById('trip-modal-overlay')?.remove();
+window.toggleTrip=(id,field,val)=>{const t=DB.trips.find(x=>x.id===id);if(t){t[field]=val;toast(`Updated`);}};
+window.deleteTrip=(id)=>{if(confirm('Delete this trip?')){DB.trips=DB.trips.filter(x=>x.id!==id);toast('Trip deleted');navTo('trips');}};
+window.toggleReviewApproval=(id)=>{const r=DB.reviews.find(x=>x.id===id);if(r){r.isApproved=!r.isApproved;toast(r.isApproved?'Review approved ✅':'Review unapproved');navTo('reviews');}};
+window.deleteReview=(id)=>{if(confirm('Delete this review?')){DB.reviews=DB.reviews.filter(x=>x.id!==id);toast('Review deleted');navTo('reviews');}};
+window.saveReview=(id)=>{
+  const name=document.getElementById('r-name')?.value, text=document.getElementById('r-text')?.value;
+  if(!name||!text){toast('Name and review text required','err');return;}
+  if(id){const r=DB.reviews.find(x=>x.id===id);r.name=name;r.location=document.getElementById('r-loc')?.value||'';r.tripLocation=document.getElementById('r-triploc')?.value||'';r.rating=parseInt(document.getElementById('r-rating')?.value)||5;r.reviewText=text;r.isApproved=document.getElementById('r-approved')?.checked??true;r.isFeatured=document.getElementById('r-featured')?.checked??false;r.showOnHomepage=document.getElementById('r-homepage')?.checked??false;toast('Review updated! ✅');}
+  else{DB.reviews.unshift({id:Math.max(...DB.reviews.map(x=>x.id),0)+1,name,location:document.getElementById('r-loc')?.value||'',tripLocation:document.getElementById('r-triploc')?.value||'',rating:parseInt(document.getElementById('r-rating')?.value)||5,reviewText:text,profileImage:'',isApproved:document.getElementById('r-approved')?.checked??true,isFeatured:document.getElementById('r-featured')?.checked??false,showOnHomepage:document.getElementById('r-homepage')?.checked??false,displayOrder:0,createdAt:new Date().toISOString().slice(0,10)});toast('Review added! 🎉');}
+  document.getElementById('rev-modal-overlay')?.remove();navTo('reviews');
+};
+window.toggleFeatured=(id)=>{const img=DB.gallery.find(x=>x.id===id);if(img){img.isFeatured=!img.isFeatured;toast(img.isFeatured?'Marked as featured ⭐':'Removed from featured');navTo('gallery');}};
+window.deleteImage=(id)=>{if(confirm('Delete this image?')){DB.gallery=DB.gallery.filter(x=>x.id!==id);toast('Image deleted');navTo('gallery');}};
+window.uploadImage=()=>toast('In the live version, this opens a file picker to upload images','ok');
+window.updateSuggStatus=(id,status)=>{const s=DB.suggestions.find(x=>x.id===id);if(s){s.status=status;toast(`Marked as ${status}`);navTo('suggestions');}};
+window.toggleStar=(id)=>{const s=DB.suggestions.find(x=>x.id===id);if(s){s.isStarred=!s.isStarred;toast(s.isStarred?'Starred ★':'Unstarred');navTo('suggestions');}};
+window.deleteSugg=(id)=>{if(confirm('Delete this suggestion?')){DB.suggestions=DB.suggestions.filter(x=>x.id!==id);toast('Deleted');navTo('suggestions');}};
+window.filterTrips=(val)=>{const f=DB.trips.filter(t=>t.name.toLowerCase().includes(val.toLowerCase())||t.location.toLowerCase().includes(val.toLowerCase()));document.getElementById('trips-tbody').innerHTML=buildTripsRows(f);};
+window.setTripFilter=(type)=>{const f=type==='all'?DB.trips:DB.trips.filter(t=>t.tripType===type);document.getElementById('trips-tbody').innerHTML=buildTripsRows(f);};
+window.filterSugg=(status)=>{const f=status==='all'?DB.suggestions:DB.suggestions.filter(s=>s.status===status);document.getElementById('sugg-grid').innerHTML=buildSuggCards(f);};
+window.saveSettings=()=>{['heroHeadline','heroSubline','settPhone','settEmail','settInsta','settWA'].forEach(id=>{const el=document.getElementById(id);if(el){const key={heroHeadline:'heroHeadline',heroSubline:'heroSubline',settPhone:'phone',settEmail:'email',settInsta:'instagram',settWA:'whatsapp'}[id];if(key)DB.settings[key]=el.value;}});toast('Settings saved! 💾');};
+// FAQ actions
+window.toggleFaqActive=(id,val)=>{const f=DB.faqs.find(x=>x.id===id);if(f){f.isActive=val;toast(val?'FAQ is now live ✅':'FAQ hidden from site');}};
+window.filterFaqs=(cat)=>{const f=cat==='all'?DB.faqs:DB.faqs.filter(x=>x.category===cat);document.getElementById('faq-table').innerHTML=buildFaqTable(f);};
+window.deleteFaq=(id)=>{if(confirm('Delete this FAQ?')){DB.faqs=DB.faqs.filter(x=>x.id!==id);toast('FAQ deleted');navTo('faqs');}};
+window.saveFaq=(id)=>{
+  const q=document.getElementById('faq-q')?.value, a=document.getElementById('faq-a')?.value;
+  if(!q||!a){toast('Question and answer are required','err');return;}
+  if(id){const f=DB.faqs.find(x=>x.id===id);f.question=q;f.answer=a;f.category=document.getElementById('faq-cat')?.value||f.category;f.displayOrder=parseInt(document.getElementById('faq-order')?.value)||f.displayOrder;f.isActive=document.getElementById('faq-active')?.checked??f.isActive;toast('FAQ updated! ✅');}
+  else{DB.faqs.push({id:Math.max(...DB.faqs.map(x=>x.id),0)+1,question:q,answer:a,category:document.getElementById('faq-cat')?.value||'General',displayOrder:parseInt(document.getElementById('faq-order')?.value)||DB.faqs.length+1,isActive:document.getElementById('faq-active')?.checked??true});toast('FAQ added! 🎉');}
+  document.getElementById('faq-modal-overlay')?.remove();navTo('faqs');
+};
+// Team actions
+window.toggleTeamActive=(id,val)=>{const m=DB.team.find(x=>x.id===id);if(m){m.isActive=val;toast(val?'Now visible on About page ✅':'Hidden from About page');navTo('team');}};
+window.deleteTeamMember=(id)=>{if(confirm('Remove this team member?')){DB.team=DB.team.filter(x=>x.id!==id);toast('Team member removed');navTo('team');}};
+window.saveTeamMember=(id)=>{
+  const name=document.getElementById('tm-name')?.value, role=document.getElementById('tm-role')?.value;
+  if(!name||!role){toast('Name and role are required','err');return;}
+  if(id){const m=DB.team.find(x=>x.id===id);m.name=name;m.role=role;m.bio=document.getElementById('tm-bio')?.value||m.bio;m.photo=document.getElementById('tm-photo')?.value||m.photo;m.instagram=document.getElementById('tm-insta')?.value||m.instagram;m.displayOrder=parseInt(document.getElementById('tm-order')?.value)||m.displayOrder;m.isActive=document.getElementById('tm-active')?.checked??m.isActive;toast('Team member updated! ✅');}
+  else{DB.team.push({id:Math.max(...DB.team.map(x=>x.id),0)+1,name,role,bio:document.getElementById('tm-bio')?.value||'',photo:document.getElementById('tm-photo')?.value||'',instagram:document.getElementById('tm-insta')?.value||'',displayOrder:parseInt(document.getElementById('tm-order')?.value)||DB.team.length+1,isActive:document.getElementById('tm-active')?.checked??true});toast('Team member added! 🎉');}
+  document.getElementById('team-modal-overlay')?.remove();navTo('team');
+};
+// Career actions
+window.toggleJobOpen=(id,val)=>{const j=DB.careers.find(x=>x.id===id);if(j){j.isOpen=val;toast(val?'Position is now open 🟢':'Position closed');navTo('careers');}};
+window.deleteJob=(id)=>{if(confirm('Delete this job listing?')){DB.careers=DB.careers.filter(x=>x.id!==id);toast('Job listing deleted');navTo('careers');}};
+window.filterCareers=(f)=>{const filtered=f==='all'?DB.careers:f==='open'?DB.careers.filter(j=>j.isOpen):DB.careers.filter(j=>!j.isOpen);document.getElementById('careers-list').innerHTML=buildCareerCards(filtered);};
+
+window.openTripModal=openTripModal;
+window.openReviewModal=openReviewModal;
+window.openFaqModal=openFaqModal;
+window.openTeamModal=openTeamModal;
+window.openCareerModal=openCareerModal;
+
+// ── BUILD APP ──────────────────────────────────────────────────────────
+function buildApp() {
+  const pages={dashboard:buildDashboard,trips:buildTrips,reviews:buildReviews,gallery:buildGallery,suggestions:buildSuggestions,faqs:buildFaqs,team:buildTeam,careers:buildCareers,settings:buildSettings};
+  const titles={dashboard:'Dashboard',trips:'Trips',reviews:'Reviews',gallery:'Gallery',suggestions:'Suggestions',faqs:'FAQs',team:'Team / About',careers:'Careers',settings:'Settings'};
+  return `${buildSidebar()}<div class="main"><div class="topbar"><div style="font-weight:700;font-size:15px;letter-spacing:-.02em">${titles[currentPage]||currentPage}</div><div style="margin-left:auto;display:flex;align-items:center;gap:10px"><span style="font-size:12px;color:var(--mid)">Demo Mode — data resets on refresh</span><span style="background:var(--rust-tint);color:var(--rust);font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px">DEMO</span></div></div><div class="content">${(pages[currentPage]||buildDashboard)()}</div></div>`;
+}
+function attachEvents(){}
+render();
+</script>
+</body>
+</html>

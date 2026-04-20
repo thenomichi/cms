@@ -1,0 +1,2244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nomichi CMS — Admin Panel v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rust:#C94B1A; --rust-d:#A83A12; --rust-tint:#FDF1EB; --rust-tint2:#FAE3D7;
+  --ink:#1A1814; --ink2:#2E2B26; --ink3:#4B4741;
+  --mid:#7C7670; --fog:#B0AAA2;
+  --line:#E9E5DF; --line2:#F2EFE9;
+  --bg:#FFFFFF; --bg2:#FAFAF7; --bg3:#F5F2EC;
+  --green:#1A6B3A; --green-bg:#E4F5EC;
+  --red:#C0392B; --red-bg:#FDECEA;
+  --blue:#1A5276; --blue-bg:#EBF5FB;
+  --amber:#92620A; --amber-bg:#FEF3C7;
+  --purple:#5B2D8E; --purple-bg:#F3EEF9;
+  --sw:240px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg2);color:var(--ink);font-size:14px;overflow-x:hidden}
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none}
+input,textarea,select{font-family:'Inter',sans-serif;outline:none}
+
+/* LAYOUT */
+.app{display:flex;min-height:100vh}
+.sidebar{width:var(--sw);background:#16120E;color:#fff;position:fixed;top:0;left:0;bottom:0;z-index:200;display:flex;flex-direction:column;overflow-y:auto}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:62px;background:var(--bg);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.content{flex:1;padding:28px;max-width:1300px}
+
+/* SIDEBAR */
+.sb-brand{padding:22px 20px 18px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:12px}
+.sb-logo{width:36px;height:36px;background:var(--rust);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;color:#fff;flex-shrink:0;letter-spacing:-.02em}
+.sb-name{font-weight:700;font-size:15px;letter-spacing:-.02em}
+.sb-tag{font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;margin-top:1px}
+.sb-section{padding:16px 20px 5px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.25)}
+.sb-item{display:flex;align-items:center;gap:11px;padding:11px 20px;color:rgba(255,255,255,.6);cursor:pointer;transition:all .15s;border-left:3px solid transparent;font-size:13.5px;font-weight:500}
+.sb-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.sb-item.active{background:rgba(201,75,26,.18);color:#fff;border-left-color:var(--rust)}
+.sb-item .ic{font-size:16px;width:20px;text-align:center}
+.sb-badge{margin-left:auto;background:var(--rust);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;min-width:20px;text-align:center}
+.sb-footer{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,.07)}
+.sb-user-name{font-weight:600;font-size:13px;color:rgba(255,255,255,.85)}
+.sb-user-email{font-size:11px;color:rgba(255,255,255,.35);margin-top:2px}
+.sb-logout{margin-top:10px;width:100%;padding:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;color:rgba(255,255,255,.5);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.sb-logout:hover{background:rgba(255,255,255,.1);color:#fff}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--rust);color:#fff}
+.btn-primary:hover{background:var(--rust-d);transform:translateY(-1px)}
+.btn-secondary{background:var(--bg3);color:var(--ink2);border:1px solid var(--line)}
+.btn-secondary:hover{background:var(--line)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid #f5c6c6}
+.btn-danger:hover{background:#f5c6c6}
+.btn-success{background:var(--green-bg);color:var(--green);border:1px solid #b7e4ca}
+.btn-amber{background:var(--amber-bg);color:var(--amber);border:1px solid #fde68a}
+.btn-purple{background:var(--purple-bg);color:var(--purple);border:1px solid #d6c5f0}
+.btn-sm{padding:6px 13px;font-size:12px}
+.btn-icon{padding:7px 9px;background:var(--bg3);border:1px solid var(--line);color:var(--ink3);border-radius:7px}
+.btn-icon:hover{background:var(--line)}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:22px;cursor:pointer;transition:all .2s}
+.stat-card:hover{border-color:var(--rust);transform:translateY(-2px);box-shadow:0 6px 24px rgba(201,75,26,.1)}
+.stat-icon{font-size:26px;margin-bottom:12px}
+.stat-num{font-size:34px;font-weight:800;color:var(--ink);letter-spacing:-.04em;line-height:1}
+.stat-label{font-size:12px;color:var(--mid);font-weight:500;margin-top:6px}
+.stat-sub{margin-top:10px}
+
+/* TABLE */
+.table-wrap{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.table-header{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.table-title{font-size:15px;font-weight:700}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:11px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mid);background:var(--bg2);border-bottom:1px solid var(--line)}
+td{padding:13px 16px;border-bottom:1px solid var(--line2);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg2)}
+.td-actions{display:flex;gap:6px}
+
+/* PILLS */
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700}
+.pill-green{background:var(--green-bg);color:var(--green)}
+.pill-red{background:var(--red-bg);color:var(--red)}
+.pill-rust{background:var(--rust-tint2);color:var(--rust)}
+.pill-blue{background:var(--blue-bg);color:var(--blue)}
+.pill-gray{background:var(--bg3);color:var(--mid);border:1px solid var(--line)}
+.pill-amber{background:var(--amber-bg);color:var(--amber)}
+.pill-purple{background:var(--purple-bg);color:var(--purple)}
+
+/* TOGGLE */
+.tog{position:relative;width:38px;height:22px;display:inline-block;cursor:pointer;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0;position:absolute}
+.tog-track{position:absolute;inset:0;background:var(--line);border-radius:100px;transition:background .2s}
+.tog input:checked+.tog-track{background:var(--rust)}
+.tog-thumb{position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.tog input:checked~.tog-thumb{transform:translateX(16px)}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(4px)}
+.modal{background:var(--bg);border-radius:18px;width:100%;max-width:820px;box-shadow:0 24px 80px rgba(0,0,0,.22)}
+.modal-lg{max-width:1020px}
+.modal-hdr{padding:22px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:17px;font-weight:700}
+.modal-close{background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font-size:18px;color:var(--mid);cursor:pointer}
+.modal-close:hover{color:var(--ink)}
+.modal-body{padding:26px}
+.modal-foot{padding:18px 26px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+
+/* TABS */
+.tabs{display:flex;gap:2px;padding:4px;background:var(--bg3);border-radius:10px;width:fit-content;margin-bottom:22px}
+.tab{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;color:var(--mid);transition:all .15s;border:none;background:none}
+.tab.active{background:var(--bg);color:var(--ink);box-shadow:0 1px 5px rgba(0,0,0,.09)}
+
+/* LIST BUILDER (highlights / inclusions / exclusions) */
+.list-builder{display:flex;flex-direction:column;gap:8px}
+.list-row{display:flex;align-items:center;gap:8px}
+.list-inp{flex:1;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:14px;color:var(--ink);background:var(--bg2);transition:border-color .15s}
+.list-inp:focus{border-color:var(--rust);outline:none}
+.list-rm{flex-shrink:0;width:30px;height:30px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg3);color:var(--mid);font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.list-rm:hover{border-color:var(--red,#e74c3c);color:var(--red,#e74c3c);background:rgba(231,76,60,.08)}
+
+/* ITINERARY BUILDER */
+.itin-day{border:1.5px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.itin-hdr{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg3);border-bottom:1px solid var(--line)}
+.itin-num{font-size:11px;font-weight:800;color:var(--rust);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;min-width:40px}
+.itin-inp{flex:1;padding:7px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;color:var(--ink);background:var(--bg);font-weight:600}
+.itin-inp:focus{border-color:var(--rust);outline:none}
+.itin-body{padding:14px;display:flex;flex-direction:column;gap:10px}
+.itin-body .field textarea{min-height:70px}
+.itin-body .fg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* FORM */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:700;color:var(--ink3);letter-spacing:.05em;text-transform:uppercase}
+.field input,.field select,.field textarea{padding:10px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:14px;color:var(--ink);background:var(--bg);transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--rust)}
+.field textarea{resize:vertical;min-height:90px;line-height:1.6}
+.field-hint{font-size:11px;color:var(--mid)}
+.row-toggle{display:flex;align-items:center;gap:12px}
+.row-toggle label{margin:0;font-size:13px;font-weight:500;color:var(--ink2)}
+
+/* CARDS */
+.card{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:22px}
+.card-title{font-size:15px;font-weight:700;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--mid);margin-bottom:16px}
+
+/* IDENTITY CARDS GRID */
+.identity-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.identity-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:18px;position:relative}
+.identity-icon{font-size:32px;margin-bottom:12px}
+.identity-type{font-size:14px;font-weight:700;margin-bottom:6px}
+.identity-desc{font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:14px}
+.identity-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* RAW MOMENTS GRID */
+.moments-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.moment-card{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px}
+.moment-loc{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--ink)}
+.moment-badge{display:inline-block;font-size:10px;font-weight:700;color:#F59E0B;background:var(--amber-bg);padding:2px 8px;border-radius:100px;margin-bottom:10px}
+.moment-actions{display:flex;gap:6px}
+
+/* TRIPS CARD GRID */
+.trips-toolbar{display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap}
+.trips-search-wrap{display:flex;align-items:center;gap:8px;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:0 13px;min-width:220px;flex:1;max-width:320px;transition:border-color .15s}
+.trips-search-wrap:focus-within{border-color:var(--rust)}
+.trips-search{border:none;outline:none;background:transparent;font-size:13px;color:var(--ink);padding:10px 0;width:100%}
+.trips-filters{display:flex;gap:6px;flex-wrap:wrap}
+.tflt{padding:8px 16px;border-radius:100px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid var(--line);background:var(--bg);color:var(--mid);transition:all .15s;white-space:nowrap}
+.tflt:hover{border-color:var(--rust);color:var(--rust)}
+.tflt-on{background:var(--rust);border-color:var(--rust);color:#fff !important}
+
+.trip-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+
+.tc-card{background:var(--bg);border:1.5px solid var(--line);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s,transform .2s;cursor:default}
+.tc-card:hover{box-shadow:0 8px 32px rgba(0,0,0,.1);transform:translateY(-2px)}
+
+.tc-img-wrap{position:relative;height:180px;overflow:hidden;flex-shrink:0}
+.tc-img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s}
+.tc-card:hover .tc-img{transform:scale(1.04)}
+.tc-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,8,6,.55) 0%,transparent 55%)}
+
+.tc-tier-badge{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:100px;backdrop-filter:blur(6px)}
+.tc-tier-green{background:rgba(26,107,58,.85);color:#fff}
+.tc-tier-rust{background:rgba(201,75,26,.9);color:#fff}
+.tc-tier-purple{background:rgba(124,58,237,.85);color:#fff}
+
+.tc-status-dots{position:absolute;top:12px;right:12px;display:flex;gap:5px;align-items:center}
+.tc-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(255,255,255,.5);flex-shrink:0}
+.dot-green{background:#22C55E;border-color:rgba(255,255,255,.7)}
+.dot-amber{background:#F59E0B;border-color:rgba(255,255,255,.7)}
+.dot-blue{background:#3B82F6;border-color:rgba(255,255,255,.7)}
+.dot-off{background:rgba(255,255,255,.25)}
+
+.tc-body{padding:16px 18px;flex:1;display:flex;flex-direction:column;gap:8px}
+
+.tc-meta-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mid)}
+.tc-flag{font-size:14px}
+.tc-location{flex:1;font-weight:500;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc-dur{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--ink3);white-space:nowrap}
+
+.tc-name{font-size:16px;font-weight:800;letter-spacing:-.025em;color:var(--ink);line-height:1.25}
+
+.tc-price-row{display:flex;align-items:flex-end;justify-content:space-between}
+.tc-orig-price{font-size:11px;color:var(--fog);text-decoration:line-through}
+.tc-price{font-size:20px;font-weight:800;color:var(--rust);letter-spacing:-.03em}
+.tc-rating{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:3px;padding-bottom:2px}
+.tc-rev{color:var(--mid);font-size:11px}
+
+.tc-slots-wrap{display:flex;flex-direction:column;gap:5px}
+.tc-slots-bar{height:4px;background:var(--bg3);border-radius:100px;overflow:hidden}
+.tc-slots-fill{height:100%;border-radius:100px;transition:width .4s}
+.tc-slots-label{font-size:11px;color:var(--mid)}
+
+.tc-dep{font-size:11px;color:var(--mid);margin-top:2px}
+.tc-dep strong{color:var(--ink2)}
+
+.tc-footer{padding:12px 18px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--bg2)}
+.tc-toggles{display:flex;gap:14px}
+.tc-tog-wrap{display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none}
+.tc-tog-wrap input[type=checkbox]{accent-color:var(--rust);width:14px;height:14px;cursor:pointer}
+.tc-tog-label{font-size:11px;font-weight:600;color:var(--mid)}
+.tc-tog-wrap:has(input:checked) .tc-tog-label{color:var(--ink2)}
+
+/* SECTION HEAD */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:wrap}
+.sec-title{font-size:21px;font-weight:800;letter-spacing:-.03em}
+.sec-sub{font-size:13px;color:var(--mid);margin-top:2px}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.search-inp{padding:9px 14px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;color:var(--ink);background:var(--bg);min-width:220px}
+.search-inp:focus{border-color:var(--rust);outline:none}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--ink);color:#fff;padding:12px 20px;border-radius:11px;font-size:13px;font-weight:500;box-shadow:0 6px 24px rgba(0,0,0,.2);display:flex;align-items:center;gap:9px;animation:tin .25s ease;max-width:320px}
+.toast.ok{background:#1A6B3A}
+.toast.err{background:#C0392B}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* MISC */
+.divider{border:none;border-top:1px solid var(--line);margin:20px 0}
+.empty{text-align:center;padding:52px 20px;color:var(--mid)}
+.empty-icon{font-size:44px;margin-bottom:12px}
+
+/* CHECKBOX GRID */
+.checkbox-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px}
+.checkbox-item{display:flex;align-items:center;gap:8px}
+.checkbox-item input[type="checkbox"]{width:16px;height:16px;cursor:pointer}
+.checkbox-item label{margin:0;cursor:pointer;font-size:13px}
+
+/* ── INCL/EXCL TILE PICKER ─────────────────────────────────────── */
+.incl-repo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px}
+.incl-tile{display:flex;flex-direction:column;align-items:center;gap:5px;padding:11px 8px;border:1.5px solid var(--line);border-radius:10px;cursor:pointer;background:var(--bg2);transition:all .15s;text-align:center;user-select:none}
+.incl-tile:hover{border-color:var(--mid);background:var(--bg3)}
+.incl-tile.selected{border-color:var(--green);background:rgba(26,107,58,.12);color:var(--green)}
+.incl-tile-icon{font-size:22px;line-height:1}
+.incl-tile-name{font-size:11px;font-weight:700;color:inherit;line-height:1.2}
+.incl-tile-note{font-size:10px;color:var(--mid);line-height:1.3}
+.incl-tile.selected .incl-tile-note{color:var(--green);opacity:.8}
+.excl-repo-grid{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.excl-pill{padding:6px 12px;border:1.5px solid var(--line);border-radius:100px;cursor:pointer;font-size:12px;background:var(--bg2);color:var(--ink2);transition:all .15s;user-select:none}
+.excl-pill:hover{border-color:var(--mid)}
+.excl-pill.selected{border-color:var(--red);background:rgba(192,57,43,.12);color:#E55A4B}
+.incl-custom-input{display:flex;gap:8px;margin-top:10px}
+.incl-custom-input input{flex:1;padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink);background:var(--bg)}
+.incl-custom-list{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.incl-custom-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--bg3);border-radius:7px;font-size:12px;color:var(--ink2)}
+
+/* ── MEDIA SUB-TABS ────────────────────────────────────────────── */
+.media-subtabs{display:flex;gap:4px;margin-bottom:20px;background:var(--bg2);padding:4px;border-radius:10px;border:1px solid var(--line);width:fit-content}
+.media-stab{padding:7px 18px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:var(--mid);background:transparent;border:none;transition:all .15s}
+.media-stab.active{background:var(--ink);color:#fff}
+.media-img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.media-img-card{border-radius:11px;overflow:hidden;background:var(--bg2);border:1.5px solid var(--line);transition:border-color .15s}
+.media-img-card:hover{border-color:var(--mid)}
+.media-img-card img{width:100%;height:130px;object-fit:cover;display:block}
+.media-img-meta{padding:10px 12px}
+.media-img-alt{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.media-img-trip{font-size:11px;color:var(--mid);margin-bottom:7px}
+.media-img-actions{display:flex;gap:5px;align-items:center}
+.media-moment-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.media-moment-card{border-radius:11px;overflow:hidden;background:var(--bg2);border:1.5px solid var(--line)}
+.media-moment-card img{width:100%;height:140px;object-fit:cover;display:block}
+.media-moment-img-placeholder{width:100%;height:140px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--mid)}
+.media-moment-body{padding:10px 12px}
+.media-moment-loc{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.media-moment-cap{font-size:11px;color:var(--mid);margin-bottom:5px;line-height:1.4;font-style:italic}
+.media-moment-tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px}
+.media-moment-tag{padding:2px 7px;background:var(--bg3);border:1px solid var(--line);border-radius:100px;font-size:10px;color:var(--mid)}
+.media-moment-actions{display:flex;gap:5px}
+
+/* ── REVIEW AVATAR ─────────────────────────────────────────────── */
+.rev-card-hdr{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.rev-avatar{width:38px;height:38px;border-radius:50%;object-fit:cover;background:var(--bg3);border:2px solid var(--line);flex-shrink:0}
+.rev-avatar-placeholder{width:38px;height:38px;border-radius:50%;background:var(--bg3);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--mid)}
+.rev-card-info{flex:1;min-width:0}
+
+/* ── TRIP CARD REDESIGN ────────────────────────────────────────── */
+.tc-actions-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg2)}
+.tc-status-pills{display:flex;gap:5px;flex-wrap:wrap}
+.tc-spill{font-size:10px;font-weight:700;padding:3px 8px;border-radius:100px;border:1.5px solid transparent;cursor:pointer;transition:all .12s}
+.tc-spill-active{background:rgba(26,107,58,.12);color:#22a55a;border-color:rgba(26,107,58,.25)}
+.tc-spill-inactive{background:var(--bg3);color:var(--mid);border-color:var(--line)}
+.tc-spill-featured{background:rgba(245,158,11,.1);color:#d97706;border-color:rgba(245,158,11,.25)}
+.tc-spill-homepage{background:rgba(59,130,246,.1);color:#3b82f6;border-color:rgba(59,130,246,.2)}
+.tc-btn-row{display:flex;gap:6px}
+.tc-price-beyond{font-size:12px;font-weight:700;color:var(--rust);background:rgba(201,75,26,.08);padding:3px 10px;border-radius:6px;border:1px solid rgba(201,75,26,.2)}
+
+/* ── GALLERY TIER BADGE ────────────────────────────────────────── */
+.media-tier-tag{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+.media-tier-jat{background:rgba(26,107,58,.1);color:#22a55a;border:1px solid rgba(26,107,58,.2)}
+.media-tier-bo{background:rgba(201,75,26,.1);color:var(--rust);border:1px solid rgba(201,75,26,.2)}
+.media-tier-sj{background:rgba(124,66,163,.1);color:#7c42a3;border:1px solid rgba(124,66,163,.2)}
+.media-img-edit-btn{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);border:none;border-radius:6px;padding:4px 7px;font-size:12px;cursor:pointer;color:#fff;opacity:0;transition:opacity .15s}
+.media-img-card:hover .media-img-edit-btn{opacity:1}
+.media-img-card{position:relative}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+// ── SAMPLE DATA v2 ────────────────────────────────────────────────────
+const DB = {
+  trips: [
+    // ── JOIN A TRIP (community) — 8 trips ──────────────────────────────────
+    { id:1, name:'Meghalaya Monsoon', slug:'meghalaya', location:'Meghalaya, India', flag:'🇮🇳', duration:{days:7,nights:6}, basePrice:32500, originalPrice:38000, tripType:'community', tier:'join-a-trip', filterType:'dom', filterDest:'india', filterCategory:'offbeat', filterDuration:'5-7', signatureSubtype:null, departureCity:'Guwahati', nextDeparture:'Jul 2026', spotsLeft:5, relatedTrips:[2,3], tags:['nature','caves','waterfalls'], month:'jul', totalSlots:14, bookedSlots:9, coverImage:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:4.8, reviewCount:89, overview:'Living root bridges, Dawki river, and monsoon magic in the abode of clouds.', highlights:['Double Decker Living Root Bridge trek','Dawki river boat ride','Mawlynnong — Asia\'s cleanest village'], inclusions:['6 nights accommodation','All meals','Guwahati airport transfers','All permits'], exclusions:['Flights to Guwahati','Travel insurance','Lunch on free days'], itinerary:[{day:1,title:'Arrive Guwahati → Shillong',description:'Pickup from Guwahati airport. Drive to Shillong.',meals:'Dinner',accommodation:'Hotel in Shillong'}] },
+    { id:2, name:'Hampi Ruins', slug:'hampi', location:'Hampi, Karnataka', flag:'🇮🇳', duration:{days:4,nights:3}, basePrice:18500, originalPrice:22000, tripType:'community', tier:'join-a-trip', filterType:'dom', filterDest:'india', filterCategory:'heritage', filterDuration:'3-4', signatureSubtype:null, departureCity:'Bangalore', nextDeparture:'Sep 2026', spotsLeft:8, relatedTrips:[1], tags:['heritage','ruins','history'], month:'sep', totalSlots:16, bookedSlots:6, coverImage:'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:4.7, reviewCount:52, overview:'A weekend among ancient boulders and Vijayanagara empire ruins.', highlights:['Virupaksha Temple at sunrise','Bouldering in Hampi','Coracle ride on the Tungabhadra'], inclusions:['3 nights stay','Breakfasts','Bangalore transfers','Guide'], exclusions:['Flights','Lunch & Dinner (except Day 1)'], itinerary:[] },
+    { id:3, name:'Shoja & Jalori Pass', slug:'shoja', location:'Shoja, Himachal Pradesh', flag:'🇮🇳', duration:{days:5,nights:4}, basePrice:24999, originalPrice:28000, tripType:'community', tier:'join-a-trip', filterType:'dom', filterDest:'india', filterCategory:'offbeat', filterDuration:'5-7', signatureSubtype:null, departureCity:'Chandigarh', nextDeparture:'Jun 2026', spotsLeft:3, relatedTrips:[1], tags:['mountains','offbeat','himachal'], month:'jun', totalSlots:12, bookedSlots:9, coverImage:'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400', isActive:true, isFeatured:false, showOnHomepage:false, isVisible:true, avgRating:4.85, reviewCount:34, overview:'Himachal\'s hidden gem — meadows, cedar forests, and no tourist crowds.', highlights:['Jalori Pass trek (10,500 ft)','Serolsar Lake hike','Apple orchard stays'], inclusions:['4 nights homestays','All meals','Chandigarh transfers'], exclusions:['Flights to Chandigarh','Insurance'], itinerary:[] },
+    { id:4, name:'Thailand Island Hop', slug:'thailand', location:'Thailand', flag:'🇹🇭', duration:{days:7,nights:6}, basePrice:55999, originalPrice:65000, tripType:'community', tier:'join-a-trip', filterType:'intl', filterDest:'intl', filterCategory:'beach', filterDuration:'5-7', signatureSubtype:null, departureCity:'Mumbai', nextDeparture:'Dec 2026', spotsLeft:4, relatedTrips:[8], tags:['beach','islands','international'], month:'dec', totalSlots:14, bookedSlots:10, coverImage:'https://images.unsplash.com/photo-1488085061387-422e29b40080?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:4.75, reviewCount:71, overview:'Bangkok, Koh Samui, and Koh Phangan — the Thai triangle.', highlights:['Full Moon Party','Floating markets','Island hopping by longtail boat'], inclusions:['6 nights accommodation','Breakfasts','All transfers'], exclusions:['International flights','Visa fees','Lunch & Dinner'], itinerary:[] },
+    { id:5, name:'Vietnam Mountains', slug:'vietnam-mt', location:'Sapa & Ha Giang, Vietnam', flag:'🇻🇳', duration:{days:8,nights:7}, basePrice:48500, originalPrice:55000, tripType:'community', tier:'join-a-trip', filterType:'intl', filterDest:'intl', filterCategory:'adventure', filterDuration:'7plus', signatureSubtype:null, departureCity:'Delhi', nextDeparture:'Oct 2026', spotsLeft:6, relatedTrips:[4], tags:['mountains','trekking','international'], month:'oct', totalSlots:14, bookedSlots:8, coverImage:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:4.9, reviewCount:41, overview:'Ha Giang loop, Sapa terraces, and Vietnam\'s most dramatic landscapes.', highlights:['Ha Giang motorbike loop','Sapa rice terraces trek','Homestay with local families'], inclusions:['7 nights accommodation','All meals','In-country transport'], exclusions:['International flights','Vietnam e-visa'], itinerary:[] },
+    { id:6, name:'Japan Hidden Trails', slug:'japan', location:'Kyoto & Osaka, Japan', flag:'🇯🇵', duration:{days:10,nights:9}, basePrice:115000, originalPrice:130000, tripType:'community', tier:'join-a-trip', filterType:'intl', filterDest:'intl', filterCategory:'culture', filterDuration:'7plus', signatureSubtype:null, departureCity:'Mumbai', nextDeparture:'Apr 2026', spotsLeft:2, relatedTrips:[8], tags:['culture','temples','international'], month:'apr', totalSlots:12, bookedSlots:10, coverImage:'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:4.95, reviewCount:28, overview:'Japan beyond the Instagram shots — hidden temples, street food, and local life.', highlights:['Fushimi Inari before sunrise','Nara deer park','Osaka\'s Dotonbori night walk'], inclusions:['9 nights ryokan & hotels','Breakfasts','JR Pass','Guided tours'], exclusions:['International flights','Japan visa','Lunch & Dinner'], itinerary:[] },
+    { id:7, name:'Bali Community Trip', slug:'bali', location:'Bali, Indonesia', flag:'🇮🇩', duration:{days:8,nights:7}, basePrice:62999, originalPrice:72000, tripType:'community', tier:'join-a-trip', filterType:'intl', filterDest:'intl', filterCategory:'beach', filterDuration:'7plus', signatureSubtype:null, departureCity:'Mumbai', nextDeparture:'May 2026', spotsLeft:5, relatedTrips:[4], tags:['beach','culture','international'], month:'may', totalSlots:14, bookedSlots:9, coverImage:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:4.8, reviewCount:56, overview:'Ubud, Seminyak, Uluwatu — Bali in a group that actually clicks.', highlights:['Tegalalang rice terraces','Mount Batur sunrise hike','Uluwatu sunset ceremony'], inclusions:['7 nights accommodation','Breakfasts','All transfers in Bali'], exclusions:['International flights','Visa on arrival (₹1,200 approx)','Lunch & Dinner'], itinerary:[] },
+    { id:8, name:'Morocco Desert', slug:'morocco', location:'Marrakech & Sahara, Morocco', flag:'🇲🇦', duration:{days:9,nights:8}, basePrice:89999, originalPrice:100000, tripType:'community', tier:'join-a-trip', filterType:'intl', filterDest:'intl', filterCategory:'adventure', filterDuration:'7plus', signatureSubtype:null, departureCity:'Mumbai', nextDeparture:'Nov 2026', spotsLeft:4, relatedTrips:[4], tags:['desert','culture','international'], month:'nov', totalSlots:12, bookedSlots:8, coverImage:'https://images.unsplash.com/photo-1539020140153-e479b8b22e9e?w=400', isActive:true, isFeatured:false, showOnHomepage:false, isVisible:true, avgRating:4.85, reviewCount:19, overview:'Marrakech medina, Atlas Mountains, and a night under the Sahara stars.', highlights:['Camel trek into the Sahara','Overnight desert camp','Blue city of Chefchaouen'], inclusions:['8 nights riads & desert camp','All meals','Private group vehicle'], exclusions:['International flights','Morocco visa (if applicable)'], itinerary:[] },
+    // ── BEYOND ORDINARY (exclusive) — 7 trips ─────────────────────────────
+    { id:9, name:'Spiti Valley Deep', slug:'spiti', location:'Spiti, Himachal Pradesh', flag:'🇮🇳', duration:{days:10,nights:9}, basePrice:55999, originalPrice:null, tripType:'exclusive', tier:'beyond-ordinary', filterType:'dom', filterDest:'india', filterCategory:'adventure', filterDuration:'7plus', signatureSubtype:null, departureCity:'Shimla', nextDeparture:'Jul 2026', spotsLeft:4, relatedTrips:[3], tags:['mountains','offbeat','exclusive'], month:'jul', totalSlots:8, bookedSlots:4, coverImage:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:4.95, reviewCount:24, overview:'Ancient monasteries, fossil valleys and nights under the Milky Way. Invite-only.', highlights:['Key Monastery (1,000 years old)','Chandratal Lake overnight camp','Nomad homestay in Kibber'], inclusions:['9 nights (camps, homestays, guesthouses)','All meals','All transport','Guided hikes','Monastery entries'], exclusions:['Flights to Shimla','Travel insurance','Altitude medication'], itinerary:[] },
+    { id:10, name:'Andaman Untouched', slug:'andaman', location:'Andaman Islands', flag:'🇮🇳', duration:{days:8,nights:7}, basePrice:65999, originalPrice:null, tripType:'exclusive', tier:'beyond-ordinary', filterType:'dom', filterDest:'india', filterCategory:'beach', filterDuration:'7plus', signatureSubtype:null, departureCity:'Chennai', nextDeparture:'Jan 2027', spotsLeft:3, relatedTrips:[], tags:['islands','diving','exclusive'], month:'jan', totalSlots:8, bookedSlots:5, coverImage:'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:4.9, reviewCount:18, overview:'Island hopping beyond Havelock. Private beaches, bioluminescence, and zero tourist trail.', highlights:['Private bioluminescence night swim','Neil Island free dive experience','Unexplored beach camping'], inclusions:['7 nights (beach camps & boutique stays)','All meals','All boats & transfers','Snorkelling gear'], exclusions:['Flights to Port Blair','Travel insurance'], itinerary:[] },
+    { id:11, name:'Coorg Harvest', slug:'coorg', location:'Coorg, Karnataka', flag:'🇮🇳', duration:{days:5,nights:4}, basePrice:42999, originalPrice:null, tripType:'exclusive', tier:'beyond-ordinary', filterType:'dom', filterDest:'india', filterCategory:'offbeat', filterDuration:'3-4', signatureSubtype:null, departureCity:'Mysuru', nextDeparture:'Nov 2026', spotsLeft:5, relatedTrips:[], tags:['plantation','culture','exclusive'], month:'nov', totalSlots:6, bookedSlots:1, coverImage:'https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=400', isActive:true, isFeatured:false, showOnHomepage:false, isVisible:true, avgRating:0, reviewCount:0, overview:'Coffee picking at dawn, spice forest walks, and Kodava cooking. Invite-only.', highlights:['Dawn coffee harvest','Spice forest walk with 3rd-gen planter','Kodava cooking class with a local family'], inclusions:['4 nights plantation bungalow','All meals','All transport','Cooking class'], exclusions:['Flights to Mysuru/Mangaluru','Travel insurance'], itinerary:[] },
+    { id:12, name:'Meghalaya Monsoon Exclusive', slug:'meghalaya-2', location:'Meghalaya, India', flag:'🇮🇳', duration:{days:6,nights:5}, basePrice:44999, originalPrice:null, tripType:'exclusive', tier:'beyond-ordinary', filterType:'dom', filterDest:'india', filterCategory:'offbeat', filterDuration:'5-7', signatureSubtype:null, departureCity:'Guwahati', nextDeparture:'Aug 2026', spotsLeft:4, relatedTrips:[1], tags:['nature','waterfalls','exclusive'], month:'aug', totalSlots:8, bookedSlots:4, coverImage:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400', isActive:true, isFeatured:false, showOnHomepage:false, isVisible:true, avgRating:4.85, reviewCount:11, overview:'Living root bridges, village trails, and monsoon waterfalls — curated and invite-only.', highlights:['Living root bridges via lesser-known trail','Village homestay in Nongriat','Krang Suri falls (restricted access)'], inclusions:['5 nights village homestays','All meals','All transport & guide'], exclusions:['Flights to Guwahati','Travel insurance'], itinerary:[] },
+    { id:13, name:'Rajasthan After Dark', slug:'rajasthan', location:'Jaipur · Jodhpur · Jaisalmer', flag:'🇮🇳', duration:{days:6,nights:5}, basePrice:58999, originalPrice:null, tripType:'exclusive', tier:'beyond-ordinary', filterType:'dom', filterDest:'india', filterCategory:'heritage', filterDuration:'5-7', signatureSubtype:null, departureCity:'Jaipur', nextDeparture:'Oct 2026', spotsLeft:6, relatedTrips:[], tags:['heritage','desert','exclusive'], month:'oct', totalSlots:8, bookedSlots:2, coverImage:'https://images.unsplash.com/photo-1477587458883-47145ed68a2d?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:0, reviewCount:0, overview:'Forts by night, desert camps, old city laneways. Rajasthan nobody shows you.', highlights:['After-dark fort access in Jaisalmer','Thar desert stargazing camp','Jodhpur blue city walk with local storyteller'], inclusions:['5 nights havelis & desert camp','All meals','Private vehicle','Storyteller guide'], exclusions:['Flights to Jaipur','Travel insurance'], itinerary:[] },
+    { id:14, name:'Kerala Backwaters', slug:'kerala', location:'Kochi · Kumarakom · Alleppey', flag:'🇮🇳', duration:{days:6,nights:5}, basePrice:51999, originalPrice:null, tripType:'exclusive', tier:'beyond-ordinary', filterType:'dom', filterDest:'india', filterCategory:'offbeat', filterDuration:'5-7', signatureSubtype:null, departureCity:'Kochi', nextDeparture:'Sep 2026', spotsLeft:5, relatedTrips:[], tags:['backwaters','culture','exclusive'], month:'sep', totalSlots:8, bookedSlots:3, coverImage:'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:0, reviewCount:0, overview:'Houseboats, toddy shops, and a Kerala that exists only if you know where to look.', highlights:['Sunrise country boat through hidden canals','Sadya cooking with a Kumarakom family','Four-generation toddy shop visit'], inclusions:['5 nights tharavad stays & backwater lodge','All meals','All transport & country boat rides'], exclusions:['Flights to Kochi','Travel insurance'], itinerary:[] },
+    { id:15, name:'Indonesia Beyond Bali', slug:'indonesia', location:'Java · Bali · Flores, Indonesia', flag:'🇮🇩', duration:{days:10,nights:9}, basePrice:88999, originalPrice:null, tripType:'exclusive', tier:'beyond-ordinary', filterType:'intl', filterDest:'intl', filterCategory:'adventure', filterDuration:'7plus', signatureSubtype:null, departureCity:'Mumbai', nextDeparture:'Jun 2026', spotsLeft:3, relatedTrips:[7], tags:['islands','culture','exclusive'], month:'jun', totalSlots:8, bookedSlots:5, coverImage:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400', isActive:true, isFeatured:false, showOnHomepage:false, isVisible:true, avgRating:4.9, reviewCount:9, overview:'Java, Bali, and Flores — the Indonesia that exists beyond Kuta beach.', highlights:['Borobudur at sunrise (private access)','Komodo island private tour','Flores traditional village stay'], inclusions:['9 nights boutique stays','All meals','All inter-island flights','Private guides'], exclusions:['International flights to Bali','Travel insurance'], itinerary:[] },
+    // ── SIGNATURE JOURNEYS (custom) — 3 trips ─────────────────────────────
+    { id:16, name:'Vietnam in Love', slug:'vietnam', location:'Ha Long Bay · Hoi An · Da Nang', flag:'🇻🇳', duration:{days:8,nights:7}, basePrice:85000, originalPrice:null, tripType:'custom', tier:'signature-journey', filterType:'intl', filterDest:'intl', filterCategory:'honeymoon', filterDuration:'7plus', signatureSubtype:'honeymoon', departureCity:'Delhi', nextDeparture:'flex', spotsLeft:null, relatedTrips:[17,18], tags:['honeymoon','beach','international'], month:'flex', totalSlots:2, bookedSlots:0, coverImage:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400', isActive:true, isFeatured:true, showOnHomepage:true, isVisible:true, avgRating:4.95, reviewCount:14, overview:'Ha Long Bay at dawn, Hoi An lanterns at dusk, private beachside stays. Vietnam, crafted for two.', highlights:['Private Ha Long Bay cruise','Hoi An lantern festival evening','Da Nang beach resort stay'], inclusions:['7 nights (cruise + hotels)','All meals','Private transfers throughout','Couples experiences'], exclusions:['International flights','Vietnam e-visa'], itinerary:[] },
+    { id:17, name:'Bali Dreaming', slug:'bali-honeymoon', location:'Ubud · Uluwatu · Seminyak', flag:'🇮🇩', duration:{days:8,nights:7}, basePrice:89999, originalPrice:null, tripType:'custom', tier:'signature-journey', filterType:'intl', filterDest:'intl', filterCategory:'honeymoon', filterDuration:'7plus', signatureSubtype:'honeymoon', departureCity:'Mumbai', nextDeparture:'flex', spotsLeft:null, relatedTrips:[16,18], tags:['honeymoon','villa','international'], month:'flex', totalSlots:2, bookedSlots:0, coverImage:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:4.9, reviewCount:22, overview:'Ubud rice terraces, Uluwatu sunsets, private villa stays. A Bali honeymoon crafted for two.', highlights:['Private villa with infinity pool','Uluwatu sunset temple visit','Couples cooking class in Ubud'], inclusions:['7 nights private villas','Breakfasts + 3 dinners','Private driver','Couples experiences'], exclusions:['International flights','Visa on arrival'], itinerary:[] },
+    { id:18, name:'Thailand for Two', slug:'thailand-honeymoon', location:'Bangkok · Koh Samui · Koh Lanta', flag:'🇹🇭', duration:{days:7,nights:6}, basePrice:79999, originalPrice:null, tripType:'custom', tier:'signature-journey', filterType:'intl', filterDest:'intl', filterCategory:'honeymoon', filterDuration:'7plus', signatureSubtype:'honeymoon', departureCity:'Mumbai', nextDeparture:'flex', spotsLeft:null, relatedTrips:[16,17], tags:['honeymoon','islands','international'], month:'flex', totalSlots:2, bookedSlots:0, coverImage:'https://images.unsplash.com/photo-1488085061387-422e29b40080?w=400', isActive:true, isFeatured:false, showOnHomepage:true, isVisible:true, avgRating:4.85, reviewCount:17, overview:'Island-hopping, floating markets, private longtail boats. A Thailand honeymoon that feels like a movie.', highlights:['Private longtail boat island hop','Bangkok floating market visit','Beachside sunset dinner'], inclusions:['6 nights boutique hotels & beach resort','Breakfasts + 2 dinners','Private transfers'], exclusions:['International flights','Visa fees'], itinerary:[] }
+  ],
+  reviews: [
+    { id:1, name:'Priya Sharma', location:'Mumbai', tripLocation:'Ladakh', rating:5, reviewText:'Nomichi made Ladakh the trip of my life. Pangong Tso at 4am was something I\'ll never forget.', profileImage:'', isApproved:true, isFeatured:true, showOnHomepage:true, displayOrder:1, createdAt:'2025-11-12' },
+    { id:2, name:'Arjun Mehta', location:'Bangalore', tripLocation:'Meghalaya', rating:5, reviewText:'The root bridge trek destroyed my legs and healed my soul. Dawki river is genuinely the most beautiful place I\'ve ever seen.', profileImage:'', isApproved:true, isFeatured:true, showOnHomepage:true, displayOrder:2, createdAt:'2025-10-24' },
+    { id:3, name:'Rhea D\'Souza', location:'Goa', tripLocation:'Bali', rating:5, reviewText:'Nomichi\'s curation is on a completely different level. The boutique hotels, the private cooking class — felt like a luxury retreat.', profileImage:'', isApproved:true, isFeatured:false, showOnHomepage:true, displayOrder:3, createdAt:'2025-09-08' },
+    { id:4, name:'Karan Joshi', location:'Delhi', tripLocation:'Ladakh', rating:4, reviewText:'Amazing experience overall. A bit of altitude sickness on Day 2 but the team was super supportive.', profileImage:'', isApproved:false, isFeatured:false, showOnHomepage:false, displayOrder:4, createdAt:'2025-12-01' }
+  ],
+  gallery: [
+    { id:1, url:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600', alt:'Pangong Tso at dawn', tripName:'Spiti Valley Deep', tripId:9, category:'trip', isFeatured:true },
+    { id:2, url:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600', alt:'Double Decker Root Bridge', tripName:'Meghalaya Monsoon', tripId:1, category:'trip', isFeatured:false },
+    { id:3, url:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600', alt:'Uluwatu Temple', tripName:'Bali Community Trip', tripId:7, category:'trip', isFeatured:true },
+    { id:4, url:'https://images.unsplash.com/photo-1544735716-392fe2489ffa?w=600', alt:'Spiti river valley', tripName:'Spiti Valley Deep', tripId:9, category:'trip', isFeatured:false },
+    { id:5, url:'https://images.unsplash.com/photo-1518684079-3c830dcef090?w=600', alt:'Sahara dunes at sunset', tripName:'Morocco Desert', tripId:8, category:'trip', isFeatured:false },
+    { id:6, url:'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600', alt:'Fushimi Inari torii gates', tripName:'Japan Hidden Trails', tripId:6, category:'trip', isFeatured:false },
+    { id:7, url:'https://images.unsplash.com/photo-1488085061387-422e29b40080?w=600', alt:'Koh Phangan beach', tripName:'Thailand Island Hop', tripId:4, category:'hero', isFeatured:true },
+    { id:8, url:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=600', alt:'Ha Long Bay karsts', tripName:'Vietnam in Love', tripId:16, category:'hero', isFeatured:true },
+    { id:9, url:'https://images.unsplash.com/photo-1477587458883-47145ed68a2d?w=600', alt:'Jaisalmer fort', tripName:'Rajasthan After Dark', tripId:13, category:'hero', isFeatured:false },
+    { id:10, url:'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=600', alt:'Kerala backwater canals', tripName:'Kerala Backwaters', tripId:14, category:'hero', isFeatured:false }
+  ],
+  rawMoments: [
+    { id:1, loc:'Bali, Indonesia', imageUrl:'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400', caption:'Temple ceremony at dusk — no tourists, just us.', tags:['candid','culture'], isFeatured:true },
+    { id:2, loc:'Vietnam Highlands', imageUrl:'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400', caption:'Ha Giang loop on a misty morning.', tags:['landscape','moody'], isFeatured:false },
+    { id:3, loc:'Meghalaya, India', imageUrl:'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=400', caption:'Monsoon rain through the root bridge.', tags:['candid','rain'], isFeatured:true },
+    { id:4, loc:'Bhutan Valley', imageUrl:'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=400', caption:'Prayer flags over the valley at golden hour.', tags:['landscape','spiritual'], isFeatured:false },
+    { id:5, loc:'Spiti Valley, India', imageUrl:'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400', caption:'Chandratal lake — no phone signal, just silence.', tags:['landscape','remote'], isFeatured:false },
+    { id:6, loc:'Hampi, Karnataka', imageUrl:'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=400', caption:'Watching sunrise from a boulder.', tags:['candid','golden hour'], isFeatured:false },
+    { id:7, loc:'Andaman Islands', imageUrl:'https://images.unsplash.com/photo-1559128010-7c1ad6e1b6a5?w=400', caption:'Bioluminescence night swim — words fail.', tags:['night','water'], isFeatured:false },
+    { id:8, loc:'Japan', imageUrl:'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=400', caption:'Fushimi Inari at 5am before anyone else arrived.', tags:['candid','travel'], isFeatured:true },
+    { id:9, loc:'Morocco Sahara', imageUrl:'https://images.unsplash.com/photo-1518684079-3c830dcef090?w=400', caption:'Tea with the camp family under the stars.', tags:['people','candid'], isFeatured:false },
+    { id:10, loc:'Coorg, Karnataka', imageUrl:'https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=400', caption:'Coffee harvest at dawn — hands still green.', tags:['candid','people'], isFeatured:false }
+  ],
+  identityCards: [
+    { id:1, icon:'🧳', type:'The Solo Wanderer', description:'You travel to find yourself — or lose yourself. Either works.', isActive:true, displayOrder:1 },
+    { id:2, icon:'💑', type:'Couples Seeking Stories', description:'Not just a holiday. A chapter worth re-reading together.', isActive:true, displayOrder:2 },
+    { id:3, icon:'👯', type:'Friends Who Actually Travel', description:'You\'ve been planning "that trip" for years. Now\'s the time.', isActive:true, displayOrder:3 },
+    { id:4, icon:'🌍', type:'The Culture Seeker', description:'Museums, monasteries, markets — you want to live it, not watch it.', isActive:true, displayOrder:4 },
+    { id:5, icon:'🏔️', type:'The Off-Path Explorer', description:'If it\'s in a guidebook, you\'re already bored of it.', isActive:true, displayOrder:5 },
+    { id:6, icon:'🎯', type:'The Intentional Traveller', description:'You don\'t just want to go somewhere. You want to come back different.', isActive:true, displayOrder:6 }
+  ],
+  suggestions: [
+    { id:1, name:'Ananya Rao', email:'ananya@gmail.com', phone:'+91 98765 43210', destination:'Kashmir', tripType:'leisure', groupSize:2, budget:'₹40,000 - ₹60,000', preferredMonth:'April', duration:'7-8 days', message:'Honeymoon trip, want something special and private.', status:'new', isStarred:true, createdAt:'2026-03-20' },
+    { id:2, name:'Rohan Verma', email:'rohan.v@gmail.com', phone:'+91 87654 32109', destination:'Bhutan', tripType:'cultural', groupSize:4, budget:'₹80,000 - ₹1,00,000', preferredMonth:'October', duration:'10 days', message:'Family trip, have elderly parents so need comfortable stays.', status:'viewed', isStarred:false, createdAt:'2026-03-18' },
+    { id:3, name:'Sneha Pillai', email:'sneha.p@gmail.com', phone:'', destination:'Thailand', tripType:'adventure', groupSize:6, budget:'₹55,000 - ₹70,000', preferredMonth:'December', duration:'8-10 days', message:'College friends trip, want adventure + nightlife mix.', status:'contacted', isStarred:true, createdAt:'2026-03-15' },
+    { id:4, name:'Vikram Nair', email:'vikram@gmail.com', phone:'+91 90123 45678', destination:'Andaman Islands', tripType:'beach', groupSize:2, budget:'₹30,000 - ₹45,000', preferredMonth:'January', duration:'5-6 days', message:'', status:'closed', isStarred:false, createdAt:'2026-03-10' }
+  ],
+  faqs: [
+    { id:1, question:'What is included in the trip price?', answer:'All accommodation, meals as specified in the itinerary, transportation within the destination, permits, and a dedicated trip leader are included.', category:'General', displayOrder:1, isActive:true },
+    { id:2, question:'How do I book a trip?', answer:'Click "Suggest Something" or reach out on WhatsApp. We\'ll send you a personalised itinerary and booking link within 24 hours.', category:'Booking', displayOrder:2, isActive:true },
+    { id:3, question:'Is travel insurance mandatory?', answer:'We strongly recommend comprehensive travel insurance covering medical, trip cancellation, and baggage. It is not included in our price.', category:'General', displayOrder:3, isActive:true },
+    { id:4, question:'What is the cancellation policy?', answer:'Cancellations 30+ days before departure: 80% refund. 15–29 days: 50% refund. Less than 15 days: no refund. Date changes accommodated where possible.', category:'Booking', displayOrder:4, isActive:true },
+    { id:5, question:'Are the trips suitable for first-time travellers?', answer:'Absolutely! Our community trips are designed to be beginner-friendly with full support. Just bring your curiosity.', category:'General', displayOrder:5, isActive:false }
+  ],
+  team: [
+    { id:1, name:'Devanshi Ghosh', role:'Founder & Lead Trip Designer', bio:'Former software engineer turned full-time wanderer. Devanshi has travelled to 40+ countries and believes every person deserves at least one life-changing trip.', photo:'', instagram:'@devanshi.wanders', displayOrder:1, isActive:true },
+    { id:2, name:'Rahul Sharma', role:'Ops & Logistics Head', bio:'Ex-travel agent with 10 years of experience. Rahul handles all the behind-the-scenes magic — permits, stays, transport, and contingency plans.', photo:'', instagram:'@rahul.onroute', displayOrder:2, isActive:true },
+    { id:3, name:'Preethi Nair', role:'Community Manager', bio:'The voice behind our Instagram. Preethi curates stories, manages our traveller community, and makes sure every post captures the real spirit of each trip.', photo:'', instagram:'@preethi.frames', displayOrder:3, isActive:true },
+    { id:4, name:'Kabir Mehta', role:'Photography Lead', bio:'Kabir documents every trip with his lens. His photos are what make people say "I need to go here". 10 years of travel photography across 25 countries.', photo:'', instagram:'@kabir.frames', displayOrder:4, isActive:false }
+  ],
+  careers: [
+    { id:1, title:'Trip Leader — Himalayan Region', department:'Operations', location:'Remote + On-Trip (India)', type:'contract', description:'We are looking for experienced, passionate trip leaders to lead our Himalayan batches. You will be the face of Nomichi on the ground — responsible for the safety, experience, and memories of our travellers.', requirements:['Minimum 3 years leading group travel','Wilderness First Aid certified','Fluent in Hindi and English','Strong communication and problem-solving skills'], isOpen:true, createdAt:'2026-03-01' },
+    { id:2, title:'Travel Content Writer', department:'Marketing', location:'Remote', type:'part-time', description:'Create compelling travel content — destination guides, trip diaries, social copy, and email newsletters — that captures the Nomichi voice and inspires people to travel differently.', requirements:['Portfolio of published travel writing','Strong command of English','Familiarity with SEO best practices'], isOpen:true, createdAt:'2026-02-20' },
+    { id:3, title:'Full-Stack Developer', department:'Technology', location:'Remote', type:'full-time', description:'Help us build and improve the Nomichi website and CMS. You\'ll work closely with the founder to ship features, improve performance, and create a seamless booking experience.', requirements:['3+ years with Node.js and React','Experience with MongoDB','Strong eye for clean UI'], isOpen:true, createdAt:'2026-02-10' },
+    { id:4, title:'Social Media Intern', department:'Marketing', location:'Remote', type:'internship', description:'Assist our content team in scheduling posts, engaging with followers, creating Reels, and tracking analytics across Instagram and YouTube.', requirements:['Passion for travel and storytelling','Familiar with Instagram and Canva','Available 20+ hours/week'], isOpen:false, createdAt:'2026-01-15' }
+  ],
+  settings: {
+    showActiveTrips:true, showFeaturedTrips:true, showReviews:true,
+    showGallery:true, showStats:true, showSuggestForm:true,
+    heroHeadline:'Find Your Kind of Travel',
+    heroSubline:'Curated trips for curious wanderers.',
+    phone:'+91 98765 43210', email:'hello@nomichi.com',
+    instagram:'@nomichi.travel', whatsapp:'+91 98765 43210',
+    heroStats: { tripsLabel:'Trips Done', tripsValue:'100+', nomichianLabel:'Happy Nomichians', nomichianValue:'350+', ratingLabel:'Rated on Google', ratingValue:'4.9' },
+    tierVisibility: { joinATrip:true, beyondOrdinary:true, signatureJourneys:true, planATrip:true },
+    mobileBar: { bookNowText:'Book Now', showWhatsApp:true },
+    navStructure: { joinATripLabel:'Join a Trip', beyondOrdinaryLabel:'Beyond Ordinary', signatureJourneysLabel:'Signature Journeys', planATripLabel:'Plan a Trip' }
+  }
+};
+
+// ── INCLUSIONS REPOSITORY ──────────────────────────────────────────────
+const INCL_REPO = [
+  { id:1,  icon:'🏨', name:'Accommodation',      note:'All nights as per itinerary' },
+  { id:2,  icon:'🍽️', name:'All Meals',           note:'Breakfast, lunch & dinner' },
+  { id:3,  icon:'🥞', name:'Breakfast Only',      note:'Daily breakfast included' },
+  { id:4,  icon:'🚐', name:'Airport Transfers',   note:'Pick-up & drop at airport' },
+  { id:5,  icon:'🚌', name:'All Transport',       note:'All in-destination travel' },
+  { id:6,  icon:'🎟️', name:'Entry Permits',       note:'Monument & park fees covered' },
+  { id:7,  icon:'🧭', name:'Expert Guide',        note:'Experienced local trip leader' },
+  { id:8,  icon:'🏕️', name:'Camping Gear',        note:'Tents & sleeping bags provided' },
+  { id:9,  icon:'🤿', name:'Snorkelling Gear',    note:'Equipment provided on trip' },
+  { id:10, icon:'📸', name:'Trip Photographer',   note:'Professional photo sessions' },
+  { id:11, icon:'🍳', name:'Cooking Class',       note:'Local cooking experience' },
+  { id:12, icon:'🚤', name:'Boat Rides',          note:'All water transport covered' },
+  { id:13, icon:'✈️', name:'Internal Flights',    note:'All inter-city/island flights' },
+  { id:14, icon:'🎭', name:'Cultural Experience', note:'Curated cultural immersions' },
+  { id:15, icon:'💆', name:'Wellness Activity',   note:'Yoga, spa or wellness session' },
+  { id:16, icon:'🏔️', name:'Trekking / Hike',    note:'Guided adventure activities' },
+  { id:17, icon:'🎋', name:'Forest Permit',       note:'All forest & wildlife permits' },
+  { id:18, icon:'⛺', name:'High Altitude Camp',  note:'Overnight mountain camping' },
+  { id:19, icon:'🛶', name:'Country Boat',        note:'Traditional boat or canoe ride' },
+  { id:20, icon:'🌄', name:'Sunrise Experience',  note:'Guided pre-dawn access' },
+  { id:21, icon:'🍷', name:'Welcome Dinner',      note:'Curated first-night dinner' },
+  { id:22, icon:'🏡', name:'Village Homestay',    note:'Authentic local family stay' },
+  { id:23, icon:'🩺', name:'First Aid Kit',       note:'Fully stocked med kit on trip' },
+  { id:24, icon:'🎒', name:'Nomichi Trip Kit',    note:'Travel journal & badges' },
+  { id:25, icon:'🚗', name:'Private Vehicle',     note:'Dedicated group vehicle' }
+];
+
+const EXCL_REPO = [
+  'International flights',
+  'Domestic / connecting flights',
+  'Travel insurance',
+  'Visa fees',
+  'Altitude medication',
+  'Lunch & dinner (except stated)',
+  'Alcoholic beverages',
+  'Personal shopping',
+  'Tips & gratuities',
+  'Early check-in / late check-out',
+  'Medical expenses',
+  'Roaming / SIM charges',
+  'Laundry charges',
+  'Room service & mini-bar',
+  'Excess baggage fees',
+  'Optional excursions',
+  'Camera & drone permits',
+  'Porter charges',
+  'Any item not mentioned in inclusions'
+];
+
+// ── TOAST ──────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const wrap = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='ok'?'✅':type==='err'?'❌':'ℹ️'}</span>${msg}`;
+  wrap.appendChild(el);
+  setTimeout(()=>el.remove(), 3000);
+}
+
+// ── STATE ──────────────────────────────────────────────────────────────
+let currentPage = 'dashboard';
+let currentAdmin = { name:'Nomichi Admin', email:'admin@nomichi.com', role:'super_admin' };
+let tripFilter = 'all'; window._tripFilter = 'all';
+let suggFilter = 'all';
+let faqFilter = 'all';
+
+function render() {
+  document.getElementById('app').innerHTML = buildApp();
+  attachEvents();
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────
+function buildSidebar() {
+  const newSugg = DB.suggestions.filter(s=>s.status==='new').length;
+  const openJobs = DB.careers.filter(c=>c.isOpen).length;
+  const navContent = [
+    { section:'Main' },
+    { id:'dashboard', icon:'🏠', label:'Dashboard' },
+    { id:'trips', icon:'🗺️', label:'Trips' },
+    { section:'Community' },
+    { id:'reviews', icon:'⭐', label:'Reviews' },
+    { id:'suggestions', icon:'💬', label:'Suggestions', badge:newSugg },
+    { section:'Content' },
+    { id:'media', icon:'📷', label:'Media Library' },
+    { id:'identity', icon:'🪪', label:'Identity Cards' },
+    { id:'faqs', icon:'❓', label:'FAQs' },
+    { section:'Company' },
+    { id:'team', icon:'👥', label:'Team / About' },
+    { id:'careers', icon:'💼', label:'Careers', badge:openJobs>0?openJobs:null },
+    { section:'System' },
+    { id:'settings', icon:'⚙️', label:'Settings' }
+  ];
+  return `
+    <div class="sidebar">
+      <div class="sb-brand">
+        <div class="sb-logo">N</div>
+        <div><div class="sb-name">Nomichi CMS</div><div class="sb-tag">Admin Panel v2</div></div>
+      </div>
+      <div style="padding:8px 0;flex:1">
+        ${navContent.map(item=>{
+          if(item.section) return `<div class="sb-section">${item.section}</div>`;
+          return `<div class="sb-item ${currentPage===item.id?'active':''}" onclick="navTo('${item.id}')">
+            <span class="ic">${item.icon}</span>${item.label}
+            ${item.badge?`<span class="sb-badge">${item.badge}</span>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="sb-footer">
+        <div class="sb-user-name">${currentAdmin.name}</div>
+        <div class="sb-user-email">${currentAdmin.email}</div>
+        <button class="sb-logout" onclick="toast('Logged out','ok')">↩ Sign Out</button>
+      </div>
+    </div>`;
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────────────
+function buildDashboard() {
+  const activeTrips = DB.trips.filter(t=>t.isActive).length;
+  const pendingReviews = DB.reviews.filter(r=>!r.isApproved).length;
+  const newSugg = DB.suggestions.filter(s=>s.status==='new').length;
+  const openJobs = DB.careers.filter(c=>c.isOpen).length;
+  const activeFaqs = DB.faqs.filter(f=>f.isActive).length;
+  const activeTeam = DB.team.filter(m=>m.isActive).length;
+  const joinTripCount = DB.trips.filter(t=>t.tier==='join-a-trip').length;
+  const beyondOrdCount = DB.trips.filter(t=>t.tier==='beyond-ordinary').length;
+  const sigJourneyCount = DB.trips.filter(t=>t.tier==='signature-journey').length;
+  const identityCount = DB.identityCards.filter(i=>i.isActive).length;
+
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Dashboard</div><div class="sec-sub">Welcome back, ${currentAdmin.name} 👋</div></div>
+        <button class="btn btn-primary" onclick="navTo('trips')">＋ Add New Trip</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card" onclick="navTo('trips')">
+          <div class="stat-icon">🗺️</div><div class="stat-num">${DB.trips.length}</div>
+          <div class="stat-label">Total Trips</div>
+          <div class="stat-sub"><span class="pill pill-green">${activeTrips} active</span> <span class="pill pill-gray">${DB.trips.length-activeTrips} inactive</span></div>
+        </div>
+        <div class="stat-card" onclick="navTo('reviews')">
+          <div class="stat-icon">⭐</div><div class="stat-num">${DB.reviews.length}</div>
+          <div class="stat-label">Reviews</div>
+          <div class="stat-sub">${pendingReviews>0?`<span class="pill pill-amber">${pendingReviews} pending</span>`:'<span class="pill pill-green">All approved</span>'}</div>
+        </div>
+        <div class="stat-card" onclick="navTo('suggestions')">
+          <div class="stat-icon">💬</div><div class="stat-num">${DB.suggestions.length}</div>
+          <div class="stat-label">Suggestions</div>
+          <div class="stat-sub">${newSugg>0?`<span class="pill pill-rust">${newSugg} new</span>`:'<span class="pill pill-green">All reviewed</span>'}</div>
+        </div>
+        <div class="stat-card" onclick="navTo('media')">
+          <div class="stat-icon">📷</div><div class="stat-num">${DB.gallery.length + DB.rawMoments.length}</div>
+          <div class="stat-label">Media Items</div>
+          <div class="stat-sub"><span class="pill pill-blue">${DB.gallery.length} gallery</span> <span class="pill pill-gray">${DB.rawMoments.length} moments</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        <div class="stat-card" onclick="navTo('faqs')">
+          <div class="stat-icon">❓</div><div class="stat-num">${DB.faqs.length}</div>
+          <div class="stat-label">FAQs</div>
+          <div class="stat-sub"><span class="pill pill-green">${activeFaqs} live</span> <span class="pill pill-gray">${DB.faqs.length-activeFaqs} hidden</span></div>
+        </div>
+        <div class="stat-card" onclick="navTo('team')">
+          <div class="stat-icon">👥</div><div class="stat-num">${DB.team.length}</div>
+          <div class="stat-label">Team Members</div>
+          <div class="stat-sub"><span class="pill pill-blue">${activeTeam} on About page</span></div>
+        </div>
+        <div class="stat-card" onclick="navTo('careers')">
+          <div class="stat-icon">💼</div><div class="stat-num">${DB.careers.length}</div>
+          <div class="stat-label">Job Listings</div>
+          <div class="stat-sub">${openJobs>0?`<span class="pill pill-green">${openJobs} open</span> <span class="pill pill-gray">${DB.careers.length-openJobs} closed</span>`:'<span class="pill pill-gray">No open roles</span>'}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+        <div class="stat-card" onclick="navTo('trips')">
+          <div class="stat-icon">🎫</div><div class="stat-num">${joinTripCount}</div>
+          <div class="stat-label">Join a Trip</div>
+        </div>
+        <div class="stat-card" onclick="navTo('trips')">
+          <div class="stat-icon">✨</div><div class="stat-num">${beyondOrdCount}</div>
+          <div class="stat-label">Beyond Ordinary</div>
+        </div>
+        <div class="stat-card" onclick="navTo('trips')">
+          <div class="stat-icon">👑</div><div class="stat-num">${sigJourneyCount}</div>
+          <div class="stat-label">Signature Journeys</div>
+        </div>
+        <div class="stat-card" onclick="navTo('identity')">
+          <div class="stat-icon">🪪</div><div class="stat-num">${identityCount}</div>
+          <div class="stat-label">Identity Cards</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><span class="table-title">All Trips</span><button class="btn btn-primary btn-sm" onclick="navTo('trips')">Manage Trips →</button></div>
+        <table>
+          <thead><tr><th>Trip</th><th>Tier</th><th>Price</th><th>Slots</th><th>Rating</th><th>Status</th></tr></thead>
+          <tbody>${DB.trips.map(t=>`
+            <tr>
+              <td><div style="display:flex;align-items:center;gap:10px"><img class="trip-thumb" src="${t.coverImage}" onerror="this.style.display='none'"><div><div style="font-weight:600">${t.name}</div><div style="font-size:11px;color:var(--mid)">/trip/${t.slug}</div></div></div></td>
+              <td><span class="pill ${t.tier==='signature-journey'?'pill-purple':t.tier==='beyond-ordinary'?'pill-rust':'pill-green'}">${t.tier.replace('-',' ')}</span></td>
+              <td><strong style="color:var(--rust)">₹${t.basePrice.toLocaleString()}</strong></td>
+              <td><span style="font-size:12px">${t.bookedSlots}/${t.totalSlots} booked</span></td>
+              <td>${t.avgRating?`<span style="color:#F59E0B">★</span> ${t.avgRating}`:'<span style="color:var(--fog)">—</span>'}</td>
+              <td><span class="pill ${t.isActive?'pill-green':'pill-gray'}">${t.isActive?'Active':'Inactive'}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── TRIPS ──────────────────────────────────────────────────────────────
+function buildTrips() {
+  const total = DB.trips.length;
+  const active = DB.trips.filter(t=>t.isActive).length;
+  const totalBooked = DB.trips.reduce((s,t)=>s+t.bookedSlots,0);
+  const totalSlots  = DB.trips.reduce((s,t)=>s+t.totalSlots,0);
+  return `
+    <div>
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Trips</div>
+          <div class="sec-sub">${total} total &nbsp;·&nbsp; ${active} active &nbsp;·&nbsp; ${totalBooked}/${totalSlots} seats filled</div>
+        </div>
+        <button class="btn btn-primary" onclick="openTripModal(null)">＋ New Trip</button>
+      </div>
+
+      <div class="trips-toolbar">
+        <div class="trips-search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--mid);flex-shrink:0"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input class="trips-search" placeholder="Search trips…" oninput="filterTrips(this.value)">
+        </div>
+        <div class="trips-filters" id="trip-filter-btns">
+          ${['all','join-a-trip','beyond-ordinary','signature-journey'].map(f=>`
+            <button class="tflt ${(window._tripFilter||'all')===f?'tflt-on':''}" onclick="setTripFilter('${f}')">${f==='all'?'All':f==='join-a-trip'?'Join a Trip':f==='beyond-ordinary'?'Beyond Ordinary':'Signature Journeys'}</button>`).join('')}
+        </div>
+      </div>
+
+      <div class="trip-cards-grid" id="trips-tbody">${buildTripsCards(DB.trips)}</div>
+    </div>`;
+}
+
+function buildTripsCards(trips) {
+  const filtered = (window._tripFilter||'all')==='all' ? trips : trips.filter(t=>t.tier===(window._tripFilter||'all'));
+  if (!filtered.length) return `<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🗺️</div><p>No trips found</p></div>`;
+
+  const tierMeta = {
+    'join-a-trip':       { label:'Join a Trip',       cls:'tc-tier-green' },
+    'beyond-ordinary':   { label:'Beyond Ordinary',   cls:'tc-tier-rust'  },
+    'signature-journey': { label:'Signature Journey', cls:'tc-tier-purple' }
+  };
+
+  return filtered.map(t => {
+    const tm = tierMeta[t.tier] || { label:t.tier, cls:'tc-tier-green' };
+    const pct = t.totalSlots ? Math.round(t.bookedSlots/t.totalSlots*100) : 0;
+    const spotsLeft = t.totalSlots ? t.totalSlots - t.bookedSlots : null;
+    const urgency = spotsLeft===null ? 'var(--mid)' : spotsLeft<=3 ? 'var(--red)' : spotsLeft<=6 ? '#F59E0B' : 'var(--green)';
+    const isExclusive = t.tier === 'beyond-ordinary';
+    const isSignature = t.tier === 'signature-journey';
+
+    return `
+    <div class="tc-card">
+      <div class="tc-img-wrap">
+        <img class="tc-img" src="${t.coverImage}" onerror="this.src=''" alt="${t.name}">
+        <div class="tc-img-overlay"></div>
+        <span class="tc-tier-badge ${tm.cls}">${tm.label}</span>
+      </div>
+
+      <div class="tc-body">
+        <div class="tc-meta-row">
+          <span class="tc-flag">${t.flag}</span>
+          <span class="tc-location">${t.location}</span>
+          <span class="tc-dur">${t.duration.nights}N</span>
+        </div>
+
+        <div class="tc-name">${t.name}</div>
+
+        <div class="tc-price-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${isExclusive
+              ? `<span class="tc-price-beyond">Invite-only</span>`
+              : isSignature
+              ? `<div class="tc-price" style="font-size:16px">₹${(t.basePrice||0).toLocaleString()} <span style="font-size:11px;font-weight:500;color:var(--mid)">/ couple</span></div>`
+              : `<div><div class="tc-price">₹${(t.basePrice||0).toLocaleString()}</div>${t.originalPrice?`<div class="tc-orig-price">₹${t.originalPrice.toLocaleString()}</div>`:''}</div>`}
+          </div>
+          ${t.avgRating?`<div class="tc-rating"><span style="color:#F59E0B">★</span> ${t.avgRating} <span class="tc-rev">(${t.reviewCount})</span></div>`:''}
+        </div>
+
+        ${t.totalSlots ? `
+        <div class="tc-slots-wrap">
+          <div class="tc-slots-bar"><div class="tc-slots-fill" style="width:${pct}%;background:${urgency}"></div></div>
+          <div class="tc-slots-label"><span style="color:${urgency};font-weight:700">${spotsLeft} spots left</span><span style="color:var(--mid)"> · ${t.bookedSlots}/${t.totalSlots}</span></div>
+        </div>` : ''}
+
+        ${t.nextDeparture && t.nextDeparture!=='flex'?`<div class="tc-dep">🗓 <strong>${t.nextDeparture}</strong>${t.departureCity?' · '+t.departureCity:''}</div>`:''}
+      </div>
+
+      <div class="tc-actions-row">
+        <div class="tc-status-pills">
+          <span class="tc-spill ${t.isActive?'tc-spill-active':'tc-spill-inactive'}" onclick="toggleTrip(${t.id},'isActive',${!t.isActive})" title="Toggle active">${t.isActive?'● Active':'○ Inactive'}</span>
+          ${t.isFeatured?`<span class="tc-spill tc-spill-featured" onclick="toggleTrip(${t.id},'isFeatured',false)" title="Remove featured">★ Featured</span>`:`<span class="tc-spill tc-spill-inactive" onclick="toggleTrip(${t.id},'isFeatured',true)" title="Set featured">☆ Feature</span>`}
+          ${t.showOnHomepage?`<span class="tc-spill tc-spill-homepage" onclick="toggleTrip(${t.id},'showOnHomepage',false)" title="Remove from homepage">⌂ HP</span>`:`<span class="tc-spill tc-spill-inactive" onclick="toggleTrip(${t.id},'showOnHomepage',true)" title="Add to homepage">⌂</span>`}
+        </div>
+        <div class="tc-btn-row">
+          <button class="btn btn-icon btn-sm" onclick="openTripModal(${t.id})" title="Edit trip">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTrip(${t.id})" title="Delete">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── REVIEWS ────────────────────────────────────────────────────────────
+function buildReviews() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Reviews</div><div class="sec-sub">${DB.reviews.length} total · ${DB.reviews.filter(r=>!r.isApproved).length} pending approval</div></div>
+        <button class="btn btn-primary" onclick="openReviewModal(null)">＋ Add Review</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+        ${DB.reviews.map(r=>`
+          <div class="card">
+            <div class="rev-card-hdr">
+              ${r.profileImage
+                ? `<img class="rev-avatar" src="${r.profileImage}" onerror="this.outerHTML='<div class=rev-avatar-placeholder>👤</div>'" alt="${r.name}">`
+                : `<div class="rev-avatar-placeholder">👤</div>`}
+              <div class="rev-card-info">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+                  <div>
+                    <div style="font-size:13px;font-weight:700;color:var(--ink)">${r.name}</div>
+                    <div style="font-size:11px;color:var(--mid)">📍 ${r.tripLocation}${r.location?' · '+r.location:''}</div>
+                  </div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+                    <span class="pill ${r.isApproved?'pill-green':'pill-amber'}" style="font-size:10px">${r.isApproved?'Approved':'Pending'}</span>
+                    ${r.showOnHomepage?'<span class="pill pill-blue" style="font-size:10px">HP</span>':''}
+                    ${r.isFeatured?'<span class="pill pill-rust" style="font-size:10px">★</span>':''}
+                  </div>
+                </div>
+                <div style="color:#F59E0B;font-size:13px;margin-top:3px">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)} <span style="font-size:11px;color:var(--mid)">${r.createdAt}</span></div>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--mid);margin-bottom:12px;line-height:1.7;font-style:italic;border-left:2px solid var(--line);padding-left:10px">"${r.reviewText}"</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-sm ${r.isApproved?'btn-secondary':'btn-success'}" onclick="toggleReviewApproval(${r.id})">${r.isApproved?'Unapprove':'✓ Approve'}</button>
+              <button class="btn btn-sm btn-icon" onclick="openReviewModal(${r.id})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteReview(${r.id})">🗑️</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── MEDIA (unified: Trip Gallery + Hero Images + Real Moments) ──────────
+let mediaTab = 'trip';
+function buildMedia() {
+  const tripImgs  = DB.gallery.filter(g => g.category === 'trip'  || !g.category);
+  const heroImgs  = DB.gallery.filter(g => g.category === 'hero');
+  const moments   = DB.rawMoments;
+
+  const tierMeta = {
+    'join-a-trip':       { label:'Join a Trip',       cls:'media-tier-jat' },
+    'beyond-ordinary':   { label:'Beyond Ordinary',   cls:'media-tier-bo'  },
+    'signature-journey': { label:'Signature Journey', cls:'media-tier-sj'  }
+  };
+
+  function galleryTabContent(imgs, category) {
+    if (!imgs.length) return `<div class="empty"><div class="empty-icon">🖼️</div><p>No images yet — add one to get started</p></div>`;
+    return `<div class="media-img-grid">
+      ${imgs.map(img=>{
+        const linkedTrip = img.tripId ? DB.trips.find(t=>t.id===img.tripId) : null;
+        const tm = linkedTrip ? (tierMeta[linkedTrip.tier] || {}) : {};
+        return `
+        <div class="media-img-card">
+          <img src="${img.url}" alt="${img.alt}" onerror="this.src=''" style="cursor:pointer" onclick="openGalleryImageModal(${img.id},'${category}')">
+          <button class="media-img-edit-btn" onclick="openGalleryImageModal(${img.id},'${category}')">✏️ Edit</button>
+          <div class="media-img-meta">
+            ${linkedTrip && tm.cls ? `<span class="media-tier-tag ${tm.cls}">${tm.label}</span>` : ''}
+            <div class="media-img-alt">${img.alt}</div>
+            <div class="media-img-trip">📁 ${img.tripName || '—'}</div>
+            <div class="media-img-actions">
+              ${img.isFeatured?'<span class="pill pill-rust" style="font-size:10px;flex:1">⭐ Featured</span>':'<span style="flex:1"></span>'}
+              <button class="btn btn-sm btn-icon" onclick="toggleFeatured(${img.id})" title="${img.isFeatured?'Remove featured':'Set featured'}">⭐</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteImage(${img.id})">🗑️</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  function momentsTabContent() {
+    if (!moments.length) return `<div class="empty"><div class="empty-icon">📸</div><p>No real moments yet</p></div>`;
+    return `<div class="media-moment-grid">
+      ${moments.map(m=>`
+        <div class="media-moment-card">
+          ${m.imageUrl
+            ? `<img src="${m.imageUrl}" alt="${m.loc}" onerror="this.parentElement.querySelector('.media-moment-img-placeholder') && (this.style.display='none')">`
+            : `<div class="media-moment-img-placeholder">📷</div>`}
+          <div class="media-moment-body">
+            <div class="media-moment-loc">${m.loc}${m.isFeatured?' <span class="pill pill-rust" style="font-size:10px">Featured</span>':''}</div>
+            ${m.caption?`<div class="media-moment-cap">"${m.caption}"</div>`:''}
+            ${(m.tags||[]).length?`<div class="media-moment-tags">${m.tags.map(t=>`<span class="media-moment-tag">${t}</span>`).join('')}</div>`:''}
+            <div class="media-moment-actions">
+              <button class="btn btn-sm btn-icon" onclick="toggleMomentFeatured(${m.id})" title="Toggle featured">⭐</button>
+              <button class="btn btn-sm btn-icon" onclick="openMomentModal(${m.id})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteMoment(${m.id})">🗑️</button>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  const tabs = [
+    { id:'trip',    label:`🖼️ Trip Gallery`,   count:tripImgs.length },
+    { id:'hero',    label:`🎬 Hero Images`,     count:heroImgs.length },
+    { id:'moments', label:`📸 Real Moments`,    count:moments.length  }
+  ];
+
+  let tabContent = '';
+  if (mediaTab === 'trip')    tabContent = galleryTabContent(tripImgs, 'trip');
+  if (mediaTab === 'hero')    tabContent = galleryTabContent(heroImgs, 'hero');
+  if (mediaTab === 'moments') tabContent = momentsTabContent();
+
+  const tabAddBtn = mediaTab === 'moments'
+    ? `<button class="btn btn-primary" onclick="openMomentModal(null)">＋ Add Real Moment</button>`
+    : `<button class="btn btn-primary" onclick="openGalleryImageModal(null,'${mediaTab}')">＋ Add Image</button>`;
+
+  const tabDesc = {
+    trip:    '📸 Photos for trip detail pages — tag to a specific trip and tier',
+    hero:    '🎬 Full-bleed backgrounds used as page hero images — tag to a trip or tier',
+    moments: '✨ Raw, unfiltered moments — shown in the homepage polaroid gallery strip'
+  };
+
+  return `
+    <div>
+      <div class="sec-head">
+        <div>
+          <div class="sec-title">Media Library</div>
+          <div class="sec-sub">${DB.gallery.length} gallery images · ${moments.length} real moments</div>
+        </div>
+        ${tabAddBtn}
+      </div>
+
+      <div class="media-subtabs">
+        ${tabs.map(t=>`
+          <button class="media-stab ${mediaTab===t.id?'active':''}" onclick="setMediaTab('${t.id}')">
+            ${t.label} <span style="opacity:.6;font-size:11px;font-weight:400;margin-left:3px">(${t.count})</span>
+          </button>`).join('')}
+      </div>
+
+      <div style="margin-bottom:16px;font-size:12px;color:var(--mid)">${tabDesc[mediaTab]||''}</div>
+
+      ${tabContent}
+    </div>`;
+}
+
+// ── IDENTITY CARDS ─────────────────────────────────────────────────────
+function buildIdentityCards() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Identity Cards</div><div class="sec-sub">"Who is this for?" traveller archetypes</div></div>
+        <button class="btn btn-primary" onclick="openIdentityModal(null)">＋ Add Card</button>
+      </div>
+      <div class="identity-grid">
+        ${DB.identityCards.map(card=>`
+          <div class="identity-card ${card.isActive?'':'team-inactive'}">
+            <div class="identity-icon">${card.icon}</div>
+            <div class="identity-type">${card.type}</div>
+            <div class="identity-desc">${card.description}</div>
+            <div style="font-size:11px;color:var(--mid);margin-bottom:12px">Order: ${card.displayOrder}</div>
+            <div class="identity-actions">
+              <button class="btn btn-sm btn-icon" onclick="openIdentityModal(${card.id})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteIdentity(${card.id})">🗑️</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── SUGGESTIONS ────────────────────────────────────────────────────────
+function buildSuggestions() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Suggestions</div><div class="sec-sub">"Suggest Something" form submissions · ${DB.suggestions.filter(s=>s.status==='new').length} new</div></div>
+      </div>
+      <div class="filter-bar">
+        ${['all','new','viewed','contacted','closed'].map(s=>`<button class="btn btn-secondary btn-sm" onclick="filterSugg('${s}')" style="text-transform:capitalize">${s==='all'?'All':s}</button>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px" id="sugg-grid">${buildSuggCards(DB.suggestions)}</div>
+    </div>`;
+}
+
+function buildSuggCards(suggestions) {
+  const sc = {new:'pill-rust',viewed:'pill-blue',contacted:'pill-green',closed:'pill-gray'};
+  const filtered = suggFilter==='all' ? suggestions : suggestions.filter(s=>s.status===suggFilter);
+  if(!filtered.length) return '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">💬</div><p>No suggestions found</p></div>';
+  return filtered.map(s=>`
+    <div class="card ${s.status==='new'?'new':''}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+        <div><div style="font-weight:700;font-size:14px">${s.name}</div><div style="font-size:12px;color:var(--mid)">${s.email}${s.phone?' · '+s.phone:''}</div></div>
+        <div style="display:flex;gap:6px;align-items:center"><span class="pill ${sc[s.status]}">${s.status}</span><span style="font-size:18px;cursor:pointer;color:${s.isStarred?'#F59E0B':'var(--fog)'}" onclick="toggleStar(${s.id})">★</span></div>
+      </div>
+      <div style="font-size:13px;margin-bottom:8px"><span style="color:var(--mid)">Destination:</span> <strong>${s.destination}</strong></div>
+      ${s.budget?`<div style="font-size:13px;margin-bottom:8px"><span style="color:var(--mid)">Budget:</span> ${s.budget}</div>`:''}
+      <div style="font-size:13px;margin-bottom:8px"><span style="color:var(--mid)">Group:</span> ${s.groupSize} ${s.groupSize===1?'person':'people'}</div>
+      ${s.message?`<div style="font-size:12px;color:var(--mid);margin-top:10px;padding-top:10px;border-top:1px solid var(--line2);font-style:italic">"${s.message}"</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+        ${s.status!=='viewed'?`<button class="btn btn-sm btn-secondary" onclick="updateSuggStatus(${s.id},'viewed')">Mark Viewed</button>`:''}
+        ${s.status!=='contacted'?`<button class="btn btn-sm btn-success" onclick="updateSuggStatus(${s.id},'contacted')">Mark Contacted</button>`:''}
+        ${s.status!=='closed'?`<button class="btn btn-sm btn-amber" onclick="updateSuggStatus(${s.id},'closed')">Close</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick="deleteSugg(${s.id})">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── FAQs ───────────────────────────────────────────────────────────────
+function buildFaqs() {
+  const cats = [...new Set(DB.faqs.map(f=>f.category))];
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">FAQs</div><div class="sec-sub">${DB.faqs.length} questions · ${DB.faqs.filter(f=>f.isActive).length} live on site</div></div>
+        <button class="btn btn-primary" onclick="openFaqModal(null)">＋ Add FAQ</button>
+      </div>
+      <div class="filter-bar">
+        <button class="btn btn-secondary btn-sm" onclick="filterFaqs('all')">All</button>
+        ${cats.map(c=>`<button class="btn btn-secondary btn-sm" onclick="filterFaqs('${c}')">${c}</button>`).join('')}
+      </div>
+      <div class="table-wrap" id="faq-table">${buildFaqTable(DB.faqs)}</div>
+    </div>`;
+}
+
+function buildFaqTable(faqs) {
+  const filtered = faqFilter==='all' ? faqs : faqs.filter(f=>f.category===faqFilter);
+  if(!filtered.length) return `<div class="empty"><div class="empty-icon">❓</div><p>No FAQs found</p></div>`;
+  return `<table>
+    <thead><tr><th>#</th><th>Question</th><th>Category</th><th>Live</th><th>Actions</th></tr></thead>
+    <tbody>${filtered.map(f=>`
+      <tr>
+        <td style="color:var(--mid);font-size:12px">${f.displayOrder}</td>
+        <td>
+          <div style="font-weight:600;max-width:400px">${f.question}</div>
+          <div style="font-size:12px;color:var(--mid);margin-top:3px;max-width:400px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.answer}</div>
+        </td>
+        <td><span class="pill pill-blue">${f.category}</span></td>
+        <td><label class="tog"><input type="checkbox" ${f.isActive?'checked':''} onchange="toggleFaqActive(${f.id},this.checked)"><div class="tog-track"></div><div class="tog-thumb"></div></label></td>
+        <td><div class="td-actions"><button class="btn btn-icon btn-sm" onclick="openFaqModal(${f.id})">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteFaq(${f.id})">🗑️</button></div></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+}
+
+// ── TEAM ───────────────────────────────────────────────────────────────
+function buildTeam() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Team / About</div><div class="sec-sub">${DB.team.length} members · ${DB.team.filter(m=>m.isActive).length} visible on About page</div></div>
+        <button class="btn btn-primary" onclick="openTeamModal(null)">＋ Add Member</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px">
+        ${DB.team.map(m=>`
+          <div class="card ${m.isActive?'':'team-inactive'}">
+            <div style="text-align:center;margin-bottom:14px">
+              <div style="width:60px;height:60px;border-radius:50%;background:var(--rust-tint);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:24px">${m.name.charAt(0)}</div>
+              <div style="font-weight:700;font-size:14px">${m.name}</div>
+              <div style="font-size:12px;color:var(--rust);font-weight:600">${m.role}</div>
+            </div>
+            <p style="font-size:12px;color:var(--mid);line-height:1.6;margin-bottom:12px">${m.bio}</p>
+            <div style="display:flex;gap:6px;justify-content:center">
+              <button class="btn btn-sm btn-icon" onclick="openTeamModal(${m.id})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteTeam(${m.id})">🗑️</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── CAREERS ────────────────────────────────────────────────────────────
+function buildCareers() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Careers</div><div class="sec-sub">${DB.careers.length} listings · ${DB.careers.filter(c=>c.isOpen).length} open positions</div></div>
+        <button class="btn btn-primary" onclick="openCareerModal(null)">＋ New Position</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
+        ${DB.careers.map(j=>`
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+              <div>
+                <div style="font-weight:700;font-size:14px">${j.title}</div>
+                <div style="font-size:12px;color:var(--mid)">${j.department} · ${j.location}</div>
+              </div>
+              <span class="pill ${j.isOpen?'pill-green':'pill-gray'}">${j.isOpen?'Open':'Closed'}</span>
+            </div>
+            <p style="font-size:13px;color:var(--ink2);margin-bottom:10px;line-height:1.6">${j.description}</p>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-sm btn-icon" onclick="openCareerModal(${j.id})">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteCareer(${j.id})">🗑️</button>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────────────
+function buildSettings() {
+  return `
+    <div>
+      <div class="sec-head">
+        <div><div class="sec-title">Settings</div><div class="sec-sub">Site configuration & global settings</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Hero Section</div>
+        <div class="card-sub">Main headline and tagline</div>
+        <div class="fg">
+          <div class="field full">
+            <label>Headline</label>
+            <input type="text" value="${DB.settings.heroHeadline}" oninput="DB.settings.heroHeadline=this.value">
+          </div>
+          <div class="field full">
+            <label>Subline</label>
+            <input type="text" value="${DB.settings.heroSubline}" oninput="DB.settings.heroSubline=this.value">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Hero Stats</div>
+        <div class="card-sub">Three stat pairs shown on homepage hero</div>
+        <div class="fg3">
+          <div class="field">
+            <label>Stat 1 Label</label>
+            <input type="text" value="${DB.settings.heroStats.tripsLabel}" oninput="DB.settings.heroStats.tripsLabel=this.value">
+          </div>
+          <div class="field">
+            <label>Stat 1 Value</label>
+            <input type="text" value="${DB.settings.heroStats.tripsValue}" oninput="DB.settings.heroStats.tripsValue=this.value">
+          </div>
+          <div class="field" style="grid-column:1/-1"></div>
+          <div class="field">
+            <label>Stat 2 Label</label>
+            <input type="text" value="${DB.settings.heroStats.nomichianLabel}" oninput="DB.settings.heroStats.nomichianLabel=this.value">
+          </div>
+          <div class="field">
+            <label>Stat 2 Value</label>
+            <input type="text" value="${DB.settings.heroStats.nomichianValue}" oninput="DB.settings.heroStats.nomichianValue=this.value">
+          </div>
+          <div class="field" style="grid-column:1/-1"></div>
+          <div class="field">
+            <label>Stat 3 Label</label>
+            <input type="text" value="${DB.settings.heroStats.ratingLabel}" oninput="DB.settings.heroStats.ratingLabel=this.value">
+          </div>
+          <div class="field">
+            <label>Stat 3 Value</label>
+            <input type="text" value="${DB.settings.heroStats.ratingValue}" oninput="DB.settings.heroStats.ratingValue=this.value">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Navigation & Tier Visibility</div>
+        <div class="card-sub">Show/hide trip tiers and customize nav labels</div>
+        <div style="margin-bottom:16px">
+          <div class="row-toggle" style="margin-bottom:12px">
+            <label>Show "Join a Trip"</label>
+            <label class="tog"><input type="checkbox" ${DB.settings.tierVisibility.joinATrip?'checked':''} onchange="DB.settings.tierVisibility.joinATrip=this.checked"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+          <input type="text" placeholder="Label" value="${DB.settings.navStructure.joinATripLabel}" oninput="DB.settings.navStructure.joinATripLabel=this.value" style="width:100%;padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px">
+        </div>
+        <div style="margin-bottom:16px">
+          <div class="row-toggle" style="margin-bottom:12px">
+            <label>Show "Beyond Ordinary"</label>
+            <label class="tog"><input type="checkbox" ${DB.settings.tierVisibility.beyondOrdinary?'checked':''} onchange="DB.settings.tierVisibility.beyondOrdinary=this.checked"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+          <input type="text" placeholder="Label" value="${DB.settings.navStructure.beyondOrdinaryLabel}" oninput="DB.settings.navStructure.beyondOrdinaryLabel=this.value" style="width:100%;padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px">
+        </div>
+        <div style="margin-bottom:16px">
+          <div class="row-toggle" style="margin-bottom:12px">
+            <label>Show "Signature Journeys"</label>
+            <label class="tog"><input type="checkbox" ${DB.settings.tierVisibility.signatureJourneys?'checked':''} onchange="DB.settings.tierVisibility.signatureJourneys=this.checked"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+          <input type="text" placeholder="Label" value="${DB.settings.navStructure.signatureJourneysLabel}" oninput="DB.settings.navStructure.signatureJourneysLabel=this.value" style="width:100%;padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px">
+        </div>
+        <div style="margin-bottom:16px">
+          <div class="row-toggle" style="margin-bottom:12px">
+            <label>Show "Plan a Trip"</label>
+            <label class="tog"><input type="checkbox" ${DB.settings.tierVisibility.planATrip?'checked':''} onchange="DB.settings.tierVisibility.planATrip=this.checked"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+          <input type="text" placeholder="Label" value="${DB.settings.navStructure.planATripLabel}" oninput="DB.settings.navStructure.planATripLabel=this.value" style="width:100%;padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px">
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Mobile Bar Settings</div>
+        <div class="card-sub">Mobile footer bar buttons and visibility</div>
+        <div class="fg">
+          <div class="field">
+            <label>"Book Now" Button Text</label>
+            <input type="text" value="${DB.settings.mobileBar.bookNowText}" oninput="DB.settings.mobileBar.bookNowText=this.value">
+          </div>
+          <div class="field">
+            <label>Show WhatsApp Button</label>
+            <label class="tog" style="margin-top:8px"><input type="checkbox" ${DB.settings.mobileBar.showWhatsApp?'checked':''} onchange="DB.settings.mobileBar.showWhatsApp=this.checked"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Contact Information</div>
+        <div class="card-sub">Global contact details</div>
+        <div class="fg">
+          <div class="field">
+            <label>Phone</label>
+            <input type="text" value="${DB.settings.phone}" oninput="DB.settings.phone=this.value">
+          </div>
+          <div class="field">
+            <label>Email</label>
+            <input type="email" value="${DB.settings.email}" oninput="DB.settings.email=this.value">
+          </div>
+          <div class="field">
+            <label>Instagram Handle</label>
+            <input type="text" value="${DB.settings.instagram}" oninput="DB.settings.instagram=this.value">
+          </div>
+          <div class="field">
+            <label>WhatsApp Number</label>
+            <input type="text" value="${DB.settings.whatsapp}" oninput="DB.settings.whatsapp=this.value">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="btn btn-primary" onclick="toast('Settings saved!','ok')">✓ Save All Settings</button>
+      </div>
+    </div>`;
+}
+
+// ── MODALS ─────────────────────────────────────────────────────────────
+function openTripModal(id) {
+  const t = id ? DB.trips.find(x=>x.id===id) : { id:null, name:'', slug:'', location:'', flag:'🇮🇳', duration:{days:7,nights:6}, basePrice:'', originalPrice:'', tripType:'community', tier:'join-a-trip', filterType:'dom', filterDest:'india', filterCategory:'community', filterDuration:'7plus', signatureSubtype:null, departureCity:'', nextDeparture:'', spotsLeft:4, relatedTrips:[], tags:'', month:'flex', totalSlots:16, bookedSlots:0, coverImage:'', isActive:true, isFeatured:false, showOnHomepage:false, isVisible:true, avgRating:0, reviewCount:0, overview:'', highlights:[], inclusions:[], exclusions:[], itinerary:[] };
+  let highlights=[...(t.highlights||[])], inclusions=[...(t.inclusions||[])], exclusions=[...(t.exclusions||[])], itinerary=[...(t.itinerary||[])];
+  let activeTab='basic';
+
+  function listBuilder(arr, placeholder, varName) {
+    return `<div class="list-builder" id="lb-${varName}">
+      ${arr.map((item,i)=>`<div class="list-row"><input class="list-inp" value="${item.replace(/"/g,'&quot;')}" placeholder="${placeholder}" onchange="window._lbData['${varName}'][${i}]=this.value"><button class="list-rm" onclick="window._lbData['${varName}'].splice(${i},1);renderModal()">−</button></div>`).join('')}
+      <button class="btn btn-secondary btn-sm" style="margin-top:4px" onclick="window._lbData['${varName}'].push('');renderModal()">＋ Add</button>
+    </div>`;
+  }
+
+  function itinBuilder() {
+    return `<div id="lb-itin">
+      ${itinerary.map((day,i)=>`
+        <div class="itin-day">
+          <div class="itin-hdr">
+            <span class="itin-num">Day ${day.day}</span>
+            <input class="itin-inp" value="${(day.title||'').replace(/"/g,'&quot;')}" placeholder="Day title" onchange="window._lbData.itin[${i}].title=this.value">
+            <button class="list-rm" onclick="window._lbData.itin.splice(${i},1);renderModal()">−</button>
+          </div>
+          <div class="itin-body">
+            <div class="field"><label>Description</label><textarea onchange="window._lbData.itin[${i}].description=this.value">${day.description||''}</textarea></div>
+            <div class="fg">
+              <div class="field"><label>Meals</label><input value="${day.meals||''}" onchange="window._lbData.itin[${i}].meals=this.value"></div>
+              <div class="field"><label>Accommodation</label><input value="${day.accommodation||''}" onchange="window._lbData.itin[${i}].accommodation=this.value"></div>
+            </div>
+          </div>
+        </div>`).join('')}
+      <button class="btn btn-secondary btn-sm" onclick="window._lbData.itin.push({day:window._lbData.itin.length+1,title:'',description:'',meals:'',accommodation:''});renderModal()">＋ Add Day</button>
+    </div>`;
+  }
+
+  function tabContent() {
+    if (activeTab==='basic') return `
+      <div class="fg">
+        <div class="field"><label>Trip Name</label><input id="t-name" value="${(t.name||'').replace(/"/g,'&quot;')}" placeholder="Meghalaya Wonder"></div>
+        <div class="field"><label>Slug (URL)</label><input id="t-slug" value="${t.slug||''}" placeholder="meghalaya"></div>
+        <div class="field"><label>Location</label><input id="t-loc" value="${(t.location||'').replace(/"/g,'&quot;')}" placeholder="Meghalaya, India"></div>
+        <div class="field"><label>Flag emoji</label><input id="t-flag" value="${t.flag||'🇮🇳'}"></div>
+        <div class="field"><label>Days</label><input id="t-days" type="number" value="${t.duration.days||7}"></div>
+        <div class="field"><label>Nights</label><input id="t-nights" type="number" value="${t.duration.nights||6}"></div>
+        <div class="field"><label>Base Price (₹)</label><input id="t-price" type="number" value="${t.basePrice||''}"></div>
+        <div class="field"><label>Original Price (₹, optional)</label><input id="t-origprice" type="number" value="${t.originalPrice||''}"></div>
+        <div class="field"><label>Total Slots</label><input id="t-slots" type="number" value="${t.totalSlots||16}"></div>
+        <div class="field"><label>Booked Slots</label><input id="t-booked" type="number" value="${t.bookedSlots||0}"></div>
+        <div class="field"><label>Departure City</label><input id="t-depcity" value="${t.departureCity||''}" placeholder="Delhi"></div>
+        <div class="field"><label>Next Departure</label><input id="t-nextdep" value="${t.nextDeparture||''}" placeholder="Jun 2026"></div>
+        <div class="field full"><label>Cover Image URL</label><input id="t-cover" value="${t.coverImage||''}" placeholder="https://..."></div>
+        <div class="field full"><label>Trip Overview</label><textarea id="t-overview">${t.overview||''}</textarea></div>
+      </div>`;
+
+    if (activeTab==='details') return `
+      <div style="margin-bottom:20px">
+        <div class="card-title" style="margin-bottom:12px">✨ Key Highlights</div>
+        ${listBuilder(highlights,'Add a highlight','highlights')}
+      </div>`;
+
+    if (activeTab==='itinerary') return `
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div class="card-title">Day-by-Day Itinerary</div>
+          <button class="btn btn-secondary btn-sm" onclick="generatePdfItinerary(${id||'null'})">📄 Export PDF Itinerary</button>
+        </div>
+        ${itinBuilder()}
+      </div>`;
+
+    if (activeTab==='inclusions') {
+      // Build selected state arrays for inclusions (by repo name match) and exclusions (by string match)
+      const selectedInclIds = new Set(
+        INCL_REPO.filter(r => inclusions.some(inc => typeof inc==='string' ? inc.includes(r.name) : (inc.name||inc)===r.name)).map(r=>r.id)
+      );
+      const customInclusions = inclusions.filter(inc => {
+        const label = typeof inc==='string' ? inc : (inc.name||inc);
+        return !INCL_REPO.some(r => label.includes(r.name));
+      });
+      const selectedExclIds = new Set(exclusions.map(e=>typeof e==='string'?e:(e.name||e)));
+      return `
+      <div>
+        <div style="margin-bottom:28px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="card-title" style="color:var(--green)">✅ What's Included</div>
+            <span style="font-size:11px;color:var(--mid)">Click tiles to toggle — matches frontend design</span>
+          </div>
+          <div class="incl-repo-grid">
+            ${INCL_REPO.map(r=>`
+              <div class="incl-tile ${selectedInclIds.has(r.id)?'selected':''}" onclick="toggleInclTile(${r.id},'incl')">
+                <span class="incl-tile-icon">${r.icon}</span>
+                <span class="incl-tile-name">${r.name}</span>
+                <span class="incl-tile-note">${r.note}</span>
+              </div>`).join('')}
+          </div>
+          <div style="margin-top:14px">
+            <div style="font-size:11px;font-weight:700;color:var(--mid);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Custom Inclusions</div>
+            ${customInclusions.length ? `<div class="incl-repo-grid" id="custom-incl-list" style="margin-bottom:10px">
+              ${customInclusions.map((inc,i)=>`
+                <div class="incl-tile selected" style="position:relative">
+                  <span class="incl-tile-icon">${typeof inc==='object'&&inc.icon?inc.icon:'✦'}</span>
+                  <span class="incl-tile-name">${typeof inc==='object'?inc.name:(inc||'Custom')}</span>
+                  ${typeof inc==='object'&&inc.note?`<span class="incl-tile-note">${inc.note}</span>`:''}
+                  <button style="position:absolute;top:4px;right:4px;background:none;border:none;font-size:13px;cursor:pointer;color:var(--mid);line-height:1" onclick="removeCustomIncl(${i})">×</button>
+                </div>`).join('')}
+            </div>` : ''}
+            <div style="background:var(--bg3);border:1.5px dashed var(--line);border-radius:10px;padding:12px;margin-top:6px">
+              <div style="font-size:11px;color:var(--mid);margin-bottom:8px">Add a custom tile with icon, name, and note:</div>
+              <div style="display:grid;grid-template-columns:60px 1fr 1fr auto;gap:8px;align-items:flex-end">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--mid);margin-bottom:3px;text-transform:uppercase">Icon</div>
+                  <input type="text" id="custom-incl-icon" placeholder="🎯" maxlength="2"
+                    style="width:100%;text-align:center;font-size:18px;padding:6px 4px;border:1.5px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)">
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--mid);margin-bottom:3px;text-transform:uppercase">Name</div>
+                  <input type="text" id="custom-incl-name" placeholder="e.g. Stargazing Session"
+                    style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;background:var(--bg);color:var(--ink)"
+                    onkeydown="if(event.key==='Enter')addCustomIncl()">
+                </div>
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:var(--mid);margin-bottom:3px;text-transform:uppercase">Note</div>
+                  <input type="text" id="custom-incl-note" placeholder="Short description (optional)"
+                    style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;background:var(--bg);color:var(--ink)"
+                    onkeydown="if(event.key==='Enter')addCustomIncl()">
+                </div>
+                <button class="btn btn-primary btn-sm" style="height:36px;white-space:nowrap" onclick="addCustomIncl()">＋ Add Tile</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div class="card-title" style="color:var(--red)">❌ Not Included</div>
+            <span style="font-size:11px;color:var(--mid)">Click pills to select common exclusions</span>
+          </div>
+          <div class="excl-repo-grid">
+            ${EXCL_REPO.map(e=>`
+              <span class="excl-pill ${selectedExclIds.has(e)?'selected':''}" onclick="toggleExclPill(this,'${e.replace(/'/g,"\\'")}')">
+                ${e}
+              </span>`).join('')}
+          </div>
+          <div style="margin-top:12px">
+            <div style="font-size:11px;font-weight:700;color:var(--mid);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">Custom Exclusions</div>
+            <div class="incl-custom-list" id="custom-excl-list">
+              ${exclusions.filter(e=>!EXCL_REPO.includes(e)).map((e,i)=>`
+                <div class="incl-custom-item" id="custom-excl-${i}">
+                  <span>${e}</span>
+                  <button class="list-rm" onclick="removeCustomExcl(${i})">−</button>
+                </div>`).join('')}
+            </div>
+            <div class="incl-custom-input">
+              <input type="text" id="custom-excl-inp" placeholder="Add a custom exclusion…" onkeydown="if(event.key==='Enter')addCustomExcl()">
+              <button class="btn btn-secondary btn-sm" onclick="addCustomExcl()">＋ Add</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    if (activeTab==='settings') return `
+      <div class="fg">
+        <div class="field full">
+          <div class="row-toggle" style="margin-bottom:14px">
+            <label class="tog"><input type="checkbox" id="t-active" ${t.isActive?'checked':''}><div class="tog-track"></div><div class="tog-thumb"></div></label>
+            <label>Active (visible to users)</label>
+          </div>
+          <div class="row-toggle" style="margin-bottom:14px">
+            <label class="tog"><input type="checkbox" id="t-featured" ${t.isFeatured?'checked':''}><div class="tog-track"></div><div class="tog-thumb"></div></label>
+            <label>Featured (highlighted in listing)</label>
+          </div>
+          <div class="row-toggle" style="margin-bottom:14px">
+            <label class="tog"><input type="checkbox" id="t-homepage" ${t.showOnHomepage?'checked':''}><div class="tog-track"></div><div class="tog-thumb"></div></label>
+            <label>Show on Homepage</label>
+          </div>
+        </div>
+        <div class="field"><label>Avg Rating</label><input id="t-rating" type="number" step="0.1" value="${t.avgRating||0}"></div>
+        <div class="field"><label>Review Count</label><input id="t-revcount" type="number" value="${t.reviewCount||0}"></div>
+        <div class="field"><label>Month</label>
+          <select id="t-month">
+            ${['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec','flex'].map(m=>`<option value="${m}" ${t.month===m?'selected':''}>${m.toUpperCase()}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Tags (comma separated)</label><input id="t-tags" value="${Array.isArray(t.tags)?t.tags.join(', '):(t.tags||'')}"></div>
+      </div>`;
+
+    if (activeTab==='website') return `
+      <div class="fg">
+        <div class="field"><label>Tier (Nav Section)</label>
+          <select id="t-tier">
+            <option value="join-a-trip" ${t.tier==='join-a-trip'?'selected':''}>🗺️ Join a Trip</option>
+            <option value="beyond-ordinary" ${t.tier==='beyond-ordinary'?'selected':''}>⭐ Beyond Ordinary</option>
+            <option value="signature-journey" ${t.tier==='signature-journey'?'selected':''}>💎 Signature Journey</option>
+          </select>
+        </div>
+        <div class="field"><label>Homepage Filter Type</label>
+          <select id="t-ftype">
+            <option value="dom" ${t.filterType==='dom'?'selected':''}>Domestic</option>
+            <option value="intl" ${t.filterType==='intl'?'selected':''}>International</option>
+            <option value="wknd" ${t.filterType==='wknd'?'selected':''}>Weekend Trip</option>
+          </select>
+        </div>
+        <div class="field"><label>Mega Menu Tab</label>
+          <select id="t-fdest">
+            <option value="india" ${t.filterDest==='india'?'selected':''}>India</option>
+            <option value="intl" ${t.filterDest==='intl'?'selected':''}>International</option>
+          </select>
+        </div>
+        <div class="field"><label>Category</label>
+          <select id="t-fcat">
+            <option value="community" ${t.filterCategory==='community'?'selected':''}>Community</option>
+            <option value="offbeat" ${t.filterCategory==='offbeat'?'selected':''}>Offbeat</option>
+            <option value="adventure" ${t.filterCategory==='adventure'?'selected':''}>Adventure</option>
+            <option value="honeymoon" ${t.filterCategory==='honeymoon'?'selected':''}>Honeymoon</option>
+            <option value="family" ${t.filterCategory==='family'?'selected':''}>Family</option>
+            <option value="milestone" ${t.filterCategory==='milestone'?'selected':''}>Milestone</option>
+          </select>
+        </div>
+        <div class="field"><label>Duration Filter</label>
+          <select id="t-fdur">
+            <option value="3-5" ${t.filterDuration==='3-5'?'selected':''}>3–5 Days</option>
+            <option value="5-7" ${t.filterDuration==='5-7'?'selected':''}>5–7 Days</option>
+            <option value="7plus" ${t.filterDuration==='7plus'?'selected':''}>7+ Days</option>
+            <option value="flex" ${t.filterDuration==='flex'?'selected':''}>Flexible</option>
+          </select>
+        </div>
+        <div class="field"><label>Signature Subtype (if applicable)</label>
+          <select id="t-sigtype">
+            <option value="" ${!t.signatureSubtype?'selected':''}>— None —</option>
+            <option value="honeymoon" ${t.signatureSubtype==='honeymoon'?'selected':''}>Honeymoon</option>
+            <option value="family" ${t.signatureSubtype==='family'?'selected':''}>Family</option>
+            <option value="milestone" ${t.signatureSubtype==='milestone'?'selected':''}>Milestone</option>
+            <option value="flexible" ${t.signatureSubtype==='flexible'?'selected':''}>Flexible Dates</option>
+          </select>
+        </div>
+        <div class="field full"><label>Related Trips — "You Might Also Like"</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px;padding:12px;background:var(--bg3);border-radius:9px;border:1.5px solid var(--line)">
+            ${DB.trips.filter(x=>x.id!==id).map(x=>`
+              <label style="display:flex;align-items:center;gap:7px;font-size:12px;cursor:pointer;padding:5px;border-radius:6px;hover:background:var(--line2)">
+                <input type="checkbox" id="rel-${x.id}" ${(t.relatedTrips||[]).includes(x.id)?'checked':''} style="accent-color:var(--rust)">
+                ${x.name}
+              </label>`).join('')}
+          </div>
+        </div>
+      </div>`;
+    return '';
+  }
+
+  window._lbData = { highlights, inclusions, exclusions, itin: itinerary };
+
+  // Inclusions tile toggle
+  window.toggleInclTile = function(repoId, type) {
+    const repo = INCL_REPO.find(r=>r.id===repoId);
+    if (!repo) return;
+    const inclArr = window._lbData.inclusions;
+    const existsIdx = inclArr.findIndex(inc => {
+      const label = typeof inc==='string' ? inc : (inc.name||inc);
+      return label === repo.name || label.includes(repo.name);
+    });
+    if (existsIdx >= 0) {
+      inclArr.splice(existsIdx, 1);
+    } else {
+      inclArr.push({ icon: repo.icon, name: repo.name, note: repo.note });
+    }
+    inclusions = inclArr;
+    renderModal();
+  };
+
+  // Exclusions pill toggle
+  window.toggleExclPill = function(el, label) {
+    const exclArr = window._lbData.exclusions;
+    const idx = exclArr.indexOf(label);
+    if (idx >= 0) {
+      exclArr.splice(idx, 1);
+      el.classList.remove('selected');
+    } else {
+      exclArr.push(label);
+      el.classList.add('selected');
+    }
+    exclusions = exclArr;
+  };
+
+  window.addCustomIncl = function() {
+    const iconEl = document.getElementById('custom-incl-icon');
+    const nameEl = document.getElementById('custom-incl-name');
+    const noteEl = document.getElementById('custom-incl-note');
+    const name = nameEl?.value.trim();
+    if (!name) { toast('Tile name is required','err'); return; }
+    const entry = {
+      icon: iconEl?.value.trim() || '✦',
+      name: name,
+      note: noteEl?.value.trim() || ''
+    };
+    window._lbData.inclusions.push(entry);
+    inclusions = window._lbData.inclusions;
+    renderModal();
+  };
+  window.removeCustomIncl = function(i) {
+    const customItems = window._lbData.inclusions.filter(inc => {
+      const label = typeof inc==='string' ? inc : (inc.name||inc);
+      return !INCL_REPO.some(r => label.includes(r.name));
+    });
+    const toRemove = customItems[i];
+    if (toRemove !== undefined) {
+      const globalIdx = window._lbData.inclusions.indexOf(toRemove);
+      if (globalIdx >= 0) window._lbData.inclusions.splice(globalIdx, 1);
+    }
+    inclusions = window._lbData.inclusions;
+    renderModal();
+  };
+  window.addCustomExcl = function() {
+    const inp = document.getElementById('custom-excl-inp');
+    if (inp && inp.value.trim()) {
+      window._lbData.exclusions.push(inp.value.trim());
+      exclusions = window._lbData.exclusions;
+      renderModal();
+    }
+  };
+  window.removeCustomExcl = function(i) {
+    const customItems = window._lbData.exclusions.filter(e => !EXCL_REPO.includes(e));
+    const toRemove = customItems[i];
+    if (toRemove !== undefined) {
+      const globalIdx = window._lbData.exclusions.indexOf(toRemove);
+      if (globalIdx >= 0) window._lbData.exclusions.splice(globalIdx, 1);
+    }
+    exclusions = window._lbData.exclusions;
+    renderModal();
+  };
+
+  function renderModal() {
+    highlights = window._lbData.highlights;
+    inclusions = window._lbData.inclusions;
+    exclusions = window._lbData.exclusions;
+    itinerary = window._lbData.itin;
+    document.getElementById('trip-modal-overlay')?.remove();
+    const div = document.createElement('div');
+    div.id = 'trip-modal-overlay'; div.className = 'overlay';
+    div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;backdrop-filter:blur(4px)';
+    div.innerHTML = `
+      <div class="modal modal-lg">
+        <div class="modal-hdr">
+          <span class="modal-title">${id ? 'Edit Trip: '+t.name : 'New Trip'}</span>
+          <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body" style="padding-top:18px">
+          <div class="tabs">
+            ${['basic','details','itinerary','inclusions','settings','website'].map(tab=>`
+              <button class="tab ${activeTab===tab?'active':''}" onclick="switchTripTab('${tab}')" style="text-transform:capitalize">${tab==='website'?'🌐 Website':tab==='itinerary'?'📅 Itinerary':tab==='inclusions'?'✅ Inclusions':tab==='details'?'✨ Details':tab==='settings'?'⚙️ Settings':'📝 Basic'}</button>`).join('')}
+          </div>
+          <div id="trip-tab-content">${tabContent()}</div>
+        </div>
+        <div class="modal-foot">
+          ${activeTab==='itinerary'?'<button class="btn btn-secondary" onclick="generatePdfItinerary('+(id||'null')+')">📄 Export PDF</button>':''}
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveTripFull(${id||'null'})">${id?'Save Changes':'Create Trip'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(div);
+    window.switchTripTab = function(tab) { activeTab=tab; renderModal(); };
+  }
+  renderModal();
+}
+
+function generatePdfItinerary(tripId) {
+  const t = tripId ? DB.trips.find(x=>x.id===tripId) : null;
+  if (!t) { toast('Save the trip first to export PDF','err'); return; }
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:Georgia,serif;color:#1A1814;padding:48px;max-width:800px;margin:0 auto}
+    .brand{font-size:22px;font-weight:700;color:#C94B1A;letter-spacing:-.02em;margin-bottom:4px}
+    .brand span{color:#7C7670;font-size:13px;font-weight:400;display:block;margin-top:2px}
+    h1{font-size:32px;font-weight:700;margin:28px 0 6px;letter-spacing:-.03em}
+    .meta{display:flex;gap:24px;margin-bottom:32px;font-size:13px;color:#7C7670;border-bottom:2px solid #E9E5DF;padding-bottom:16px}
+    .meta strong{color:#1A1814}
+    .section-title{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#C94B1A;margin:32px 0 14px}
+    .day{border-left:3px solid #C94B1A;padding:16px 20px;margin-bottom:16px;background:#FAFAF7;border-radius:0 8px 8px 0}
+    .day-num{font-size:11px;font-weight:700;color:#C94B1A;text-transform:uppercase;letter-spacing:.06em}
+    .day-title{font-size:17px;font-weight:700;margin:4px 0 10px}
+    .day-desc{font-size:14px;line-height:1.75;color:#4B4741}
+    .day-meta{font-size:12px;color:#7C7670;margin-top:10px}
+    ul{padding-left:20px;margin-top:6px}
+    li{font-size:14px;line-height:1.8;color:#4B4741}
+    .incl-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px}
+    .incl-col h4{font-size:13px;font-weight:700;margin-bottom:10px}
+    .foot{margin-top:48px;padding-top:16px;border-top:1px solid #E9E5DF;font-size:12px;color:#B0AAA2;text-align:center}
+    @media print{body{padding:32px}}
+  </style></head><body>
+  <div class="brand">NOMICHI<span>Wander. Connect. Belong.</span></div>
+  <h1>${t.name}</h1>
+  <div class="meta">
+    <div>📍 <strong>${t.location}</strong></div>
+    <div>📅 <strong>${t.duration.nights}N / ${t.duration.days}D</strong></div>
+    ${t.departureCity?`<div>🛫 Departs from <strong>${t.departureCity}</strong></div>`:''}
+    ${t.nextDeparture?`<div>🗓️ Next: <strong>${t.nextDeparture}</strong></div>`:''}
+    <div>💰 From <strong>₹${(t.basePrice||0).toLocaleString()}</strong></div>
+  </div>
+  ${t.overview?`<p style="font-size:15px;line-height:1.8;color:#4B4741;margin-bottom:8px">${t.overview}</p>`:''}
+  ${(t.highlights||[]).length?`<div class="section-title">Key Highlights</div><ul>${t.highlights.map(h=>`<li>${h}</li>`).join('')}</ul>`:''}
+  ${(t.itinerary||[]).length?`<div class="section-title">Day-by-Day Itinerary</div>${t.itinerary.map(d=>`
+    <div class="day">
+      <div class="day-num">Day ${d.day}</div>
+      <div class="day-title">${d.title||''}</div>
+      <div class="day-desc">${d.description||''}</div>
+      ${d.meals||d.accommodation?`<div class="day-meta">${d.meals?'🍽️ '+d.meals:''}${d.accommodation?' &nbsp;|&nbsp; 🏨 '+d.accommodation:''}</div>`:''}
+    </div>`).join('')}`:''}
+  ${((t.inclusions||[]).length||(t.exclusions||[]).length)?`
+    <div class="section-title">What's Included / Excluded</div>
+    <div class="incl-grid">
+      <div><h4 style="color:#1A6B3A">✅ Included</h4><ul>${(t.inclusions||[]).map(i=>`<li>${i}</li>`).join('')}</ul></div>
+      <div><h4 style="color:#C0392B">❌ Not Included</h4><ul>${(t.exclusions||[]).map(e=>`<li>${e}</li>`).join('')}</ul></div>
+    </div>`:''}
+  <div class="foot">Generated by Nomichi CMS &nbsp;·&nbsp; hello@nomichi.com &nbsp;·&nbsp; @nomichi.travel</div>
+  </body></html>`;
+  const w = window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>w.print(), 600);
+  toast('PDF itinerary opened — use Cmd+P to save as PDF ✅');
+}
+
+function saveTripFull(id) {
+  const t = id ? DB.trips.find(x=>x.id===id) : null;
+  const now = window._lbData || {};
+  const data = {
+    name: document.getElementById('t-name')?.value || '',
+    slug: document.getElementById('t-slug')?.value || '',
+    location: document.getElementById('t-loc')?.value || '',
+    flag: document.getElementById('t-flag')?.value || '🇮🇳',
+    duration: { days: +document.getElementById('t-days')?.value||7, nights: +document.getElementById('t-nights')?.value||6 },
+    basePrice: +document.getElementById('t-price')?.value||0,
+    originalPrice: document.getElementById('t-origprice')?.value ? +document.getElementById('t-origprice').value : null,
+    totalSlots: +document.getElementById('t-slots')?.value||16,
+    bookedSlots: +document.getElementById('t-booked')?.value||0,
+    departureCity: document.getElementById('t-depcity')?.value||'',
+    nextDeparture: document.getElementById('t-nextdep')?.value||'',
+    coverImage: document.getElementById('t-cover')?.value||'',
+    overview: document.getElementById('t-overview')?.value||'',
+    tier: document.getElementById('t-tier')?.value||'join-a-trip',
+    filterType: document.getElementById('t-ftype')?.value||'dom',
+    filterDest: document.getElementById('t-fdest')?.value||'india',
+    filterCategory: document.getElementById('t-fcat')?.value||'community',
+    filterDuration: document.getElementById('t-fdur')?.value||'7plus',
+    signatureSubtype: document.getElementById('t-sigtype')?.value||null,
+    isActive: document.getElementById('t-active')?.checked ?? true,
+    isFeatured: document.getElementById('t-featured')?.checked ?? false,
+    showOnHomepage: document.getElementById('t-homepage')?.checked ?? false,
+    avgRating: +document.getElementById('t-rating')?.value||0,
+    reviewCount: +document.getElementById('t-revcount')?.value||0,
+    month: document.getElementById('t-month')?.value||'flex',
+    tags: (document.getElementById('t-tags')?.value||'').split(',').map(s=>s.trim()).filter(Boolean),
+    relatedTrips: DB.trips.filter(x=>x.id!==id && document.getElementById('rel-'+x.id)?.checked).map(x=>x.id),
+    highlights: now.highlights||[],
+    inclusions: now.inclusions||[],
+    exclusions: now.exclusions||[],
+    itinerary: now.itin||[]
+  };
+  if (!data.name) { toast('Trip name is required','err'); return; }
+  if (id) {
+    const idx = DB.trips.findIndex(x=>x.id===id);
+    DB.trips[idx] = { ...DB.trips[idx], ...data };
+    toast('Trip updated successfully ✅');
+  } else {
+    data.id = DB.trips.length ? Math.max(...DB.trips.map(x=>x.id))+1 : 1;
+    data.isVisible = true; data.avgRating = data.avgRating||0; data.reviewCount = data.reviewCount||0;
+    DB.trips.push(data);
+    toast('Trip created successfully ✅');
+  }
+  closeModal();
+  render();
+}
+
+
+function openGalleryImageModal(id, category) {
+  const img = id ? DB.gallery.find(g=>g.id===id) : null;
+  const cat = category || img?.category || 'trip';
+  const tierMeta = {
+    'join-a-trip':       'Join a Trip',
+    'beyond-ordinary':   'Beyond Ordinary',
+    'signature-journey': 'Signature Journey'
+  };
+
+  // Sort trips alphabetically for selector
+  const sortedTrips = [...DB.trips].sort((a,b)=>a.name.localeCompare(b.name));
+
+  // Get current tier from linked trip
+  const linkedTrip = img?.tripId ? DB.trips.find(t=>t.id===img.tripId) : null;
+
+  const html = `
+    <div class="overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">${img ? 'Edit Image' : 'Add Image'} — ${cat==='trip'?'Trip Gallery':'Hero Images'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="margin-bottom:14px;border-radius:10px;overflow:hidden;background:var(--bg3);border:1px solid var(--line);height:140px;display:flex;align-items:center;justify-content:center">
+            ${img?.url
+              ? `<img id="gal-img-preview" src="${img.url}" style="width:100%;height:140px;object-fit:cover;display:block">`
+              : `<div id="gal-img-preview" style="font-size:36px;color:var(--mid)">🖼️</div>`}
+          </div>
+          <div class="fg">
+            <div class="field full">
+              <label>Image URL</label>
+              <input type="url" id="gal-url" value="${img?.url||''}" placeholder="https://images.unsplash.com/…"
+                oninput="const p=document.getElementById('gal-img-preview');if(this.value){p.outerHTML='<img id=gal-img-preview src='+this.value+' style=width:100%;height:140px;object-fit:cover;display:block>'}">
+            </div>
+            <div class="field">
+              <label>Alt Text / Caption</label>
+              <input type="text" id="gal-alt" value="${img?.alt||''}" placeholder="Describe the image…">
+            </div>
+            <div class="field">
+              <label>Tag to Trip</label>
+              <select id="gal-trip" onchange="
+                const trip=DB.trips.find(t=>t.id===parseInt(this.value));
+                if(trip){
+                  document.getElementById('gal-tripname').value=trip.name;
+                  document.getElementById('gal-tier-display').textContent=({'join-a-trip':'Join a Trip','beyond-ordinary':'Beyond Ordinary','signature-journey':'Signature Journey'}[trip.tier]||trip.tier);
+                  document.getElementById('gal-tier-display').style.display='inline-flex';
+                } else {
+                  document.getElementById('gal-tier-display').style.display='none';
+                }">
+                <option value="">— No trip linked —</option>
+                ${sortedTrips.map(t=>`<option value="${t.id}" ${img?.tripId===t.id?'selected':''}>${t.name} (${t.tier==='join-a-trip'?'Join':t.tier==='beyond-ordinary'?'Beyond Ordinary':'Signature'})</option>`).join('')}
+              </select>
+            </div>
+            <div class="field">
+              <label>Trip Name (display)</label>
+              <input type="text" id="gal-tripname" value="${img?.tripName||''}" placeholder="Auto-fills from trip selection">
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--mid)">Trip tier:</span>
+            <span id="gal-tier-display" class="pill ${linkedTrip?.tier==='join-a-trip'?'pill-green':linkedTrip?.tier==='beyond-ordinary'?'pill-rust':'pill-purple'}"
+              style="${linkedTrip?'':'display:none'}">
+              ${linkedTrip ? (tierMeta[linkedTrip.tier]||linkedTrip.tier) : ''}
+            </span>
+            ${!linkedTrip?'<span style="font-size:11px;color:var(--mid)">Select a trip above to auto-fill</span>':''}
+          </div>
+          <div style="margin-top:12px">
+            <label class="tog" style="display:flex;align-items:center;gap:10px">
+              <input type="checkbox" id="gal-featured" ${img?.isFeatured?'checked':''}>
+              <span style="font-size:13px">Featured image</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveGalleryImage(${id||'null'},'${cat}')">Save Image</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function saveGalleryImage(id, category) {
+  const url = document.getElementById('gal-url')?.value?.trim();
+  if (!url) { toast('Image URL is required','err'); return; }
+  const tripId = parseInt(document.getElementById('gal-trip')?.value) || null;
+  const linkedTrip = tripId ? DB.trips.find(t=>t.id===tripId) : null;
+  const data = {
+    url,
+    alt:      document.getElementById('gal-alt')?.value?.trim() || '',
+    tripName: document.getElementById('gal-tripname')?.value?.trim() || (linkedTrip?.name || ''),
+    tripId:   tripId,
+    category: category || 'trip',
+    isFeatured: document.getElementById('gal-featured')?.checked || false
+  };
+  if (id) {
+    Object.assign(DB.gallery.find(g=>g.id===id), data);
+    toast('Image updated ✅','ok');
+  } else {
+    const newId = DB.gallery.length ? Math.max(...DB.gallery.map(g=>g.id))+1 : 1;
+    DB.gallery.push({ id:newId, ...data });
+    toast('Image added ✅','ok');
+  }
+  closeModal();
+  render();
+}
+
+function openMomentModal(id) {
+  const moment = id ? DB.rawMoments.find(m=>m.id===id) : null;
+  const html = `
+    <div class="overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">${moment?'Edit Real Moment':'New Real Moment'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="fg">
+            <div class="field">
+              <label>Location Name</label>
+              <input type="text" id="moment-loc" value="${moment?.loc||''}" placeholder="Bali, Indonesia">
+            </div>
+            <div class="field">
+              <label>Tags (comma-separated)</label>
+              <input type="text" id="moment-tags" value="${(moment?.tags||[]).join(', ')}" placeholder="candid, landscape, people">
+            </div>
+            <div class="field full">
+              <label>Image URL</label>
+              <input type="url" id="moment-img" value="${moment?.imageUrl||''}" placeholder="https://…/photo.jpg">
+            </div>
+            <div class="field full">
+              <label>Caption</label>
+              <input type="text" id="moment-cap" value="${moment?.caption||''}" placeholder="A short candid caption…">
+            </div>
+          </div>
+          <div class="row-toggle" style="margin-top:14px">
+            <label>Featured in Polaroid Gallery</label>
+            <label class="tog"><input type="checkbox" ${moment?.isFeatured?'checked':''} id="moment-feat"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveMoment(${id})">Save Moment</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function openIdentityModal(id) {
+  const card = id ? DB.identityCards.find(c=>c.id===id) : null;
+  const html = `
+    <div class="overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">${card?'Edit Card':'New Card'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field">
+            <label>Icon (emoji)</label>
+            <input type="text" id="ident-icon" value="${card?.icon||''}" placeholder="🧳" maxlength="2">
+          </div>
+          <div class="field">
+            <label>Traveller Type</label>
+            <input type="text" id="ident-type" value="${card?.type||''}" placeholder="The Solo Wanderer">
+          </div>
+          <div class="field">
+            <label>Description</label>
+            <textarea id="ident-desc">${card?.description||''}</textarea>
+          </div>
+          <div class="field">
+            <label>Display Order</label>
+            <input type="number" id="ident-order" value="${card?.displayOrder||''}" min="1">
+          </div>
+          <div class="row-toggle" style="margin-top:18px">
+            <label>Active</label>
+            <label class="tog"><input type="checkbox" ${card?.isActive?'checked':''} id="ident-active"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveIdentity(${id})">Save Card</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function openReviewModal(id) {
+  const review = id ? DB.reviews.find(r=>r.id===id) : null;
+  const html = `
+    <div class="overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">${review?'Edit Review':'New Review'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:12px;background:var(--bg3);border-radius:10px;border:1px solid var(--line)">
+            <div id="rev-photo-preview">
+              ${review?.profileImage
+                ? `<img src="${review.profileImage}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--line)" onerror="this.outerHTML='<div style=width:52px;height:52px;border-radius:50%;background:var(--bg2);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:22px>👤</div>'">`
+                : `<div style="width:52px;height:52px;border-radius:50%;background:var(--bg2);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:22px">👤</div>`}
+            </div>
+            <div style="flex:1">
+              <label style="font-size:11px;font-weight:700;color:var(--mid);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px">Profile Photo URL</label>
+              <input type="url" id="rev-photo" value="${review?.profileImage||''}" placeholder="https://…/photo.jpg"
+                style="width:100%;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12px;background:var(--bg)"
+                oninput="const img=document.getElementById('rev-photo-preview');const v=this.value.trim();img.innerHTML=v?'<img src='+v+' style=width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--line) onerror=this.outerHTML=\\'<div style=width:52px;height:52px;border-radius:50%;background:var(--bg2);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:22px>👤</div>\\'>':'<div style=width:52px;height:52px;border-radius:50%;background:var(--bg2);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:22px>👤</div>'">
+            </div>
+          </div>
+          <div class="fg">
+            <div class="field">
+              <label>Reviewer Name</label>
+              <input type="text" id="rev-name" value="${review?.name||''}" placeholder="Priya Sharma">
+            </div>
+            <div class="field">
+              <label>Reviewer Location</label>
+              <input type="text" id="rev-loc" value="${review?.location||''}" placeholder="Mumbai">
+            </div>
+            <div class="field">
+              <label>Trip / Destination</label>
+              <input type="text" id="rev-trip" value="${review?.tripLocation||''}" placeholder="Ladakh">
+            </div>
+            <div class="field">
+              <label>Rating</label>
+              <select id="rev-rating">
+                <option value="5" ${(review?.rating||5)===5?'selected':''}>⭐⭐⭐⭐⭐ (5 Stars)</option>
+                <option value="4" ${review?.rating===4?'selected':''}>⭐⭐⭐⭐ (4 Stars)</option>
+                <option value="3" ${review?.rating===3?'selected':''}>⭐⭐⭐ (3 Stars)</option>
+                <option value="2" ${review?.rating===2?'selected':''}>⭐⭐ (2 Stars)</option>
+                <option value="1" ${review?.rating===1?'selected':''}>⭐ (1 Star)</option>
+              </select>
+            </div>
+          </div>
+          <div class="field full">
+            <label>Review Text</label>
+            <textarea id="rev-text" rows="4">${review?.reviewText||''}</textarea>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveReview(${id})">Save Review</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function openFaqModal(id) {
+  const faq = id ? DB.faqs.find(f=>f.id===id) : null;
+  const html = `
+    <div class="overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">${faq?'Edit FAQ':'New FAQ'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="field full">
+            <label>Question</label>
+            <input type="text" id="faq-q" value="${faq?.question||''}" placeholder="What is included?">
+          </div>
+          <div class="field full">
+            <label>Answer</label>
+            <textarea id="faq-a">${faq?.answer||''}</textarea>
+          </div>
+          <div class="fg">
+            <div class="field">
+              <label>Category</label>
+              <input type="text" id="faq-cat" value="${faq?.category||''}" placeholder="General">
+            </div>
+            <div class="field">
+              <label>Display Order</label>
+              <input type="number" id="faq-order" value="${faq?.displayOrder||''}" min="1">
+            </div>
+          </div>
+          <div class="row-toggle">
+            <label>Active on Website</label>
+            <label class="tog"><input type="checkbox" ${faq?.isActive?'checked':''} id="faq-active"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveFaq(${id})">Save FAQ</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function openTeamModal(id) {
+  const member = id ? DB.team.find(m=>m.id===id) : null;
+  const html = `
+    <div class="overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal">
+        <div class="modal-hdr">
+          <div class="modal-title">${member?'Edit Member':'New Member'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="fg">
+            <div class="field full">
+              <label>Name</label>
+              <input type="text" id="team-name" value="${member?.name||''}" placeholder="Devanshi Ghosh">
+            </div>
+            <div class="field full">
+              <label>Role</label>
+              <input type="text" id="team-role" value="${member?.role||''}" placeholder="Founder & Lead Trip Designer">
+            </div>
+            <div class="field full">
+              <label>Bio</label>
+              <textarea id="team-bio">${member?.bio||''}</textarea>
+            </div>
+            <div class="field">
+              <label>Instagram Handle</label>
+              <input type="text" id="team-ig" value="${member?.instagram||''}" placeholder="@devanshi.wanders">
+            </div>
+            <div class="field">
+              <label>Display Order</label>
+              <input type="number" id="team-order" value="${member?.displayOrder||''}" min="1">
+            </div>
+          </div>
+          <div class="row-toggle" style="margin-top:18px">
+            <label>Visible on About Page</label>
+            <label class="tog"><input type="checkbox" ${member?.isActive?'checked':''} id="team-active"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveTeam(${id})">Save Member</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function openCareerModal(id) {
+  const job = id ? DB.careers.find(c=>c.id===id) : null;
+  const html = `
+    <div class="overlay" onclick="if(event.target===this) closeModal()">
+      <div class="modal modal-lg">
+        <div class="modal-hdr">
+          <div class="modal-title">${job?'Edit Position':'New Position'}</div>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="fg">
+            <div class="field full">
+              <label>Job Title</label>
+              <input type="text" id="job-title" value="${job?.title||''}" placeholder="Trip Leader — Himalayan Region">
+            </div>
+            <div class="field">
+              <label>Department</label>
+              <input type="text" id="job-dept" value="${job?.department||''}" placeholder="Operations">
+            </div>
+            <div class="field">
+              <label>Location</label>
+              <input type="text" id="job-loc" value="${job?.location||''}" placeholder="Remote + On-Trip (India)">
+            </div>
+            <div class="field">
+              <label>Type</label>
+              <select id="job-type">
+                <option value="full-time" ${job?.type==='full-time'?'selected':''}>Full-time</option>
+                <option value="part-time" ${job?.type==='part-time'?'selected':''}>Part-time</option>
+                <option value="contract" ${job?.type==='contract'?'selected':''}>Contract</option>
+                <option value="internship" ${job?.type==='internship'?'selected':''}>Internship</option>
+              </select>
+            </div>
+          </div>
+          <div class="field full">
+            <label>Description</label>
+            <textarea id="job-desc">${job?.description||''}</textarea>
+          </div>
+          <div class="row-toggle" style="margin-top:18px">
+            <label>Position is Open</label>
+            <label class="tog"><input type="checkbox" ${job?.isOpen?'checked':''} id="job-open"><div class="tog-track"></div><div class="tog-thumb"></div></label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="saveCareer(${id})">Save Position</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+// ── SAVE FUNCTIONS ─────────────────────────────────────────────────────
+function saveTrip(id) {
+  const relatedIds = Array.from(document.querySelectorAll('input[id^="rel-"]:checked')).map(el=>parseInt(el.id.split('-')[1]));
+  const data = {
+    name:document.getElementById('trip-name').value,
+    slug:document.getElementById('trip-slug').value,
+    location:document.getElementById('trip-loc').value,
+    duration:{days:parseInt(document.getElementById('trip-days').value),nights:parseInt(document.getElementById('trip-days').value)-1},
+    basePrice:parseInt(document.getElementById('trip-price').value),
+    originalPrice:document.getElementById('trip-orig-price').value?parseInt(document.getElementById('trip-orig-price').value):null,
+    totalSlots:parseInt(document.getElementById('trip-slots').value),
+    bookedSlots:parseInt(document.getElementById('trip-booked').value),
+    overview:document.getElementById('trip-overview').value,
+    tier:document.getElementById('trip-tier').value,
+    filterType:document.getElementById('trip-filter-type').value,
+    filterDest:document.getElementById('trip-filter-dest').value,
+    filterCategory:document.getElementById('trip-filter-cat').value,
+    filterDuration:document.getElementById('trip-filter-dur').value,
+    departureCity:document.getElementById('trip-dept-city').value,
+    nextDeparture:document.getElementById('trip-next-dept').value,
+    spotsLeft:parseInt(document.getElementById('trip-spots-left').value),
+    signatureSubtype:document.getElementById('trip-sig-subtype').value||null,
+    relatedTrips:relatedIds
+  };
+  if(id) {
+    Object.assign(DB.trips.find(t=>t.id===id),data);
+    toast('Trip updated','ok');
+  } else {
+    const newId = Math.max(...DB.trips.map(t=>t.id))+1;
+    DB.trips.push({id:newId,...data,tripType:'community',tags:[],month:'jun',coverImage:'',isActive:true,isFeatured:false,showOnHomepage:true,isVisible:true,avgRating:0,reviewCount:0,highlights:[],inclusions:[],exclusions:[],itinerary:[]});
+    toast('Trip created','ok');
+  }
+  closeModal();
+  render();
+}
+
+function saveMoment(id) {
+  const data = {
+    loc: document.getElementById('moment-loc').value,
+    imageUrl: document.getElementById('moment-img')?.value || '',
+    caption: document.getElementById('moment-cap')?.value || '',
+    tags: (document.getElementById('moment-tags')?.value || '').split(',').map(s=>s.trim()).filter(Boolean),
+    isFeatured: document.getElementById('moment-feat').checked
+  };
+  if(id) {
+    Object.assign(DB.rawMoments.find(m=>m.id===id), data);
+    toast('Moment updated ✅','ok');
+  } else {
+    const newId = Math.max(...DB.rawMoments.map(m=>m.id))+1;
+    DB.rawMoments.push({id:newId,...data});
+    toast('Moment added ✅','ok');
+  }
+  closeModal();
+  render();
+}
+
+function saveIdentity(id) {
+  const data = {icon:document.getElementById('ident-icon').value,type:document.getElementById('ident-type').value,description:document.getElementById('ident-desc').value,displayOrder:parseInt(document.getElementById('ident-order').value),isActive:document.getElementById('ident-active').checked};
+  if(id) {
+    Object.assign(DB.identityCards.find(c=>c.id===id),data);
+    toast('Card updated','ok');
+  } else {
+    const newId = Math.max(...DB.identityCards.map(c=>c.id))+1;
+    DB.identityCards.push({id:newId,...data});
+    toast('Card created','ok');
+  }
+  closeModal();
+  render();
+}
+
+function saveReview(id) {
+  const data = {
+    name: document.getElementById('rev-name').value,
+    location: document.getElementById('rev-loc').value,
+    tripLocation: document.getElementById('rev-trip').value,
+    rating: parseInt(document.getElementById('rev-rating').value),
+    reviewText: document.getElementById('rev-text').value,
+    profileImage: document.getElementById('rev-photo')?.value || ''
+  };
+  if(id) {
+    Object.assign(DB.reviews.find(r=>r.id===id), data);
+    toast('Review updated ✅','ok');
+  } else {
+    const newId = Math.max(...DB.reviews.map(r=>r.id))+1;
+    DB.reviews.push({id:newId,...data,isApproved:false,isFeatured:false,showOnHomepage:false,displayOrder:DB.reviews.length+1,createdAt:new Date().toISOString().split('T')[0]});
+    toast('Review added ✅','ok');
+  }
+  closeModal();
+  render();
+}
+
+function saveFaq(id) {
+  const data = {question:document.getElementById('faq-q').value,answer:document.getElementById('faq-a').value,category:document.getElementById('faq-cat').value,displayOrder:parseInt(document.getElementById('faq-order').value),isActive:document.getElementById('faq-active').checked};
+  if(id) {
+    Object.assign(DB.faqs.find(f=>f.id===id),data);
+    toast('FAQ updated','ok');
+  } else {
+    const newId = Math.max(...DB.faqs.map(f=>f.id))+1;
+    DB.faqs.push({id:newId,...data});
+    toast('FAQ created','ok');
+  }
+  closeModal();
+  render();
+}
+
+function saveTeam(id) {
+  const data = {name:document.getElementById('team-name').value,role:document.getElementById('team-role').value,bio:document.getElementById('team-bio').value,instagram:document.getElementById('team-ig').value,displayOrder:parseInt(document.getElementById('team-order').value),isActive:document.getElementById('team-active').checked};
+  if(id) {
+    Object.assign(DB.team.find(m=>m.id===id),data);
+    toast('Member updated','ok');
+  } else {
+    const newId = Math.max(...DB.team.map(m=>m.id))+1;
+    DB.team.push({id:newId,...data,photo:''});
+    toast('Member added','ok');
+  }
+  closeModal();
+  render();
+}
+
+function saveCareer(id) {
+  const data = {title:document.getElementById('job-title').value,department:document.getElementById('job-dept').value,location:document.getElementById('job-loc').value,type:document.getElementById('job-type').value,description:document.getElementById('job-desc').value,isOpen:document.getElementById('job-open').checked};
+  if(id) {
+    Object.assign(DB.careers.find(c=>c.id===id),data);
+    toast('Position updated','ok');
+  } else {
+    const newId = Math.max(...DB.careers.map(c=>c.id))+1;
+    DB.careers.push({id:newId,...data,requirements:[],createdAt:new Date().toISOString().split('T')[0]});
+    toast('Position added','ok');
+  }
+  closeModal();
+  render();
+}
+
+// ── DELETE FUNCTIONS ───────────────────────────────────────────────────
+function deleteTrip(id) { if(confirm('Delete this trip?')) { DB.trips=DB.trips.filter(t=>t.id!==id); toast('Trip deleted','ok'); render(); } }
+function deleteMoment(id) { if(confirm('Delete this location?')) { DB.rawMoments=DB.rawMoments.filter(m=>m.id!==id); toast('Location deleted','ok'); render(); } }
+function deleteIdentity(id) { if(confirm('Delete this card?')) { DB.identityCards=DB.identityCards.filter(c=>c.id!==id); toast('Card deleted','ok'); render(); } }
+function deleteReview(id) { if(confirm('Delete this review?')) { DB.reviews=DB.reviews.filter(r=>r.id!==id); toast('Review deleted','ok'); render(); } }
+function deleteImage(id) { DB.gallery=DB.gallery.filter(g=>g.id!==id); toast('Image removed','ok'); render(); }
+function deleteSugg(id) { if(confirm('Delete this suggestion?')) { DB.suggestions=DB.suggestions.filter(s=>s.id!==id); toast('Suggestion deleted','ok'); render(); } }
+function deleteFaq(id) { if(confirm('Delete this FAQ?')) { DB.faqs=DB.faqs.filter(f=>f.id!==id); toast('FAQ deleted','ok'); render(); } }
+function deleteTeam(id) { if(confirm('Delete this member?')) { DB.team=DB.team.filter(m=>m.id!==id); toast('Member deleted','ok'); render(); } }
+function deleteCareer(id) { if(confirm('Delete this position?')) { DB.careers=DB.careers.filter(c=>c.id!==id); toast('Position deleted','ok'); render(); } }
+
+// ── TOGGLE FUNCTIONS ───────────────────────────────────────────────────
+function toggleTrip(id,field,val) { DB.trips.find(t=>t.id===id)[field]=val; render(); }
+function toggleFeatured(id) { const img=DB.gallery.find(g=>g.id===id); img.isFeatured=!img.isFeatured; render(); }
+function toggleReviewApproval(id) { const r=DB.reviews.find(r=>r.id===id); r.isApproved=!r.isApproved; render(); }
+function toggleFaqActive(id,val) { DB.faqs.find(f=>f.id===id).isActive=val; render(); }
+function toggleMomentFeatured(id) { const m=DB.rawMoments.find(m=>m.id===id); m.isFeatured=!m.isFeatured; render(); }
+function toggleStar(id) { const s=DB.suggestions.find(s=>s.id===id); s.isStarred=!s.isStarred; render(); }
+function updateSuggStatus(id,status) { DB.suggestions.find(s=>s.id===id).status=status; render(); }
+
+// ── FILTER FUNCTIONS ───────────────────────────────────────────────────
+function setTripFilter(f) {
+  tripFilter=f; window._tripFilter=f;
+  document.getElementById('trips-tbody').innerHTML=buildTripsCards(DB.trips);
+  document.querySelectorAll('.tflt').forEach(b=>b.classList.toggle('tflt-on', b.textContent.trim().toLowerCase().replace(/ /g,'-')===f||(f==='all'&&b.textContent.trim()==='All')));
+}
+function filterTrips(q) {
+  const filtered=DB.trips.filter(t=>t.name.toLowerCase().includes(q.toLowerCase())||t.location.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('trips-tbody').innerHTML=buildTripsCards(filtered);
+}
+function filterSugg(s) { suggFilter=s; document.getElementById('sugg-grid').innerHTML=buildSuggCards(DB.suggestions); }
+function filterFaqs(c) { faqFilter=c; document.getElementById('faq-table').innerHTML=buildFaqTable(DB.faqs); }
+
+// ── APP ────────────────────────────────────────────────────────────────
+function buildApp() {
+  const content = {
+    dashboard:buildDashboard,
+    trips:buildTrips,
+    reviews:buildReviews,
+    media:buildMedia,
+    identity:buildIdentityCards,
+    suggestions:buildSuggestions,
+    faqs:buildFaqs,
+    team:buildTeam,
+    careers:buildCareers,
+    settings:buildSettings
+  };
+  return `
+    ${buildSidebar()}
+    <div class="main">
+      <div class="topbar">
+        <span style="font-weight:600;font-size:15px">Nomichi CMS v2</span>
+        <div style="margin-left:auto;font-size:13px;color:var(--mid)">Last sync: just now</div>
+      </div>
+      <div class="content">
+        ${(content[currentPage]||buildDashboard)()}
+      </div>
+    </div>`;
+}
+
+function navTo(page) { currentPage=page; render(); }
+function setMediaTab(tab) { mediaTab=tab; document.querySelector('.main .content').innerHTML=(buildMedia()); }
+function closeModal() { document.querySelector('.overlay')?.remove(); }
+function switchTab(tab) { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none'); event.target.classList.add('active'); document.getElementById('tab-'+tab).style.display='block'; }
+function uploadImage() { toast('Image upload not implemented in demo','ok'); }
+
+function attachEvents() {}
+
+// ── INIT ───────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>

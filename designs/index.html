@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nomichi CMS — Admin Panel</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rust: #C94B1A; --rust-d: #A83A12; --rust-l: #E85E2A;
+  --rust-tint: #FDF1EB; --rust-tint2: #FAE3D7;
+  --ink: #1A1814; --ink2: #2E2B26; --ink3: #4B4741;
+  --mid: #7C7670; --fog: #B0AAA2;
+  --line: #E9E5DF; --line2: #F2EFE9;
+  --bg: #FFFFFF; --bg2: #FAFAF7; --bg3: #F5F2EC;
+  --sidebar-w: 240px;
+  --green: #1A6B3A; --green-bg: #E4F5EC;
+  --red: #C0392B; --red-bg: #FDECEA;
+  --blue: #1A5276; --blue-bg: #EBF5FB;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Inter',sans-serif; background:var(--bg2); color:var(--ink); font-size:14px; }
+a { text-decoration:none; color:inherit; }
+button { font-family:'Inter',sans-serif; cursor:pointer; }
+input, textarea, select { font-family:'Inter',sans-serif; }
+
+/* ── Layout ── */
+.app { display:flex; min-height:100vh; }
+.sidebar {
+  width:var(--sidebar-w); background:var(--ink); color:#fff;
+  position:fixed; top:0; left:0; bottom:0; z-index:100;
+  display:flex; flex-direction:column; overflow-y:auto;
+}
+.main { margin-left:var(--sidebar-w); flex:1; display:flex; flex-direction:column; min-height:100vh; }
+.topbar {
+  height:60px; background:var(--bg); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; padding:0 28px; gap:16px;
+  position:sticky; top:0; z-index:50;
+}
+.content { flex:1; padding:28px; }
+
+/* ── Sidebar ── */
+.sb-brand {
+  padding:20px 20px 16px; border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex; align-items:center; gap:10px;
+}
+.sb-logo {
+  width:32px; height:32px; background:var(--rust); border-radius:8px;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:16px; color:#fff; flex-shrink:0;
+}
+.sb-brand-name { font-weight:700; font-size:16px; letter-spacing:-.02em; }
+.sb-brand-sub { font-size:10px; color:rgba(255,255,255,.4); text-transform:uppercase; letter-spacing:.08em; }
+.sb-nav { padding:12px 0; flex:1; }
+.sb-section { padding:8px 16px 4px; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:rgba(255,255,255,.3); }
+.sb-item {
+  display:flex; align-items:center; gap:10px; padding:10px 20px;
+  color:rgba(255,255,255,.65); cursor:pointer; transition:all .15s;
+  border-left:3px solid transparent; font-size:13.5px; font-weight:500;
+}
+.sb-item:hover { background:rgba(255,255,255,.06); color:#fff; }
+.sb-item.active { background:rgba(201,75,26,.2); color:#fff; border-left-color:var(--rust); }
+.sb-item svg { flex-shrink:0; opacity:.7; }
+.sb-item.active svg { opacity:1; }
+.sb-badge {
+  margin-left:auto; background:var(--rust); color:#fff;
+  font-size:10px; font-weight:700; padding:2px 6px; border-radius:100px;
+}
+.sb-footer { padding:16px 20px; border-top:1px solid rgba(255,255,255,.08); }
+.sb-user { font-size:12px; color:rgba(255,255,255,.5); }
+.sb-user strong { display:block; color:rgba(255,255,255,.85); font-size:13px; }
+
+/* ── Buttons ── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; border:none; cursor:pointer; transition:all .15s; }
+.btn-primary { background:var(--rust); color:#fff; }
+.btn-primary:hover { background:var(--rust-d); }
+.btn-secondary { background:var(--bg3); color:var(--ink2); border:1px solid var(--line); }
+.btn-secondary:hover { background:var(--line); }
+.btn-danger { background:var(--red-bg); color:var(--red); border:1px solid #f5c6c6; }
+.btn-danger:hover { background:#f5c6c6; }
+.btn-success { background:var(--green-bg); color:var(--green); }
+.btn-sm { padding:6px 12px; font-size:12px; }
+.btn-icon { padding:7px; border-radius:7px; background:var(--bg3); border:1px solid var(--line); color:var(--ink3); }
+.btn-icon:hover { background:var(--line); }
+
+/* ── Cards ── */
+.card { background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:20px; }
+.card-title { font-size:15px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+.card-sub { font-size:12px; color:var(--mid); }
+
+/* ── Stats Grid ── */
+.stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.stat-card { background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:20px; }
+.stat-num { font-size:32px; font-weight:700; color:var(--ink); letter-spacing:-.03em; }
+.stat-label { font-size:12px; color:var(--mid); font-weight:500; margin-top:4px; }
+.stat-badge { display:inline-block; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; margin-top:8px; }
+
+/* ── Table ── */
+.table-wrap { background:var(--bg); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.table-header { padding:16px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.table-title { font-size:15px; font-weight:700; }
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; padding:11px 16px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--mid); background:var(--bg2); border-bottom:1px solid var(--line); }
+td { padding:13px 16px; border-bottom:1px solid var(--line2); font-size:13px; vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--bg2); }
+.td-actions { display:flex; gap:6px; }
+.trip-thumb { width:44px; height:34px; border-radius:6px; object-fit:cover; background:var(--bg3); flex-shrink:0; }
+.trip-img-placeholder { width:44px; height:34px; border-radius:6px; background:var(--bg3); display:flex; align-items:center; justify-content:center; font-size:18px; }
+
+/* ── Badges / Pills ── */
+.pill { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:100px; font-size:11px; font-weight:600; }
+.pill-green { background:var(--green-bg); color:var(--green); }
+.pill-red { background:var(--red-bg); color:var(--red); }
+.pill-rust { background:var(--rust-tint2); color:var(--rust); }
+.pill-blue { background:var(--blue-bg); color:var(--blue); }
+.pill-gray { background:var(--bg3); color:var(--mid); }
+
+/* ── Toggle Switch ── */
+.toggle { position:relative; width:36px; height:20px; display:inline-block; cursor:pointer; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-track { position:absolute; inset:0; background:var(--line); border-radius:100px; transition:background .2s; }
+.toggle input:checked + .toggle-track { background:var(--rust); }
+.toggle-thumb { position:absolute; width:14px; height:14px; background:#fff; border-radius:50%; top:3px; left:3px; transition:transform .2s; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+.toggle input:checked ~ .toggle-thumb { transform:translateX(16px); }
+
+/* ── Forms ── */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.form-grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.form-full { grid-column: 1 / -1; }
+.field { display:flex; flex-direction:column; gap:5px; }
+.field label { font-size:12px; font-weight:700; color:var(--ink3); letter-spacing:.04em; text-transform:uppercase; }
+.field input, .field select, .field textarea {
+  padding:10px 13px; border:1.5px solid var(--line); border-radius:8px;
+  font-size:14px; color:var(--ink); background:var(--bg);
+  outline:none; transition:border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color:var(--rust); }
+.field textarea { resize:vertical; min-height:90px; line-height:1.6; }
+.field-hint { font-size:11px; color:var(--mid); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:500;
+  display:flex; align-items:flex-start; justify-content:center;
+  padding:40px 20px; overflow-y:auto; backdrop-filter:blur(3px);
+}
+.modal {
+  background:var(--bg); border-radius:16px; width:100%; max-width:780px;
+  box-shadow:0 20px 60px rgba(0,0,0,.2); position:relative;
+}
+.modal-wide { max-width:1000px; }
+.modal-header {
+  padding:20px 24px; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-title { font-size:17px; font-weight:700; }
+.modal-body { padding:24px; }
+.modal-footer {
+  padding:16px 24px; border-top:1px solid var(--line);
+  display:flex; justify-content:flex-end; gap:10px;
+}
+.modal-close { background:var(--bg3); border:1px solid var(--line); border-radius:7px; padding:6px 10px; font-size:18px; line-height:1; cursor:pointer; color:var(--mid); }
+.modal-close:hover { color:var(--ink); }
+
+/* ── Section tabs ── */
+.tabs { display:flex; gap:2px; padding:4px; background:var(--bg3); border-radius:10px; width:fit-content; margin-bottom:20px; }
+.tab { padding:8px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; color:var(--mid); transition:all .15s; border:none; background:none; }
+.tab.active { background:var(--bg); color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.08); }
+
+/* ── Search / Filter bar ── */
+.filter-bar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.search-input {
+  padding:9px 13px; border:1.5px solid var(--line); border-radius:8px;
+  font-size:13px; outline:none; min-width:220px; color:var(--ink);
+}
+.search-input:focus { border-color:var(--rust); }
+
+/* ── Dynamic list builder ── */
+.list-builder { display:flex; flex-direction:column; gap:8px; }
+.list-item-row { display:flex; gap:8px; align-items:center; }
+.list-item-input { flex:1; padding:9px 12px; border:1.5px solid var(--line); border-radius:7px; font-size:13px; outline:none; }
+.list-item-input:focus { border-color:var(--rust); }
+.list-remove { padding:7px 10px; border:none; background:var(--red-bg); color:var(--red); border-radius:7px; cursor:pointer; font-size:14px; flex-shrink:0; }
+.list-add { align-self:flex-start; margin-top:4px; }
+
+/* ── Itinerary builder ── */
+.itin-day { border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:10px; }
+.itin-day-header { background:var(--bg3); padding:12px 16px; display:flex; align-items:center; gap:10px; cursor:pointer; }
+.itin-day-num { background:var(--rust); color:#fff; font-size:11px; font-weight:800; padding:3px 9px; border-radius:6px; flex-shrink:0; }
+.itin-day-title { font-weight:600; font-size:13px; flex:1; }
+.itin-day-body { padding:16px; display:flex; flex-direction:column; gap:10px; }
+
+/* ── Upload zone ── */
+.upload-zone {
+  border:2px dashed var(--line); border-radius:12px; padding:32px 20px;
+  text-align:center; cursor:pointer; transition:all .15s; background:var(--bg2);
+}
+.upload-zone:hover { border-color:var(--rust); background:var(--rust-tint); }
+.upload-zone input { display:none; }
+.upload-preview { display:grid; grid-template-columns:repeat(auto-fill,minmax(100px,1fr)); gap:10px; margin-top:12px; }
+.upload-thumb { position:relative; border-radius:8px; overflow:hidden; background:var(--bg3); }
+.upload-thumb img { width:100%; height:80px; object-fit:cover; display:block; }
+.upload-thumb-remove { position:absolute; top:4px; right:4px; background:rgba(0,0,0,.6); color:#fff; border:none; border-radius:50%; width:20px; height:20px; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+/* ── Gallery grid ── */
+.gallery-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:12px; }
+.gallery-item { border-radius:10px; overflow:hidden; background:var(--bg3); position:relative; cursor:pointer; border:2px solid transparent; }
+.gallery-item.selected { border-color:var(--rust); }
+.gallery-item img { width:100%; height:110px; object-fit:cover; display:block; }
+.gallery-item-info { padding:8px 10px; }
+.gallery-item-meta { font-size:11px; color:var(--mid); }
+.gallery-item-actions { position:absolute; top:6px; right:6px; display:flex; gap:4px; }
+.gallery-action-btn { background:rgba(0,0,0,.55); color:#fff; border:none; border-radius:5px; padding:4px 7px; font-size:11px; cursor:pointer; }
+
+/* ── Review card ── */
+.review-card { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:16px; }
+.review-stars { color:#F4A100; font-size:13px; margin-bottom:6px; }
+.review-text { font-size:13px; line-height:1.65; color:var(--ink3); margin-bottom:10px; }
+.review-author { display:flex; align-items:center; gap:8px; }
+.review-avatar { width:32px; height:32px; border-radius:50%; object-fit:cover; background:var(--bg3); font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.review-name { font-size:12px; font-weight:600; }
+.review-meta { font-size:11px; color:var(--mid); }
+
+/* ── Suggestion card ── */
+.sugg-card { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:16px; }
+.sugg-card.sugg-new { border-left:3px solid var(--rust); }
+.sugg-field { display:flex; gap:6px; margin-bottom:6px; font-size:13px; }
+.sugg-label { color:var(--mid); min-width:90px; font-weight:500; }
+
+/* ── Login screen ── */
+.login-wrap { min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--bg2); }
+.login-card { background:var(--bg); border:1px solid var(--line); border-radius:16px; padding:40px; width:100%; max-width:400px; box-shadow:0 8px 40px rgba(0,0,0,.08); }
+.login-logo { display:flex; align-items:center; gap:10px; margin-bottom:28px; }
+.login-title { font-size:22px; font-weight:700; letter-spacing:-.03em; }
+.login-sub { font-size:13px; color:var(--mid); margin-bottom:24px; }
+
+/* ── Toast ── */
+.toast-wrap { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
+.toast {
+  background:var(--ink); color:#fff; padding:12px 18px; border-radius:10px;
+  font-size:13px; font-weight:500; box-shadow:0 4px 20px rgba(0,0,0,.2);
+  display:flex; align-items:center; gap:8px; max-width:320px;
+  animation:toastIn .25s ease;
+}
+.toast.success { background:#1A6B3A; }
+.toast.error { background:#C0392B; }
+@keyframes toastIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+/* ── Misc ── */
+.section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:12px; }
+.section-title { font-size:20px; font-weight:700; letter-spacing:-.02em; }
+.section-sub { font-size:13px; color:var(--mid); }
+.empty-state { text-align:center; padding:48px 20px; color:var(--mid); }
+.empty-icon { font-size:42px; margin-bottom:12px; }
+.divider { border:none; border-top:1px solid var(--line); margin:20px 0; }
+.text-rust { color:var(--rust); }
+.text-mid { color:var(--mid); }
+.fw-700 { font-weight:700; }
+.tag { display:inline-block; padding:3px 8px; background:var(--bg3); border-radius:5px; font-size:11px; font-weight:600; color:var(--ink3); margin:2px; }
+.loading { display:flex; align-items:center; justify-content:center; padding:48px; color:var(--mid); gap:10px; }
+.spinner { width:18px; height:18px; border:2px solid var(--line); border-top-color:var(--rust); border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+// ── CONFIG ──────────────────────────────────────────────────────────
+const API = window.NOMICHI_API_URL || 'http://localhost:5000/api';
+
+// ── API Helper ──────────────────────────────────────────────────────
+async function apiCall(method, path, body = null, isFormData = false) {
+  const token = localStorage.getItem('nomichi_token');
+  const opts = {
+    method,
+    headers: { Authorization: token ? `Bearer ${token}` : '' }
+  };
+  if (body && !isFormData) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  } else if (body && isFormData) {
+    opts.body = body; // FormData — no Content-Type header needed
+  }
+  const res = await fetch(`${API}${path}`, opts);
+  const data = await res.json();
+  if (!data.success) throw new Error(data.message || 'Request failed');
+  return data;
+}
+
+// ── Toast System ────────────────────────────────────────────────────
+let _toastSetter = null;
+function useToasts() {
+  const [toasts, setToasts] = useState([]);
+  _toastSetter = setToasts;
+  return toasts;
+}
+function toast(msg, type = 'success') {
+  if (!_toastSetter) return;
+  const id = Date.now();
+  _toastSetter(prev => [...prev, { id, msg, type }]);
+  setTimeout(() => _toastSetter(prev => prev.filter(t => t.id !== id)), 3200);
+}
+
+// ── Icons (inline SVG) ───────────────────────────────────────────────
+const Icon = ({ name, size = 16 }) => {
+  const icons = {
+    dashboard: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+    trips: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.5 8 13 8 13s8-7.5 8-13a8 8 0 0 0-8-8z"/></svg>,
+    reviews: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    gallery: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+    suggestions: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+    settings: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+    plus: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    edit: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+    trash: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>,
+    check: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>,
+    eye: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+    logout: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    star: <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    upload: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>,
+    image: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  };
+  return icons[name] || null;
+};
+
+// ── Toggle Component ─────────────────────────────────────────────────
+const Toggle = ({ checked, onChange }) => (
+  <label className="toggle" onClick={e => e.stopPropagation()}>
+    <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
+    <div className="toggle-track" />
+    <div className="toggle-thumb" />
+  </label>
+);
+
+// ── List Builder ─────────────────────────────────────────────────────
+const ListBuilder = ({ items = [], onChange, placeholder = 'Add item...' }) => {
+  const add = () => onChange([...items, '']);
+  const update = (i, v) => { const arr = [...items]; arr[i] = v; onChange(arr); };
+  const remove = (i) => onChange(items.filter((_, idx) => idx !== i));
+  return (
+    <div className="list-builder">
+      {items.map((item, i) => (
+        <div className="list-item-row" key={i}>
+          <input className="list-item-input" value={item} onChange={e => update(i, e.target.value)} placeholder={placeholder} />
+          <button className="list-remove" onClick={() => remove(i)}>×</button>
+        </div>
+      ))}
+      <button className="btn btn-secondary btn-sm list-add" onClick={add}>+ Add</button>
+    </div>
+  );
+};
+
+// ── Itinerary Builder ────────────────────────────────────────────────
+const ItineraryBuilder = ({ itinerary = [], onChange }) => {
+  const addDay = () => onChange([...itinerary, { day: itinerary.length + 1, title: '', description: '', meals: '', accommodation: '' }]);
+  const updateDay = (i, field, val) => {
+    const arr = [...itinerary];
+    arr[i] = { ...arr[i], [field]: val };
+    onChange(arr);
+  };
+  const removeDay = (i) => {
+    const arr = itinerary.filter((_, idx) => idx !== i).map((d, idx) => ({ ...d, day: idx + 1 }));
+    onChange(arr);
+  };
+  return (
+    <div>
+      {itinerary.map((day, i) => (
+        <div className="itin-day" key={i}>
+          <div className="itin-day-header">
+            <span className="itin-day-num">Day {day.day}</span>
+            <input className="list-item-input" style={{flex:1,marginRight:8}} value={day.title} onChange={e => updateDay(i, 'title', e.target.value)} placeholder="Day title..." />
+            <button className="list-remove" onClick={() => removeDay(i)}>×</button>
+          </div>
+          <div className="itin-day-body">
+            <textarea rows="3" className="list-item-input" value={day.description} onChange={e => updateDay(i, 'description', e.target.value)} placeholder="Description..." style={{width:'100%'}} />
+            <div className="form-grid">
+              <input className="list-item-input" value={day.meals} onChange={e => updateDay(i, 'meals', e.target.value)} placeholder="Meals (e.g. Breakfast + Dinner)" />
+              <input className="list-item-input" value={day.accommodation} onChange={e => updateDay(i, 'accommodation', e.target.value)} placeholder="Accommodation" />
+            </div>
+          </div>
+        </div>
+      ))}
+      <button className="btn btn-secondary btn-sm" onClick={addDay}>+ Add Day</button>
+    </div>
+  );
+};
+
+// ── Stars ────────────────────────────────────────────────────────────
+const Stars = ({ rating }) => '★'.repeat(rating) + '☆'.repeat(5 - rating);
+
+// ── LOGIN PAGE ────────────────────────────────────────────────────────
+const LoginPage = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setLoading(true); setError('');
+    try {
+      const data = await apiCall('POST', '/auth/login', { email, password });
+      localStorage.setItem('nomichi_token', data.token);
+      localStorage.setItem('nomichi_admin', JSON.stringify(data.admin));
+      onLogin(data.admin);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="login-wrap">
+      <div className="login-card">
+        <div className="login-logo">
+          <div className="sb-logo">N</div>
+          <div>
+            <div style={{fontWeight:800,fontSize:18,letterSpacing:'-.02em'}}>Nomichi CMS</div>
+            <div style={{fontSize:11,color:'var(--mid)'}}>Admin Panel</div>
+          </div>
+        </div>
+        <p className="login-sub">Sign in to manage your travel website</p>
+        <form onSubmit={handleSubmit}>
+          <div className="field" style={{marginBottom:12}}>
+            <label>Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@nomichi.com" required />
+          </div>
+          <div className="field" style={{marginBottom:20}}>
+            <label>Password</label>
+            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+          </div>
+          {error && <div style={{background:'var(--red-bg)',color:'var(--red)',padding:'10px 14px',borderRadius:8,fontSize:13,marginBottom:14}}>{error}</div>}
+          <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',padding:'12px'}} disabled={loading}>
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────
+const Dashboard = ({ onNav }) => {
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    apiCall('GET', '/admin/dashboard').then(d => { setStats(d); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div className="loading"><div className="spinner"/><span>Loading...</span></div>;
+  if (!stats) return <div className="empty-state"><div className="empty-icon">⚠️</div><p>Could not load dashboard. Is the backend running?</p></div>;
+
+  const { totalTrips, activeTrips, featuredTrips, totalReviews, pendingReviews, totalImages, newSuggestions } = stats.stats;
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Dashboard</div><div className="section-sub">Welcome back — here's what's happening</div></div>
+      </div>
+      <div className="stats-grid">
+        <div className="stat-card" onClick={() => onNav('trips')} style={{cursor:'pointer'}}>
+          <div style={{fontSize:28,marginBottom:8}}>🗺</div>
+          <div className="stat-num">{totalTrips}</div>
+          <div className="stat-label">Total Trips</div>
+          <div className="stat-badge pill pill-green">{activeTrips} active</div>
+        </div>
+        <div className="stat-card" onClick={() => onNav('reviews')} style={{cursor:'pointer'}}>
+          <div style={{fontSize:28,marginBottom:8}}>⭐</div>
+          <div className="stat-num">{totalReviews}</div>
+          <div className="stat-label">Reviews</div>
+          {pendingReviews > 0 && <div className="stat-badge pill pill-rust">{pendingReviews} pending</div>}
+        </div>
+        <div className="stat-card" onClick={() => onNav('gallery')} style={{cursor:'pointer'}}>
+          <div style={{fontSize:28,marginBottom:8}}>🖼</div>
+          <div className="stat-num">{totalImages}</div>
+          <div className="stat-label">Gallery Images</div>
+        </div>
+        <div className="stat-card" onClick={() => onNav('suggestions')} style={{cursor:'pointer'}}>
+          <div style={{fontSize:28,marginBottom:8}}>💬</div>
+          <div className="stat-num">{stats.stats.totalSuggestions}</div>
+          <div className="stat-label">Suggestions</div>
+          {newSuggestions > 0 && <div className="stat-badge pill pill-rust">{newSuggestions} new</div>}
+        </div>
+      </div>
+
+      <div className="table-wrap">
+        <div className="table-header">
+          <span className="table-title">Recent Trips</span>
+          <button className="btn btn-primary btn-sm" onClick={() => onNav('trips')}><Icon name="plus" size={14}/>Add Trip</button>
+        </div>
+        <table>
+          <thead><tr><th>Trip</th><th>Location</th><th>Active</th><th>Featured</th><th>Added</th></tr></thead>
+          <tbody>
+            {(stats.recentTrips || []).map(t => (
+              <tr key={t._id}>
+                <td><strong>{t.name}</strong></td>
+                <td style={{color:'var(--mid)'}}>{t.location}</td>
+                <td><span className={`pill ${t.isActive ? 'pill-green' : 'pill-gray'}`}>{t.isActive ? 'Active' : 'Inactive'}</span></td>
+                <td><span className={`pill ${t.isFeatured ? 'pill-rust' : 'pill-gray'}`}>{t.isFeatured ? 'Featured' : '—'}</span></td>
+                <td style={{color:'var(--mid)'}}>{new Date(t.createdAt).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ── TRIP FORM MODAL ────────────────────────────────────────────────────
+const TripFormModal = ({ trip, onClose, onSaved }) => {
+  const isEdit = !!trip?._id;
+  const [tab, setTab] = useState('basic');
+  const [form, setForm] = useState({
+    name: '', slug: '', location: '', country: 'India', flag: '🇮🇳',
+    'duration.days': 7, 'duration.nights': 6,
+    basePrice: '', originalPrice: '',
+    tripType: 'community', tags: '', month: 'flex',
+    totalSlots: 16, overview: '', ctaLabel: 'Book This Trip',
+    isActive: true, isFeatured: false, isVisible: true, showOnHomepage: false,
+    metaTitle: '', metaDescription: '',
+    ...trip
+  });
+  const [highlights, setHighlights] = useState(trip?.highlights || []);
+  const [inclusions, setInclusions] = useState(trip?.inclusions || []);
+  const [exclusions, setExclusions] = useState(trip?.exclusions || []);
+  const [itinerary, setItinerary] = useState(trip?.itinerary || []);
+  const [coverFile, setCoverFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  // Auto-slug from name
+  const autoSlug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      const payload = {
+        ...form,
+        duration: { days: parseInt(form['duration.days']), nights: parseInt(form['duration.nights']) },
+        highlights, inclusions, exclusions, itinerary
+      };
+      // Remove flat keys used only in form state
+      delete payload['duration.days']; delete payload['duration.nights'];
+
+      for (const [k, v] of Object.entries(payload)) {
+        if (Array.isArray(v)) fd.append(k, JSON.stringify(v));
+        else if (v !== null && v !== undefined) fd.append(k, v);
+      }
+      if (coverFile) fd.append('coverImage', coverFile);
+
+      let res;
+      if (isEdit) {
+        res = await fetch(`${API}/trips/admin/${trip._id}`, {
+          method: 'PUT', headers: { Authorization: `Bearer ${localStorage.getItem('nomichi_token')}` }, body: fd
+        });
+      } else {
+        res = await fetch(`${API}/trips/admin`, {
+          method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('nomichi_token')}` }, body: fd
+        });
+      }
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      toast(isEdit ? 'Trip updated!' : 'Trip created!');
+      onSaved(data.trip);
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal modal-wide">
+        <div className="modal-header">
+          <span className="modal-title">{isEdit ? `Edit: ${trip.name}` : 'Add New Trip'}</span>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body" style={{padding:'20px 24px 0'}}>
+          <div className="tabs">
+            {['basic','details','itinerary','inclusions','settings'].map(t => (
+              <button key={t} className={`tab ${tab===t?'active':''}`} onClick={() => setTab(t)} style={{textTransform:'capitalize'}}>{t}</button>
+            ))}
+          </div>
+
+          {tab === 'basic' && (
+            <div className="form-grid">
+              <div className="field form-full">
+                <label>Trip Name *</label>
+                <input value={form.name} onChange={e => { set('name', e.target.value); if (!isEdit) set('slug', autoSlug(e.target.value)); }} placeholder="e.g. Ladakh Expedition" />
+              </div>
+              <div className="field">
+                <label>Slug *</label>
+                <input value={form.slug} onChange={e => set('slug', e.target.value.toLowerCase().replace(/\s+/g,'-'))} placeholder="e.g. ladakh" />
+                <span className="field-hint">URL: /trip/{form.slug || 'slug'}</span>
+              </div>
+              <div className="field">
+                <label>Location *</label>
+                <input value={form.location} onChange={e => set('location', e.target.value)} placeholder="e.g. Ladakh, India" />
+              </div>
+              <div className="field">
+                <label>Trip Type *</label>
+                <select value={form.tripType} onChange={e => set('tripType', e.target.value)}>
+                  <option value="community">Join a Trip (Community Group)</option>
+                  <option value="exclusive">Beyond Ordinary (Invite-Only)</option>
+                  <option value="custom">Signature Journeys (Honeymoon / Milestone)</option>
+                </select>
+              </div>
+              <div className="field">
+                <label>Flag Emoji</label>
+                <input value={form.flag} onChange={e => set('flag', e.target.value)} placeholder="🇮🇳" />
+              </div>
+              <div className="field">
+                <label>Duration — Days</label>
+                <input type="number" min="1" value={form['duration.days']} onChange={e => set('duration.days', e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Duration — Nights</label>
+                <input type="number" min="0" value={form['duration.nights']} onChange={e => set('duration.nights', e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Base Price (₹)</label>
+                <input type="number" value={form.basePrice} onChange={e => set('basePrice', e.target.value)} placeholder="58000" />
+              </div>
+              <div className="field">
+                <label>Original Price (strikethrough)</label>
+                <input type="number" value={form.originalPrice} onChange={e => set('originalPrice', e.target.value)} placeholder="68000" />
+              </div>
+              <div className="field">
+                <label>Total Slots</label>
+                <input type="number" min="1" value={form.totalSlots} onChange={e => set('totalSlots', e.target.value)} />
+              </div>
+              <div className="field">
+                <label>Month Tag (for filtering)</label>
+                <select value={form.month} onChange={e => set('month', e.target.value)}>
+                  {['flex','jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="field form-full">
+                <label>Tags (comma separated)</label>
+                <input value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="adventure, mountains, high-altitude" />
+              </div>
+              <div className="field form-full">
+                <label>Cover Image</label>
+                <input type="file" accept="image/*" onChange={e => setCoverFile(e.target.files[0])} style={{padding:'8px'}} />
+                {(form.coverImage && !coverFile) && <img src={form.coverImage} alt="" style={{marginTop:8,height:80,borderRadius:8,objectFit:'cover'}} />}
+              </div>
+              <div className="field form-full">
+                <label>CTA Button Label</label>
+                <input value={form.ctaLabel} onChange={e => set('ctaLabel', e.target.value)} placeholder="Book This Trip" />
+              </div>
+            </div>
+          )}
+
+          {tab === 'details' && (
+            <div>
+              <div className="field" style={{marginBottom:16}}>
+                <label>Overview</label>
+                <textarea value={form.overview} onChange={e => set('overview', e.target.value)} rows="5" placeholder="Trip overview..." />
+              </div>
+              <div className="field">
+                <label>Highlights</label>
+                <ListBuilder items={highlights} onChange={setHighlights} placeholder="Add highlight..." />
+              </div>
+            </div>
+          )}
+
+          {tab === 'itinerary' && (
+            <div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+                <div style={{fontSize:13,color:'var(--mid)'}}>Build the day-by-day itinerary</div>
+              </div>
+              <ItineraryBuilder itinerary={itinerary} onChange={setItinerary} />
+            </div>
+          )}
+
+          {tab === 'inclusions' && (
+            <div className="form-grid">
+              <div className="field">
+                <label>✅ Inclusions</label>
+                <ListBuilder items={inclusions} onChange={setInclusions} placeholder="What's included..." />
+              </div>
+              <div className="field">
+                <label>❌ Exclusions</label>
+                <ListBuilder items={exclusions} onChange={setExclusions} placeholder="What's not included..." />
+              </div>
+            </div>
+          )}
+
+          {tab === 'settings' && (
+            <div className="form-grid">
+              <div className="field" style={{flexDirection:'row',alignItems:'center',gap:12}}>
+                <label style={{margin:0}}>Active</label>
+                <Toggle checked={form.isActive} onChange={v => set('isActive', v)} />
+              </div>
+              <div className="field" style={{flexDirection:'row',alignItems:'center',gap:12}}>
+                <label style={{margin:0}}>Featured</label>
+                <Toggle checked={form.isFeatured} onChange={v => set('isFeatured', v)} />
+              </div>
+              <div className="field" style={{flexDirection:'row',alignItems:'center',gap:12}}>
+                <label style={{margin:0}}>Visible on site</label>
+                <Toggle checked={form.isVisible} onChange={v => set('isVisible', v)} />
+              </div>
+              <div className="field" style={{flexDirection:'row',alignItems:'center',gap:12}}>
+                <label style={{margin:0}}>Show on Homepage</label>
+                <Toggle checked={form.showOnHomepage} onChange={v => set('showOnHomepage', v)} />
+              </div>
+              <div className="field form-full">
+                <label>Meta Title (SEO)</label>
+                <input value={form.metaTitle} onChange={e => set('metaTitle', e.target.value)} placeholder="Ladakh Expedition | Nomichi" />
+              </div>
+              <div className="field form-full">
+                <label>Meta Description (SEO)</label>
+                <textarea value={form.metaDescription} onChange={e => set('metaDescription', e.target.value)} rows="3" placeholder="Short description for Google..." />
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
+            {loading ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Trip')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── TRIPS PAGE ─────────────────────────────────────────────────────────
+const TripsPage = () => {
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(null); // null | 'add' | trip object
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all');
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { const d = await apiCall('GET', '/trips/admin/all'); setTrips(d.trips); } catch {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const deleteTrip = async (id, name) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try { await apiCall('DELETE', `/trips/admin/${id}`); toast('Trip deleted'); load(); } catch (e) { toast(e.message, 'error'); }
+  };
+
+  const toggle = async (id, field) => {
+    try { const d = await apiCall('PATCH', `/trips/admin/${id}/toggle`, { field }); setTrips(p => p.map(t => t._id === id ? { ...t, [field]: d.value } : t)); } catch (e) { toast(e.message, 'error'); }
+  };
+
+  const filtered = trips.filter(t => {
+    const matchSearch = !search || t.name.toLowerCase().includes(search.toLowerCase()) || t.location.toLowerCase().includes(search.toLowerCase());
+    const matchType = typeFilter === 'all' || t.tripType === typeFilter;
+    return matchSearch && matchType;
+  });
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Trips</div><div className="section-sub">{trips.length} total</div></div>
+        <button className="btn btn-primary" onClick={() => setModal('add')}><Icon name="plus" size={14}/>New Trip</button>
+      </div>
+      <div className="filter-bar">
+        <input className="search-input" placeholder="Search trips..." value={search} onChange={e => setSearch(e.target.value)} />
+        {[
+          {val:'all', label:'All'},
+          {val:'community', label:'Join a Trip'},
+          {val:'exclusive', label:'Beyond Ordinary'},
+          {val:'custom', label:'Signature Journeys'}
+        ].map(({val, label}) => (
+          <button key={val} className={`btn ${typeFilter===val?'btn-primary':'btn-secondary'} btn-sm`} onClick={() => setTypeFilter(val)}>{label}</button>
+        ))}
+      </div>
+
+      {loading ? <div className="loading"><div className="spinner"/>Loading...</div> : (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Trip</th><th>Type</th><th>Price</th><th>Slots</th><th>Active</th><th>Featured</th><th>Homepage</th><th>Actions</th></tr>
+            </thead>
+            <tbody>
+              {filtered.map(t => (
+                <tr key={t._id}>
+                  <td>
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      {t.coverImage ? <img className="trip-thumb" src={t.coverImage} alt="" /> : <div className="trip-img-placeholder">{t.flag||'🗺'}</div>}
+                      <div>
+                        <div style={{fontWeight:600}}>{t.name}</div>
+                        <div style={{fontSize:11,color:'var(--mid)'}}>/trip/{t.slug}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><span className={`pill ${t.tripType==='exclusive'?'pill-rust':t.tripType==='custom'?'pill-blue':'pill-green'}`}>{t.tripType==='exclusive'?'Beyond Ordinary':t.tripType==='custom'?'Signature':t.tripType==='community'?'Join a Trip':t.tripType}</span></td>
+                  <td><strong style={{color:'var(--rust)'}}>₹{t.basePrice?.toLocaleString()}</strong></td>
+                  <td><span style={{fontSize:12}}>{t.bookedSlots||0}/{t.totalSlots} booked</span></td>
+                  <td><Toggle checked={t.isActive} onChange={() => toggle(t._id,'isActive')} /></td>
+                  <td><Toggle checked={t.isFeatured} onChange={() => toggle(t._id,'isFeatured')} /></td>
+                  <td><Toggle checked={t.showOnHomepage} onChange={() => toggle(t._id,'showOnHomepage')} /></td>
+                  <td>
+                    <div className="td-actions">
+                      <button className="btn btn-icon btn-sm" title="Edit" onClick={() => setModal(t)}><Icon name="edit" size={14}/></button>
+                      <button className="btn btn-danger btn-sm" title="Delete" onClick={() => deleteTrip(t._id, t.name)}><Icon name="trash" size={14}/></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && <tr><td colSpan="8"><div className="empty-state"><div className="empty-icon">🗺</div><p>No trips found</p></div></td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {modal && (
+        <TripFormModal
+          trip={modal === 'add' ? null : modal}
+          onClose={() => setModal(null)}
+          onSaved={() => { setModal(null); load(); }}
+        />
+      )}
+    </div>
+  );
+};
+
+// ── REVIEWS PAGE ────────────────────────────────────────────────────────
+const ReviewFormModal = ({ review, onClose, onSaved }) => {
+  const isEdit = !!review?._id;
+  const [form, setForm] = useState({ name:'', location:'', tripLocation:'', rating:5, reviewText:'', isApproved:true, isFeatured:false, showOnHomepage:false, displayOrder:0, ...review });
+  const [imageFile, setImageFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      Object.entries(form).forEach(([k,v]) => { if (v !== null && v !== undefined) fd.append(k, v); });
+      if (imageFile) fd.append('profileImage', imageFile);
+      const url = isEdit ? `/reviews/admin/${review._id}` : '/reviews/admin';
+      const method = isEdit ? 'PUT' : 'POST';
+      const res = await fetch(`${API}${url}`, { method, headers: { Authorization: `Bearer ${localStorage.getItem('nomichi_token')}` }, body: fd });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      toast(isEdit ? 'Review updated!' : 'Review created!');
+      onSaved();
+    } catch(e) { toast(e.message,'error'); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-header">
+          <span className="modal-title">{isEdit ? 'Edit Review' : 'Add Review'}</span>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="modal-body">
+          <div className="form-grid">
+            <div className="field"><label>Reviewer Name *</label><input value={form.name} onChange={e => set('name',e.target.value)} placeholder="Priya Sharma" /></div>
+            <div className="field"><label>Reviewer Location</label><input value={form.location} onChange={e => set('location',e.target.value)} placeholder="Mumbai" /></div>
+            <div className="field"><label>Trip Location *</label><input value={form.tripLocation} onChange={e => set('tripLocation',e.target.value)} placeholder="Ladakh" /></div>
+            <div className="field">
+              <label>Rating *</label>
+              <select value={form.rating} onChange={e => set('rating', parseInt(e.target.value))}>
+                {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} Star{r!==1?'s':''}</option>)}
+              </select>
+            </div>
+            <div className="field form-full"><label>Review Text *</label><textarea value={form.reviewText} onChange={e => set('reviewText',e.target.value)} rows="4" placeholder="Write the review..." /></div>
+            <div className="field form-full"><label>Profile Photo</label><input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} style={{padding:8}} /></div>
+            <div className="field" style={{flexDirection:'row',alignItems:'center',gap:12}}><label style={{margin:0}}>Approved</label><Toggle checked={form.isApproved} onChange={v => set('isApproved',v)} /></div>
+            <div className="field" style={{flexDirection:'row',alignItems:'center',gap:12}}><label style={{margin:0}}>Featured</label><Toggle checked={form.isFeatured} onChange={v => set('isFeatured',v)} /></div>
+            <div className="field" style={{flexDirection:'row',alignItems:'center',gap:12}}><label style={{margin:0}}>Show on Homepage</label><Toggle checked={form.showOnHomepage} onChange={v => set('showOnHomepage',v)} /></div>
+            <div className="field"><label>Display Order</label><input type="number" value={form.displayOrder} onChange={e => set('displayOrder',parseInt(e.target.value)||0)} /></div>
+          </div>
+        </div>
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSave} disabled={loading}>{loading?'Saving...':isEdit?'Save Changes':'Add Review'}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ReviewsPage = () => {
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { const d = await apiCall('GET', '/reviews/admin/all'); setReviews(d.reviews); } catch {}
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const deleteReview = async (id) => {
+    if (!confirm('Delete this review?')) return;
+    try { await apiCall('DELETE', `/reviews/admin/${id}`); toast('Deleted'); load(); } catch(e) { toast(e.message,'error'); }
+  };
+
+  const toggleApprove = async (id) => {
+    try { const d = await apiCall('PATCH', `/reviews/admin/${id}/approve`); setReviews(p => p.map(r => r._id===id ? {...r, isApproved: d.isApproved} : r)); } catch(e) { toast(e.message,'error'); }
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Reviews</div><div className="section-sub">{reviews.length} total</div></div>
+        <button className="btn btn-primary" onClick={() => setModal('add')}><Icon name="plus" size={14}/>Add Review</button>
+      </div>
+      {loading ? <div className="loading"><div className="spinner"/>Loading...</div> : (
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))',gap:14}}>
+          {reviews.map(r => (
+            <div key={r._id} className="review-card">
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+                <div className="review-stars"><Stars rating={r.rating} /></div>
+                <div style={{display:'flex',gap:6}}>
+                  <span className={`pill ${r.isApproved?'pill-green':'pill-rust'}`}>{r.isApproved?'Approved':'Pending'}</span>
+                  {r.showOnHomepage && <span className="pill pill-blue">Homepage</span>}
+                </div>
+              </div>
+              <p className="review-text">"{r.reviewText}"</p>
+              <div className="review-author">
+                <div className="review-avatar">{r.profileImage ? <img src={r.profileImage} style={{width:'100%',height:'100%',borderRadius:'50%',objectFit:'cover'}} /> : '👤'}</div>
+                <div><div className="review-name">{r.name}</div><div className="review-meta">{r.tripLocation} · {r.location}</div></div>
+              </div>
+              <div style={{display:'flex',gap:6,marginTop:12}}>
+                <button className="btn btn-sm btn-secondary" onClick={() => toggleApprove(r._id)}>{r.isApproved ? 'Unapprove' : 'Approve'}</button>
+                <button className="btn btn-sm btn-icon" onClick={() => setModal(r)}><Icon name="edit" size={13}/></button>
+                <button className="btn btn-sm btn-danger" onClick={() => deleteReview(r._id)}><Icon name="trash" size={13}/></button>
+              </div>
+            </div>
+          ))}
+          {reviews.length === 0 && <div className="empty-state" style={{gridColumn:'1/-1'}}><div className="empty-icon">⭐</div><p>No reviews yet</p></div>}
+        </div>
+      )}
+      {modal && <ReviewFormModal review={modal==='add'?null:modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(); }} />}
+    </div>
+  );
+};
+
+// ── GALLERY PAGE ──────────────────────────────────────────────────────
+const GalleryPage = () => {
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [tripFilter, setTripFilter] = useState('');
+  const [trips, setTrips] = useState([]);
+  const fileRef = useRef();
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [gData, tData] = await Promise.all([
+        apiCall('GET', `/gallery/admin/all${tripFilter ? `?tripId=${tripFilter}` : ''}`),
+        apiCall('GET', '/trips/admin/all')
+      ]);
+      setImages(gData.images); setTrips(tData.trips);
+    } catch {}
+    setLoading(false);
+  }, [tripFilter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleUpload = async (files) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append('images', f));
+      if (tripFilter) fd.append('tripId', tripFilter);
+      const res = await fetch(`${API}/gallery/admin/upload`, { method:'POST', headers: { Authorization: `Bearer ${localStorage.getItem('nomichi_token')}` }, body: fd });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+      toast(`${data.images.length} image(s) uploaded!`);
+      load();
+    } catch(e) { toast(e.message,'error'); } finally { setUploading(false); }
+  };
+
+  const deleteImage = async (id) => {
+    if (!confirm('Delete this image?')) return;
+    try { await apiCall('DELETE', `/gallery/admin/${id}`); toast('Deleted'); load(); } catch(e) { toast(e.message,'error'); }
+  };
+
+  const toggleFeatured = async (img) => {
+    try { await apiCall('PUT', `/gallery/admin/${img._id}`, { isFeatured: !img.isFeatured }); load(); } catch(e) { toast(e.message,'error'); }
+  };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Gallery</div><div className="section-sub">{images.length} images</div></div>
+        <button className="btn btn-primary" onClick={() => fileRef.current?.click()} disabled={uploading}>
+          <Icon name="upload" size={14}/>{uploading ? 'Uploading...' : 'Upload Images'}
+        </button>
+        <input ref={fileRef} type="file" multiple accept="image/*" style={{display:'none'}} onChange={e => handleUpload(e.target.files)} />
+      </div>
+
+      <div className="filter-bar">
+        <select className="search-input" value={tripFilter} onChange={e => setTripFilter(e.target.value)} style={{minWidth:200}}>
+          <option value="">All Images</option>
+          {trips.map(t => <option key={t._id} value={t._id}>{t.name}</option>)}
+        </select>
+      </div>
+
+      <div style={{border:'2px dashed var(--line)',borderRadius:12,padding:'20px',marginBottom:16,textAlign:'center',cursor:'pointer',background:'var(--bg2)'}} onClick={() => fileRef.current?.click()}>
+        <Icon name="upload" size={24}/><br/>
+        <span style={{fontSize:13,color:'var(--mid)',marginTop:6,display:'block'}}>Click to upload or drag images here</span>
+      </div>
+
+      {loading ? <div className="loading"><div className="spinner"/>Loading...</div> : (
+        <div className="gallery-grid">
+          {images.map(img => (
+            <div key={img._id} className="gallery-item">
+              <img src={img.url} alt={img.alt || ''} onError={e => { e.target.style.display='none'; }} />
+              <div className="gallery-item-info">
+                <div className="gallery-item-meta">{img.trip?.name || 'Unassigned'}</div>
+                {img.isFeatured && <span className="pill pill-rust" style={{fontSize:10,marginTop:3}}>Featured</span>}
+              </div>
+              <div className="gallery-item-actions">
+                <button className="gallery-action-btn" onClick={() => toggleFeatured(img)} title={img.isFeatured?'Unfeature':'Feature'}>⭐</button>
+                <button className="gallery-action-btn" style={{background:'rgba(192,57,43,.7)'}} onClick={() => deleteImage(img._id)} title="Delete">🗑</button>
+              </div>
+            </div>
+          ))}
+          {images.length === 0 && <div className="empty-state" style={{gridColumn:'1/-1'}}><div className="empty-icon"><Icon name="image" size={40}/></div><p>No images yet. Upload some!</p></div>}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── SUGGESTIONS PAGE ───────────────────────────────────────────────────
+const SuggestionsPage = () => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [selected, setSelected] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { const d = await apiCall('GET', `/suggestions/admin/all${statusFilter ? `?status=${statusFilter}` : ''}`); setSuggestions(d.suggestions); } catch {}
+    setLoading(false);
+  }, [statusFilter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const updateStatus = async (id, status) => {
+    try { await apiCall('PATCH', `/suggestions/admin/${id}`, { status }); load(); } catch(e) { toast(e.message,'error'); }
+  };
+
+  const toggleStar = async (id, val) => {
+    try { await apiCall('PATCH', `/suggestions/admin/${id}`, { isStarred: !val }); load(); } catch(e) { toast(e.message,'error'); }
+  };
+
+  const deleteSugg = async (id) => {
+    if (!confirm('Delete this suggestion?')) return;
+    try { await apiCall('DELETE', `/suggestions/admin/${id}`); toast('Deleted'); load(); } catch(e) { toast(e.message,'error'); }
+  };
+
+  const statusColors = { new:'pill-rust', viewed:'pill-blue', contacted:'pill-green', closed:'pill-gray' };
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Suggestions</div><div className="section-sub">"Suggest Something" form submissions</div></div>
+      </div>
+      <div className="filter-bar">
+        {['','new','viewed','contacted','closed'].map(s => (
+          <button key={s} className={`btn ${statusFilter===s?'btn-primary':'btn-secondary'} btn-sm`} onClick={() => setStatusFilter(s)} style={{textTransform:'capitalize'}}>{s||'All'}</button>
+        ))}
+      </div>
+      {loading ? <div className="loading"><div className="spinner"/>Loading...</div> : (
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))',gap:14}}>
+          {suggestions.map(s => (
+            <div key={s._id} className={`sugg-card ${s.status==='new'?'sugg-new':''}`}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+                <div><strong>{s.name}</strong><div style={{fontSize:12,color:'var(--mid)'}}>{s.email}</div></div>
+                <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                  <span className={`pill ${statusColors[s.status]}`}>{s.status}</span>
+                  <button style={{background:'none',border:'none',cursor:'pointer',fontSize:16,color:s.isStarred?'#F4A100':'var(--fog)'}} onClick={() => toggleStar(s._id, s.isStarred)}>★</button>
+                </div>
+              </div>
+              <div className="sugg-field"><span className="sugg-label">Destination</span><strong>{s.destination}</strong></div>
+              {s.budget && <div className="sugg-field"><span className="sugg-label">Budget</span>{s.budget}</div>}
+              {s.groupSize > 1 && <div className="sugg-field"><span className="sugg-label">Group size</span>{s.groupSize}</div>}
+              {s.message && <div style={{fontSize:12,color:'var(--mid)',marginTop:8,fontStyle:'italic',borderTop:'1px solid var(--line2)',paddingTop:8}}>{s.message}</div>}
+              <div style={{display:'flex',gap:6,marginTop:12,flexWrap:'wrap'}}>
+                {['viewed','contacted','closed'].filter(st => st !== s.status).map(st => (
+                  <button key={st} className="btn btn-sm btn-secondary" style={{textTransform:'capitalize'}} onClick={() => updateStatus(s._id, st)}>Mark {st}</button>
+                ))}
+                <button className="btn btn-sm btn-danger" onClick={() => deleteSugg(s._id)}>Delete</button>
+              </div>
+            </div>
+          ))}
+          {suggestions.length === 0 && <div className="empty-state" style={{gridColumn:'1/-1'}}><div className="empty-icon">💬</div><p>No suggestions yet</p></div>}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── SETTINGS PAGE ─────────────────────────────────────────────────────
+const SettingsPage = () => {
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    apiCall('GET', '/settings').then(d => { setSettings(d.settings); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  const update = (path, val) => {
+    setSettings(prev => {
+      const copy = JSON.parse(JSON.stringify(prev));
+      const parts = path.split('.');
+      let obj = copy;
+      for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+      obj[parts[parts.length - 1]] = val;
+      return copy;
+    });
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try { await apiCall('PUT', '/admin/settings', settings); toast('Settings saved!'); } catch(e) { toast(e.message,'error'); } finally { setSaving(false); }
+  };
+
+  if (loading) return <div className="loading"><div className="spinner"/>Loading...</div>;
+  if (!settings) return <div className="empty-state"><p>Could not load settings</p></div>;
+
+  const hp = settings.homepage || {};
+  const ct = settings.contact || {};
+
+  return (
+    <div>
+      <div className="section-head">
+        <div><div className="section-title">Site Settings</div><div className="section-sub">Homepage visibility and contact info</div></div>
+        <button className="btn btn-primary" onClick={save} disabled={saving}>{saving?'Saving...':'Save Settings'}</button>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+        <div className="card">
+          <div className="card-title">Homepage Sections</div>
+          <div className="card-sub" style={{marginBottom:16}}>Control what appears on the homepage</div>
+          {[
+            ['showActiveTrips','Show Active Trips'],['showFeaturedTrips','Show Featured Trips'],
+            ['showReviews','Show Reviews'],['showGallery','Show Gallery'],
+            ['showStats','Show Stats Bar'],['showSuggestForm','Show "Suggest Something" Form']
+          ].map(([key, label]) => (
+            <div key={key} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:'1px solid var(--line2)'}}>
+              <span style={{fontSize:13,fontWeight:500}}>{label}</span>
+              <Toggle checked={hp[key] !== false} onChange={v => update(`homepage.${key}`, v)} />
+            </div>
+          ))}
+        </div>
+
+        <div>
+          <div className="card" style={{marginBottom:16}}>
+            <div className="card-title">Hero Text</div>
+            <div style={{marginTop:12,display:'flex',flexDirection:'column',gap:10}}>
+              <div className="field"><label>Headline</label><input value={hp.heroHeadline||''} onChange={e => update('homepage.heroHeadline',e.target.value)} /></div>
+              <div className="field"><label>Subline</label><input value={hp.heroSubline||''} onChange={e => update('homepage.heroSubline',e.target.value)} /></div>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-title">Contact Info</div>
+            <div style={{marginTop:12,display:'flex',flexDirection:'column',gap:10}}>
+              <div className="field"><label>Phone</label><input value={ct.phone||''} onChange={e => update('contact.phone',e.target.value)} /></div>
+              <div className="field"><label>Email</label><input value={ct.email||''} onChange={e => update('contact.email',e.target.value)} /></div>
+              <div className="field"><label>Instagram</label><input value={ct.instagram||''} onChange={e => update('contact.instagram',e.target.value)} /></div>
+              <div className="field"><label>WhatsApp Number</label><input value={ct.whatsapp||''} onChange={e => update('contact.whatsapp',e.target.value)} /></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────
+const Sidebar = ({ active, onNav, admin, onLogout, newSuggestions = 0 }) => {
+  const items = [
+    { id:'dashboard', icon:'dashboard', label:'Dashboard' },
+    { id:'trips', icon:'trips', label:'Trips' },
+    { id:'reviews', icon:'reviews', label:'Reviews' },
+    { id:'gallery', icon:'gallery', label:'Gallery' },
+    { id:'suggestions', icon:'suggestions', label:'Suggestions', badge: newSuggestions || null },
+    { id:'settings', icon:'settings', label:'Settings' },
+  ];
+  return (
+    <div className="sidebar">
+      <div className="sb-brand">
+        <div className="sb-logo">N</div>
+        <div><div className="sb-brand-name">Nomichi</div><div className="sb-brand-sub">CMS</div></div>
+      </div>
+      <div className="sb-nav">
+        <div className="sb-section">Navigation</div>
+        {items.map(item => (
+          <div key={item.id} className={`sb-item ${active===item.id?'active':''}`} onClick={() => onNav(item.id)}>
+            <Icon name={item.icon} size={15}/>
+            {item.label}
+            {item.badge ? <span className="sb-badge">{item.badge}</span> : null}
+          </div>
+        ))}
+      </div>
+      <div className="sb-footer">
+        <div className="sb-user">
+          <strong>{admin?.name || 'Admin'}</strong>
+          {admin?.email}
+        </div>
+        <button className="btn btn-secondary btn-sm" style={{marginTop:8,width:'100%',justifyContent:'center'}} onClick={onLogout}>
+          <Icon name="logout" size={13}/>Sign Out
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ── ROOT APP ────────────────────────────────────────────────────────────
+const App = () => {
+  const [admin, setAdmin] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('nomichi_admin')); } catch { return null; }
+  });
+  const [page, setPage] = useState('dashboard');
+  const toasts = useToasts();
+
+  const handleLogout = () => {
+    localStorage.removeItem('nomichi_token');
+    localStorage.removeItem('nomichi_admin');
+    setAdmin(null);
+  };
+
+  if (!admin) return <LoginPage onLogin={a => { setAdmin(a); setPage('dashboard'); }} />;
+
+  const pages = {
+    dashboard: <Dashboard onNav={setPage} />,
+    trips: <TripsPage />,
+    reviews: <ReviewsPage />,
+    gallery: <GalleryPage />,
+    suggestions: <SuggestionsPage />,
+    settings: <SettingsPage />,
+  };
+
+  return (
+    <div className="app">
+      <Sidebar active={page} onNav={setPage} admin={admin} onLogout={handleLogout} />
+      <div className="main">
+        <div className="topbar">
+          <div style={{fontWeight:700,fontSize:15,letterSpacing:'-.01em',textTransform:'capitalize'}}>{page}</div>
+          <div style={{marginLeft:'auto',fontSize:12,color:'var(--mid)'}}>Nomichi CMS v1.0</div>
+        </div>
+        <div className="content">
+          {pages[page]}
+        </div>
+      </div>
+      <div className="toast-wrap">
+        {toasts.map(t => <div key={t.id} className={`toast ${t.type}`}>{t.msg}</div>)}
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.render(<App />, document.getElementById('root'));
+</script>
+</body>
+</html>
