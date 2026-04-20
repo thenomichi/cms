@@ -22,6 +22,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle?: string }> = {
   "/team": { title: "Team", subtitle: "Manage team members" },
   "/careers": { title: "Careers", subtitle: "Job listings & openings" },
   "/settings": { title: "Website Config", subtitle: "Hero, contact, branding & footer" },
+  "/activity": { title: "Activity Log", subtitle: "Recent changes made through the CMS" },
 };
 
 export function CmsShell({ user, children }: Props) {

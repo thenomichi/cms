@@ -8,8 +8,9 @@ import { FormField } from "@/components/ui/FormField";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { GALLERY_CATEGORIES } from "@/lib/constants";
 import type { DbTripGallery } from "@/lib/types";
-import { uploadTripGalleryAction } from "../../../media/actions";
 import {
+  uploadTripGalleryAction,
+  fetchTripGalleryImages,
   deleteGalleryImageAction,
   toggleGalleryFeaturedAction,
   toggleGalleryCoverAction,
@@ -21,11 +22,20 @@ interface Props {
   onGalleryChange: (gallery: DbTripGallery[]) => void;
 }
 
-export function GalleryTab({ tripId, gallery, onGalleryChange }: Props) {
+export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }: Props) {
+  const [images, setImages] = useState(initialGallery);
   const [uploading, setUploading] = useState(false);
   const [category, setCategory] = useState("gallery");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Refresh gallery from server
+  async function refreshGallery() {
+    if (!tripId) return;
+    const fresh = await fetchTripGalleryImages(tripId);
+    setImages(fresh);
+    onGalleryChange(fresh);
+  }
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || !tripId) {
@@ -43,36 +53,41 @@ export function GalleryTab({ tripId, gallery, onGalleryChange }: Props) {
       if (res.success) count++;
       else toast.error(res.error ?? "Upload failed");
     }
-    if (count > 0) toast.success(`${count} image(s) uploaded`);
+    if (count > 0) {
+      toast.success(`${count} image(s) uploaded`);
+      await refreshGallery();
+    }
     setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleDelete = async () => {
     if (!deleteId) return;
+    setImages((prev) => prev.filter((g) => g.gallery_id !== deleteId));
     const res = await deleteGalleryImageAction(deleteId);
     if (res.success) {
-      onGalleryChange(gallery.filter((g) => g.gallery_id !== deleteId));
       toast.success("Image deleted");
     } else {
+      await refreshGallery(); // revert
       toast.error(res.error ?? "Delete failed");
     }
     setDeleteId(null);
   };
 
   const handleToggleFeatured = async (id: string, current: boolean) => {
+    setImages((prev) => prev.map((g) => g.gallery_id === id ? { ...g, is_featured: !current } : g));
     const res = await toggleGalleryFeaturedAction(id, !current);
-    if (res.success) {
-      onGalleryChange(gallery.map((g) => g.gallery_id === id ? { ...g, is_featured: !current } : g));
-    }
+    if (!res.success) await refreshGallery();
   };
 
   const handleSetCover = async (id: string) => {
     if (!tripId) return;
+    setImages((prev) => prev.map((g) => ({ ...g, is_cover: g.gallery_id === id })));
     const res = await toggleGalleryCoverAction(tripId, id);
     if (res.success) {
-      onGalleryChange(gallery.map((g) => ({ ...g, is_cover: g.gallery_id === id })));
       toast.success("Cover image set");
+    } else {
+      await refreshGallery();
     }
   };
 
@@ -110,13 +125,13 @@ export function GalleryTab({ tripId, gallery, onGalleryChange }: Props) {
       </div>
 
       {/* Gallery grid */}
-      {gallery.length === 0 ? (
+      {images.length === 0 ? (
         <div className="py-10 text-center text-sm text-mid">
           No images yet. Upload images using the button above.
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {gallery.map((img) => (
+          {images.map((img) => (
             <div key={img.gallery_id} className="group relative overflow-hidden rounded-lg border border-line bg-surface">
               <img
                 src={img.image_url}
