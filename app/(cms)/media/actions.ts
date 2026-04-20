@@ -21,6 +21,7 @@ import { uploadImage } from "@/lib/storage/upload";
 import { revalidateHome } from "@/lib/revalidate";
 import { generateId } from "@/lib/utils";
 import type { DbTripGallery, DbSiteGallery, DbRawMoment } from "@/lib/types";
+import { logActivity } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Upload Actions (handle FormData with files → Storage → DB)
@@ -56,6 +57,7 @@ export async function uploadTripGalleryAction(
       display_order: 0,
     });
 
+    await logActivity({ table_name: "trip_gallery", record_id: tripId ?? "unassigned", action: "INSERT", new_values: { category, image_url: publicUrl } });
     revalidatePath("/media");
     await revalidateHome();
     return { success: true };
@@ -92,6 +94,7 @@ export async function uploadSiteGalleryAction(
       display_order: 0,
     });
 
+    await logActivity({ table_name: "site_gallery", record_id: publicUrl, action: "INSERT", new_values: { category: "gallery", image_url: publicUrl } });
     revalidatePath("/media");
     await revalidateHome();
     return { success: true };
@@ -123,6 +126,7 @@ export async function uploadRawMomentAction(
       display_order: 0,
     });
 
+    await logActivity({ table_name: "raw_moments", record_id: publicUrl, action: "INSERT", new_values: { location, image_url: publicUrl } });
     revalidatePath("/media");
     await revalidateHome();
     return { success: true };
@@ -173,6 +177,7 @@ export async function deleteGalleryImageAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteGalleryImage(id);
+    await logActivity({ table_name: "trip_gallery", record_id: id, action: "DELETE" });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {
@@ -186,6 +191,7 @@ export async function toggleGalleryFeaturedAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleGalleryFeatured(id, value);
+    await logActivity({ table_name: "trip_gallery", record_id: id, action: "UPDATE", new_values: { is_featured: value } });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {
@@ -199,6 +205,7 @@ export async function toggleGalleryCoverAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleGalleryCover(tripId, galleryId);
+    await logActivity({ table_name: "trip_gallery", record_id: galleryId, action: "UPDATE", new_values: { is_cover: true, trip_id: tripId } });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {
@@ -246,6 +253,7 @@ export async function deleteSiteGalleryImageAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteSiteGalleryImage(id);
+    await logActivity({ table_name: "site_gallery", record_id: id, action: "DELETE" });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {
@@ -293,6 +301,7 @@ export async function deleteRawMomentAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteRawMoment(id);
+    await logActivity({ table_name: "raw_moments", record_id: id, action: "DELETE" });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {
@@ -324,6 +333,7 @@ export async function linkImageToTripAction(
       is_active: true,
       display_order: 0,
     });
+    await logActivity({ table_name: "trip_gallery", record_id: id, action: "INSERT", new_values: { trip_id: targetTripId, category, image_url: imageUrl } });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {
@@ -338,6 +348,7 @@ export async function changeCategoryAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await updateGalleryImage(galleryId, { category });
+    await logActivity({ table_name: "trip_gallery", record_id: galleryId, action: "UPDATE", new_values: { category } });
     revalidatePath("/media");
     return { success: true };
   } catch (err) {

@@ -3,20 +3,11 @@
 import { FormField } from "@/components/ui/FormField";
 import { FormSection } from "@/components/ui/FormSection";
 import { ListBuilder } from "@/components/ui/ListBuilder";
+import { RichEditor } from "@/components/ui/RichEditor";
 import type { TripFormState } from "../TripFormModal";
-
-// ---------------------------------------------------------------------------
-// Shared input classes
-// ---------------------------------------------------------------------------
 
 const INPUT =
   "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
-const TEXTAREA =
-  "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20 resize-y";
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
 
 interface DetailsTabProps {
   form: TripFormState;
@@ -43,21 +34,17 @@ export function DetailsTab({ form, updateField }: DetailsTabProps) {
       <FormSection title="Trip Description">
         <div className="space-y-4">
           <FormField label="Overview" hint="Short overview shown on the trip card">
-            <textarea
-              className={TEXTAREA}
-              rows={3}
+            <RichEditor
               value={form.overview}
-              onChange={(e) => updateField("overview", e.target.value)}
+              onChange={(html) => updateField("overview", html)}
               placeholder="A brief overview of the trip..."
             />
           </FormField>
 
           <FormField label="Description" hint="Full trip description for the detail page">
-            <textarea
-              className={TEXTAREA}
-              rows={6}
+            <RichEditor
               value={form.description}
-              onChange={(e) => updateField("description", e.target.value)}
+              onChange={(html) => updateField("description", html)}
               placeholder="Detailed description of the trip experience..."
             />
           </FormField>
@@ -66,7 +53,7 @@ export function DetailsTab({ form, updateField }: DetailsTabProps) {
 
       {/* ── Key Highlights ── */}
       <FormSection title="Key Highlights">
-        <FormField label="Highlights" hint="Key highlights of the trip">
+        <FormField label="Highlights" hint="Key highlights — drag to reorder">
           <ListBuilder
             items={form.highlights}
             onChange={(items) => updateField("highlights", items)}

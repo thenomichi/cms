@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/trip-faqs";
 import { getServiceClient } from "@/lib/supabase/server";
 import { revalidateTrip, revalidateHome } from "@/lib/revalidate";
+import { logActivity } from "@/lib/audit";
 
 async function getTripSlug(tripId: string | null): Promise<string | null> {
   if (!tripId) return null;
@@ -48,6 +49,7 @@ export async function createFaq(
       is_active: isActive,
     });
 
+    await logActivity({ table_name: "trip_faqs", record_id: id, action: "INSERT", new_values: { question: parsed.data.question, trip_id: tripId } });
     revalidatePath("/faqs");
     const slug = await getTripSlug(tripId);
     if (slug) {
@@ -86,6 +88,7 @@ export async function updateFaq(
       is_active: isActive,
     });
 
+    await logActivity({ table_name: "trip_faqs", record_id: id, action: "UPDATE", new_values: { question: parsed.data.question, trip_id: tripId } });
     revalidatePath("/faqs");
     const slug = await getTripSlug(tripId);
     if (slug) {
@@ -106,6 +109,7 @@ export async function toggleFaqActive(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbUpdate(id, { is_active: isActive });
+    await logActivity({ table_name: "trip_faqs", record_id: id, action: "UPDATE", new_values: { is_active: isActive } });
     revalidatePath("/faqs");
     const slug = await getTripSlug(tripId ?? null);
     if (slug) await revalidateTrip(slug);
@@ -126,6 +130,7 @@ export async function reorderFaqs(
         .update({ display_order: i })
         .eq("faq_id", orderedIds[i]);
     }
+    await logActivity({ table_name: "trip_faqs", record_id: orderedIds.join(","), action: "UPDATE", new_values: { reordered: orderedIds } });
     revalidatePath("/faqs");
     return { success: true };
   } catch (err) {
@@ -139,6 +144,7 @@ export async function deleteFaq(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbDelete(id);
+    await logActivity({ table_name: "trip_faqs", record_id: id, action: "DELETE" });
     revalidatePath("/faqs");
     const slug = await getTripSlug(tripId ?? null);
     if (slug) {

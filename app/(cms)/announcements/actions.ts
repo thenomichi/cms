@@ -12,6 +12,7 @@ import {
 import { revalidateHome } from "@/lib/revalidate";
 import { uploadImage } from "@/lib/storage/upload";
 import { getServiceClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
 // Banner image helpers
@@ -77,6 +78,7 @@ export async function uploadBannerImage(
       display_order: 0,
     });
 
+    await logActivity({ table_name: "site_gallery", record_id: id, action: "INSERT", new_values: { category: "hero", image_url: publicUrl } });
     return { success: true, url: publicUrl };
   } catch (err) {
     return { success: false, error: (err as Error).message };
@@ -115,6 +117,7 @@ export async function createAnnouncement(
       ends_at: parsed.data.ends_at ?? null,
     });
 
+    await logActivity({ table_name: "announcements", record_id: id, action: "INSERT", new_values: { headline: parsed.data.headline, tag_type: parsed.data.tag_type } });
     revalidatePath("/announcements");
     await revalidateHome();
     return { success: true };
@@ -150,6 +153,7 @@ export async function updateAnnouncement(
       ends_at: parsed.data.ends_at ?? null,
     });
 
+    await logActivity({ table_name: "announcements", record_id: id, action: "UPDATE", new_values: { headline: parsed.data.headline, tag_type: parsed.data.tag_type } });
     revalidatePath("/announcements");
     await revalidateHome();
     return { success: true };
@@ -163,6 +167,7 @@ export async function deleteAnnouncement(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbDelete(id);
+    await logActivity({ table_name: "announcements", record_id: id, action: "DELETE" });
     revalidatePath("/announcements");
     await revalidateHome();
     return { success: true };
@@ -177,6 +182,7 @@ export async function toggleAnnouncementActive(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbToggle(id, value);
+    await logActivity({ table_name: "announcements", record_id: id, action: "UPDATE", new_values: { is_active: value } });
     revalidatePath("/announcements");
     await revalidateHome();
     return { success: true };

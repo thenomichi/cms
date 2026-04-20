@@ -9,6 +9,7 @@ import {
   generateUniqueDestCode,
 } from "@/lib/db/destinations";
 import { revalidateHome } from "@/lib/revalidate";
+import { logActivity } from "@/lib/audit";
 
 export async function createDestination(
   formData: Record<string, unknown>,
@@ -36,6 +37,7 @@ export async function createDestination(
       display_order: typeof formData.display_order === "number" ? formData.display_order : 0,
     });
 
+    await logActivity({ table_name: "destinations", record_id: id, action: "INSERT", new_values: { destination_name: name, country } });
     revalidatePath("/destinations");
     await revalidateHome();
     return { success: true };
@@ -69,6 +71,7 @@ export async function updateDestination(
       display_order: typeof formData.display_order === "number" ? formData.display_order : 0,
     });
 
+    await logActivity({ table_name: "destinations", record_id: id, action: "UPDATE", new_values: { destination_name: name, country } });
     revalidatePath("/destinations");
     await revalidateHome();
     return { success: true };
@@ -83,6 +86,7 @@ export async function toggleDestinationActive(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbUpdate(id, { is_active: isActive });
+    await logActivity({ table_name: "destinations", record_id: id, action: "UPDATE", new_values: { is_active: isActive } });
     revalidatePath("/destinations");
     await revalidateHome();
     return { success: true };
@@ -96,6 +100,7 @@ export async function deleteDestination(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await dbDelete(id);
+    await logActivity({ table_name: "destinations", record_id: id, action: "DELETE" });
     revalidatePath("/destinations");
     await revalidateHome();
     return { success: true };

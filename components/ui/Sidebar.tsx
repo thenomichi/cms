@@ -12,6 +12,7 @@ import {
   Users,
   Briefcase,
   Settings,
+  Activity,
   LogOut,
   type LucideIcon,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const navItems: NavItem[] = [
   { id: "team", label: "Team", icon: Users },
   { id: "careers", label: "Careers", icon: Briefcase },
   { id: "settings", label: "Website Config", icon: Settings },
+  { id: "activity", label: "Activity Log", icon: Activity },
 ];
 
 interface SidebarUser {
