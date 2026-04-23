@@ -1,4 +1,4 @@
-export async function revalidateWebsite(paths: string[]): Promise<void> {
+export async function revalidateWebsite(paths: string[], tags: string[] = []): Promise<void> {
   const websiteUrl = process.env.WEBSITE_URL;
   const secret = process.env.REVALIDATION_SECRET;
   if (!websiteUrl || !secret) return; // silently skip if not configured
@@ -7,7 +7,7 @@ export async function revalidateWebsite(paths: string[]): Promise<void> {
     await fetch(`${websiteUrl}/api/revalidate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret, paths }),
+      body: JSON.stringify({ secret, paths, tags }),
     });
   } catch {
     // Fire-and-forget: website eventually refreshes via ISR anyway
