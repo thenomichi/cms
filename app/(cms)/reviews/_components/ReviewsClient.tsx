@@ -20,11 +20,17 @@ import {
   toggleReviewField,
 } from "../actions";
 
-interface ReviewsClientProps {
-  reviews: DbReview[];
+interface TripOption {
+  trip_id: string;
+  trip_name: string;
 }
 
-export function ReviewsClient({ reviews: initialReviews }: ReviewsClientProps) {
+interface ReviewsClientProps {
+  reviews: DbReview[];
+  trips: TripOption[];
+}
+
+export function ReviewsClient({ reviews: initialReviews, trips }: ReviewsClientProps) {
   const router = useRouter();
   const [reviews, setReviews] = useState(initialReviews);
   useEffect(() => { setReviews(initialReviews); }, [initialReviews]);
@@ -115,6 +121,12 @@ export function ReviewsClient({ reviews: initialReviews }: ReviewsClientProps) {
     });
   };
 
+  const tripNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const t of trips) map.set(t.trip_id, t.trip_name);
+    return map;
+  }, [trips]);
+
   const stars = (n: number) => "★".repeat(n) + "☆".repeat(5 - n);
 
   return (
@@ -179,8 +191,13 @@ export function ReviewsClient({ reviews: initialReviews }: ReviewsClientProps) {
                   {r.reviewer_location && (
                     <p className="text-xs text-mid">{r.reviewer_location}</p>
                   )}
-                  {r.trip_location && (
-                    <p className="text-xs text-fog">Trip: {r.trip_location}</p>
+                  {r.trip_id && tripNameMap.get(r.trip_id) && (
+                    <p className="text-xs text-fog">
+                      Trip: {tripNameMap.get(r.trip_id)}
+                    </p>
+                  )}
+                  {!r.trip_id && r.trip_location && (
+                    <p className="text-xs text-fog">{r.trip_location}</p>
                   )}
                 </div>
 
@@ -244,6 +261,7 @@ export function ReviewsClient({ reviews: initialReviews }: ReviewsClientProps) {
         }}
         onSubmit={editing ? handleUpdate : handleCreate}
         review={editing}
+        trips={trips}
       />
 
       <ConfirmDialog

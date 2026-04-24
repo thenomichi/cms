@@ -8,11 +8,17 @@ import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
 import type { DbReview } from "@/lib/types";
 
+interface TripOption {
+  trip_id: string;
+  trip_name: string;
+}
+
 interface ReviewFormModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: Record<string, unknown>) => Promise<void>;
   review?: DbReview | null;
+  trips: TripOption[];
 }
 
 const inputClass =
@@ -27,8 +33,10 @@ export function ReviewFormModal({
   onClose,
   onSubmit,
   review,
+  trips,
 }: ReviewFormModalProps) {
   const [loading, setLoading] = useState(false);
+  const [tripId, setTripId] = useState("");
   const [reviewerName, setReviewerName] = useState("");
   const [reviewerLocation, setReviewerLocation] = useState("");
   const [tripLocation, setTripLocation] = useState("");
@@ -40,6 +48,7 @@ export function ReviewFormModal({
 
   useEffect(() => {
     if (review) {
+      setTripId(review.trip_id ?? "");
       setReviewerName(review.reviewer_name);
       setReviewerLocation(review.reviewer_location ?? "");
       setTripLocation(review.trip_location ?? "");
@@ -49,6 +58,7 @@ export function ReviewFormModal({
       setIsFeatured(review.is_featured);
       setShowOnHomepage(review.show_on_homepage);
     } else {
+      setTripId("");
       setReviewerName("");
       setReviewerLocation("");
       setTripLocation("");
@@ -64,6 +74,7 @@ export function ReviewFormModal({
     setLoading(true);
     try {
       await onSubmit({
+        trip_id: tripId || null,
         reviewer_name: reviewerName,
         reviewer_location: reviewerLocation || null,
         trip_location: tripLocation || null,
@@ -97,6 +108,24 @@ export function ReviewFormModal({
       }
     >
       <div className="space-y-5">
+        {/* ── Linked Trip ── */}
+        <FormSection title="Linked Trip" description="Associate this review with a trip so it appears on the trip detail page">
+          <FormField label="Trip">
+            <select
+              className={selectClass}
+              value={tripId}
+              onChange={(e) => setTripId(e.target.value)}
+            >
+              <option value="">— No trip (general review) —</option>
+              {trips.map((t) => (
+                <option key={t.trip_id} value={t.trip_id}>
+                  {t.trip_name}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        </FormSection>
+
         {/* ── Reviewer ── */}
         <FormSection title="Reviewer">
           <div className="grid grid-cols-2 gap-4">
