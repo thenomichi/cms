@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Copy } from "lucide-react";
 import type { TripWithDestination, TripFull } from "@/lib/db/trips";
 import type { DbDestination } from "@/lib/types";
-import { formatPrice, formatDate } from "@/lib/utils";
+import { cn, formatPrice, formatDate } from "@/lib/utils";
 import { SearchInput } from "@/components/ui/SearchInput";
 import { FilterPills } from "@/components/ui/FilterPills";
 import { DataTable, type Column } from "@/components/ui/DataTable";
@@ -18,6 +18,7 @@ import { TripFormModal } from "./TripFormModal";
 import {
   deleteTripAction,
   toggleTripFieldAction,
+  cloneAsBatchAction,
 } from "../actions";
 
 // ---------------------------------------------------------------------------
@@ -78,6 +79,8 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editTrip, setEditTrip] = useState<TripFull | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TripWithDestination | null>(null);
+  const [cloning, setCloning] = useState<string | null>(null);
+  const [batchTarget, setBatchTarget] = useState<TripWithDestination | null>(null);
   const [isPending, startTransition] = useTransition();
 
   // Client-side filtering
@@ -99,12 +102,56 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
     return list;
   }, [trips, filter, search]);
 
+  // Group batch siblings together in the list
+  // Within a group, the original (slug === group_slug) comes first, then by start_date.
+  // Trips with no start_date sort last so new drafts don't jump above the original.
+  const sortedFiltered = useMemo(() => {
+    const result = [...filtered];
+    result.sort((a, b) => {
+      const aGroup = a.group_slug ?? a.trip_id;
+      const bGroup = b.group_slug ?? b.trip_id;
+      if (aGroup !== bGroup) return aGroup.localeCompare(bGroup);
+      // Original trip (slug === group_slug) always first
+      const aIsOriginal = a.slug === a.group_slug ? 0 : 1;
+      const bIsOriginal = b.slug === b.group_slug ? 0 : 1;
+      if (aIsOriginal !== bIsOriginal) return aIsOriginal - bIsOriginal;
+      // Then by start_date, nulls last
+      const aDate = a.start_date ?? "\uffff";
+      const bDate = b.start_date ?? "\uffff";
+      return aDate.localeCompare(bDate);
+    });
+    return result;
+  }, [filtered]);
+
+  // Batch group visual tracking
+  const { firstInGroupIds, groupedTripIds } = useMemo(() => {
+    const first = new Set<string>();
+    const grouped = new Set<string>();
+    let prevSlug: string | null = null;
+    for (const t of sortedFiltered) {
+      if (t.group_slug) {
+        grouped.add(t.trip_id);
+        if (t.group_slug !== prevSlug) {
+          first.add(t.trip_id);
+        }
+      }
+      prevSlug = t.group_slug ?? null;
+    }
+    return { firstInGroupIds: first, groupedTripIds: grouped };
+  }, [sortedFiltered]);
+
   // Toggle handlers — optimistic update
   function handleToggle(
     trip: TripWithDestination,
     field: "is_listed" | "show_on_homepage",
     value: boolean,
   ) {
+    // Block listing a trip without dates set
+    if (value && (field === "is_listed" || field === "show_on_homepage") && !trip.start_date) {
+      toast.error("Set the trip dates before listing it on the website.");
+      return;
+    }
+
     // Optimistic: update local state immediately
     setTrips((prev) =>
       prev.map((t) => (t.trip_id === trip.trip_id ? { ...t, [field]: value } : t)),
@@ -146,6 +193,27 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
     });
   }
 
+  // Clone as batch handler
+  async function handleConfirmBatch() {
+    if (!batchTarget) return;
+    const trip = batchTarget;
+    setBatchTarget(null);
+    setCloning(trip.trip_id);
+    try {
+      const result = await cloneAsBatchAction(trip.trip_id);
+      if (result.success && result.newTripId) {
+        toast.success(
+          "Batch created! Set dates and pricing for the new batch.",
+        );
+        router.refresh();
+      } else {
+        toast.error(result.error ?? "Failed to create batch");
+      }
+    } finally {
+      setCloning(null);
+    }
+  }
+
   // Open edit modal (fetch full trip data)
   async function handleEdit(trip: TripWithDestination) {
     try {
@@ -182,7 +250,7 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
 
   // Table data needs Record<string, unknown> compat
   type RowType = TripWithDestination & Record<string, unknown>;
-  const tableData = filtered as RowType[];
+  const tableData = sortedFiltered as RowType[];
 
   const columns: Column<RowType>[] = [
     {
@@ -190,11 +258,29 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
       header: "Trip",
       render: (row) => {
         const t = row as TripWithDestination;
+        const isGrouped = groupedTripIds.has(t.trip_id);
+        const isFirst = firstInGroupIds.has(t.trip_id);
+        const isChild = isGrouped && !isFirst;
         return (
           <div className="min-w-[200px]">
-            <p className="font-medium text-ink">{t.trip_name ?? "Untitled"}</p>
-            <p className="text-xs text-mid">{t.destination_name ?? "—"}</p>
-            <p className="font-mono text-[10px] text-fog">{t.trip_id}</p>
+            {isFirst && (
+              <div className="mb-1.5 flex items-center gap-1.5 text-[11px]">
+                <span className="inline-flex items-center gap-1 rounded-full bg-rust-tint px-2 py-0.5 font-medium text-rust">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
+                  Batch Group · {t.batch_count ?? 0} batches
+                </span>
+              </div>
+            )}
+            <div className={cn(isChild && "ml-3 border-l-2 border-rust/30 pl-3")}>
+              <p className="font-medium text-ink">
+                {t.trip_name ?? "Untitled"}
+              </p>
+              <p className="text-xs text-mid">{t.destination_name ?? "—"}</p>
+              <p className="font-mono text-[10px] text-fog">{t.trip_id}</p>
+            </div>
           </div>
         );
       },
@@ -290,6 +376,27 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
         const t = row as TripWithDestination;
         return (
           <div className="flex items-center gap-1">
+            {/* Only show "Add Another Batch" on primary/standalone trips — not on batch copies */}
+            {(!t.group_slug || firstInGroupIds.has(t.trip_id)) && (
+              <div className="group relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon
+                  disabled={cloning === t.trip_id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBatchTarget(t);
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+                <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-ink px-2.5 py-1 text-[11px] font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                  Add another batch
+                  <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-ink" />
+                </div>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -345,6 +452,10 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
       <DataTable
         columns={columns}
         data={tableData}
+        rowClassName={(row) => {
+          const t = row as TripWithDestination;
+          return groupedTripIds.has(t.trip_id) ? "bg-rust-tint/40" : undefined;
+        }}
         emptyMessage="No trips found"
         emptyIcon="✈️"
       />
@@ -367,6 +478,54 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
         confirmLabel="Delete"
         variant="danger"
       />
+
+      {/* Add Another Batch Confirmation */}
+      <ConfirmDialog
+        open={!!batchTarget}
+        onCancel={() => setBatchTarget(null)}
+        onConfirm={handleConfirmBatch}
+        title="Add Another Batch"
+        confirmLabel="Yes, Create Batch"
+        cancelLabel="Not Now"
+      >
+        <div className="mt-3 space-y-3 text-sm text-mid">
+          <p>
+            You're about to create a new batch of{" "}
+            <strong className="text-ink">{batchTarget?.trip_name ?? ""}</strong>.
+          </p>
+
+          <div className="rounded-lg border border-line bg-surface2/50 p-3 space-y-2">
+            <p className="font-medium text-ink text-xs uppercase tracking-wide">What this does</p>
+            <ul className="space-y-1.5 text-[13px]">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-sem-green">✓</span>
+                Creates a new linked trip with the same itinerary, photos, inclusions, and FAQs
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-sem-green">✓</span>
+                You'll set different <strong className="text-ink">dates, pricing, and available slots</strong> for the new batch
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-sem-green">✓</span>
+                On the website, all batches appear as one trip with multiple date options
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-lg border border-line bg-surface2/50 p-3 space-y-2">
+            <p className="font-medium text-ink text-xs uppercase tracking-wide">Why create batches</p>
+            <p className="text-[13px]">
+              When the same trip runs on different weekends, batches keep the website clean —
+              travellers see one listing and pick their preferred date, instead of seeing
+              duplicate trip cards.
+            </p>
+          </div>
+
+          <p className="text-xs text-fog">
+            The new batch will be saved as a Draft. You can edit it and publish when ready.
+          </p>
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }

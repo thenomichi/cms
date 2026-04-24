@@ -30,6 +30,7 @@ export interface DbTrip {
   show_on_homepage: boolean | null;
   status: string | null; // "Draft" | "Upcoming" | "Ongoing" | "Completed" | "Cancelled"
   batch_number: string | null;
+  group_slug: string | null;
   request_id: string | null;
   dossier_url: string | null;
   dossier_published_at: string | null;

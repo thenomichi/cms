@@ -8,8 +8,10 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   title: string;
-  message: string;
+  message?: string;
+  children?: React.ReactNode;
   confirmLabel?: string;
+  cancelLabel?: string;
   variant?: "danger" | "primary";
 }
 
@@ -19,7 +21,9 @@ function ConfirmDialog({
   onCancel,
   title,
   message,
+  children,
   confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   variant = "primary",
 }: ConfirmDialogProps) {
   useEffect(() => {
@@ -42,14 +46,14 @@ function ConfirmDialog({
       />
       <div className="relative w-full max-w-md rounded-xl bg-surface p-6 shadow-xl">
         <h3 className="text-base font-semibold text-ink">{title}</h3>
-        <p className="mt-2 text-sm text-mid">{message}</p>
+        {children ?? <p className="mt-2 text-sm text-mid">{message}</p>}
         <div className="mt-5 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
             className="h-9 rounded-lg border border-line bg-surface3 px-4 text-sm font-medium text-ink hover:bg-line2 transition-colors"
           >
-            Cancel
+            {cancelLabel}
           </button>
           <button
             type="button"

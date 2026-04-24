@@ -39,6 +39,7 @@ export interface TripFormState {
   advance_pct: number;
   total_slots: number | null;
   batch_number: string;
+  group_slug: string | null;
   departure_city: string;
   departure_airport: string;
   booking_kind: string;
@@ -64,7 +65,7 @@ function buildInitialState(trip: TripFull | null): TripFormState {
       trip_category: "", destination_id: "", duration_days: 1, duration_nights: 0,
       start_date: "", end_date: "", mrp_price: null, selling_price: null,
       discount_pct: null, quoted_price: null, advance_pct: 50, total_slots: null,
-      batch_number: "", departure_city: "", departure_airport: "",
+      batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
       booking_kind: "trip", currency_code: "INR",
       overview: "", description: "", tagline: "", highlights: [],
       itinerary: [], inclusions: [], exclusions: [],
@@ -91,6 +92,7 @@ function buildInitialState(trip: TripFull | null): TripFormState {
     discount_pct: trip.discount_pct, quoted_price: trip.quoted_price,
     advance_pct: trip.advance_pct ?? 50, total_slots: trip.total_slots,
     batch_number: trip.batch_number ?? "",
+    group_slug: trip.group_slug ?? null,
     departure_city: trip.departure_city ?? "", departure_airport: trip.departure_airport ?? "",
     booking_kind: trip.booking_kind ?? "trip", currency_code: trip.currency_code ?? "INR",
     overview: contentOf("overview"), description: contentOf("description"),
@@ -218,7 +220,8 @@ export function TripFormModal({ open, onClose, trip, destinations }: TripFormMod
         mrp_price: form.mrp_price, selling_price: form.selling_price,
         discount_pct: form.discount_pct, quoted_price: form.quoted_price,
         advance_pct: form.advance_pct, total_slots: form.total_slots,
-        batch_number: form.batch_number || null, tagline: form.tagline || null,
+        batch_number: form.batch_number || null, group_slug: form.group_slug,
+        tagline: form.tagline || null,
         departure_city: form.departure_city || null,
         departure_airport: form.departure_airport || null,
         booking_kind: form.booking_kind, currency_code: form.currency_code,
@@ -297,6 +300,28 @@ export function TripFormModal({ open, onClose, trip, destinations }: TripFormMod
       footer={footer}
     >
       <div className="space-y-5">
+        {/* Batch group context banner */}
+        {isEditing && form.group_slug && (
+          <div
+            style={{
+              background: "var(--surface2)",
+              border: "1px solid var(--line)",
+              borderRadius: 8,
+              padding: "10px 14px",
+              marginBottom: 0,
+              fontSize: 13,
+              color: "var(--mid)",
+            }}
+          >
+            <strong style={{ color: "var(--ink)" }}>
+              This trip is part of a batch group.
+            </strong>
+            <br />
+            Changes to dates, pricing, and slots only affect this batch. Content
+            changes (itinerary, gallery, inclusions) only affect this batch.
+          </div>
+        )}
+
         {/* Step indicator — unified for both create and edit */}
         <div className="space-y-3">
           {/* Progress bar */}

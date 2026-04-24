@@ -13,6 +13,7 @@ interface DataTableProps<T extends Record<string, unknown>> {
   columns: Column<T>[];
   data: T[];
   onRowClick?: (item: T) => void;
+  rowClassName?: (item: T, index: number) => string | undefined;
   emptyMessage?: string;
   emptyIcon?: string;
   className?: string;
@@ -22,6 +23,7 @@ function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   onRowClick,
+  rowClassName,
   emptyMessage = "No data found",
   emptyIcon = "📭",
   className,
@@ -62,7 +64,8 @@ function DataTable<T extends Record<string, unknown>>({
                 key={idx}
                 className={cn(
                   "border-b border-line last:border-b-0 transition-colors",
-                  onRowClick && "cursor-pointer hover:bg-surface2"
+                  onRowClick && "cursor-pointer hover:bg-surface2",
+                  rowClassName?.(item, idx),
                 )}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}
               >

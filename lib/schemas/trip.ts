@@ -27,6 +27,7 @@ export const tripBasicSchema = z.object({
   advance_pct: z.coerce.number().min(0).max(100).default(50),
   total_slots: z.coerce.number().min(0).nullable(),
   batch_number: z.string().nullable(),
+  group_slug: z.string().nullable().optional(),
   tagline: z.string().nullable().optional(),
   departure_city: z.string().nullable().optional(),
   departure_airport: z.string().nullable().optional(),

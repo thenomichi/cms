@@ -3,7 +3,7 @@
 import { tripBasicSchema } from "@/lib/schemas/trip";
 import { nextTripId, nextSequentialId } from "@/lib/ids";
 import { getServiceClient } from "@/lib/supabase/server";
-import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug } from "@/lib/db/trips";
+import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById } from "@/lib/db/trips";
 import { upsertTripContent, upsertHighlights } from "@/lib/db/trip-content";
 import { saveTripItinerary, type ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import {
@@ -12,6 +12,7 @@ import {
   type ExclusionInput,
 } from "@/lib/db/trip-inclusions";
 import { revalidateTrip } from "@/lib/revalidate";
+import { revalidatePath } from "next/cache";
 import { logActivity } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
@@ -240,6 +241,64 @@ export async function toggleTripFieldAction(
     return {
       success: false,
       error: err instanceof Error ? err.message : "Failed to toggle field",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Clone as Batch
+// ---------------------------------------------------------------------------
+
+export async function cloneAsBatchAction(
+  sourceTripId: string,
+): Promise<{ success: boolean; newTripId?: string; error?: string }> {
+  try {
+    const source = await getTripById(sourceTripId);
+    if (!source) return { success: false, error: "Source trip not found" };
+
+    // Look up destination to build the trip ID (same pattern as createTripAction)
+    let isDomestic = true;
+    let destCode = "GEN";
+    if (source.destination_id) {
+      const db = getServiceClient();
+      const { data: dest } = await db
+        .from("destinations")
+        .select("is_domestic, destination_code")
+        .eq("destination_id", source.destination_id)
+        .single();
+      if (dest) {
+        isDomestic = dest.is_domestic;
+        destCode = dest.destination_code.replace(/-/g, "").slice(0, 3).toUpperCase();
+      }
+    }
+
+    const newTripId = await nextTripId(
+      isDomestic,
+      source.trip_type ?? "Community",
+      destCode,
+    );
+
+    const newSlug = await generateUniqueSlug(
+      source.trip_name ?? "batch",
+      null, // no start date yet — admin will set it
+      sourceTripId, // exclude source from uniqueness check
+    );
+
+    await cloneAsBatch(sourceTripId, newTripId, newSlug);
+
+    await logActivity({
+      table_name: "trips",
+      record_id: newTripId,
+      action: "INSERT",
+      new_values: { cloned_from: sourceTripId, trip_name: source.trip_name },
+    });
+    revalidatePath("/trips");
+    return { success: true, newTripId };
+  } catch (err) {
+    console.error("[cloneAsBatchAction]", err);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Failed to create batch",
     };
   }
 }
