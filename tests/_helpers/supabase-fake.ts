@@ -88,6 +88,20 @@ export function makeSupabaseFake(programmed: Programmed = {}): SupabaseFake {
       return Promise.resolve(result);
     },
     storage: {
+      // Top-level bucket helpers (used by ensureCmsMediaBucket* paths).
+      getBucket: (id: string) => {
+        log.push({ storage: id, op: "getBucket" });
+        const key = `storage:${id}:getBucket`;
+        return Promise.resolve(programmed[key] ?? {
+          data: { id, public: true, allowed_mime_types: ["application/pdf", "image/jpeg", "image/png", "image/webp", "video/mp4", "video/webm", "video/quicktime"], file_size_limit: 52428800 },
+          error: null,
+        });
+      },
+      updateBucket: (id: string, opts: unknown) => {
+        log.push({ storage: id, op: "updateBucket", opts });
+        const key = `storage:${id}:updateBucket`;
+        return Promise.resolve(programmed[key] ?? { data: null, error: null });
+      },
       from: (bucket: string) => ({
         upload: (path: string, file: unknown, opts?: unknown) => {
           log.push({ storage: bucket, op: "upload", path, opts });
