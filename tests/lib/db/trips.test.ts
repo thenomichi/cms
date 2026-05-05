@@ -111,16 +111,22 @@ describe("trips db", () => {
     await expect(deleteTrip("T1")).rejects.toThrow();
   });
   it.each(["is_listed", "show_on_homepage"] as const)(
-    "toggleTripField updates %s",
+    "toggleTripField updates %s when trip is publicly listable",
     async (field) => {
-      current = makeSupabaseFake({ "trips:update": { data: null, error: null } });
+      current = makeSupabaseFake({
+        "trips:select": { data: { status: "Upcoming" }, error: null },
+        "trips:update": { data: null, error: null },
+      });
       await toggleTripField("T1", field, true);
       const upd = current.log.find((l) => l.op === "update") as any;
       expect(upd.payload[field]).toBe(true);
     },
   );
-  it("toggleTripField throws on error", async () => {
-    current = makeSupabaseFake({ "trips:update": { data: null, error: { message: "x" } } });
+  it("toggleTripField throws on update error (when listable)", async () => {
+    current = makeSupabaseFake({
+      "trips:select": { data: { status: "Upcoming" }, error: null },
+      "trips:update": { data: null, error: { message: "x" } },
+    });
     await expect(toggleTripField("T1", "is_listed", true)).rejects.toThrow();
   });
   it("cloneAsBatch clones trip + children", async () => {

@@ -218,12 +218,45 @@ export async function deleteTrip(id: string): Promise<void> {
 // Toggle fields
 // ---------------------------------------------------------------------------
 
+// trip.status values that allow a trip to be listed on the public site or
+// shown on the homepage. Draft and Cancelled trips must never appear on the
+// public site, regardless of how the toggle was flipped.
+export const PUBLIC_LISTABLE_STATUSES = ["Upcoming", "Ongoing", "Completed"] as const;
+const _publicListableSet = new Set<string>(PUBLIC_LISTABLE_STATUSES);
+export function isPubliclyListable(status: string | null | undefined): boolean {
+  return status != null && _publicListableSet.has(status);
+}
+
+export class TripNotListableError extends Error {
+  constructor(public readonly status: string | null) {
+    super(
+      `Trip in status "${status ?? "Draft"}" cannot be listed on the website. Move it to Upcoming, Ongoing, or Completed first.`,
+    );
+    this.name = "TripNotListableError";
+  }
+}
+
 export async function toggleTripField(
   id: string,
   field: "is_listed" | "show_on_homepage",
   value: boolean,
 ): Promise<void> {
   const db = getServiceClient();
+
+  // Turning a flag ON requires the trip to be in a publicly-listable status.
+  // Turning it OFF is always safe.
+  if (value) {
+    const { data: trip, error: readErr } = await db
+      .from("trips")
+      .select("status")
+      .eq("trip_id", id)
+      .single();
+    if (readErr) throw new Error(`toggleTripField read failed: ${readErr.message}`);
+    if (!isPubliclyListable(trip?.status)) {
+      throw new TripNotListableError(trip?.status ?? null);
+    }
+  }
+
   const { error } = await db
     .from("trips")
     .update({ [field]: value })

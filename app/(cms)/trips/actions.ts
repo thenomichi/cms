@@ -3,7 +3,7 @@
 import { tripBasicSchema } from "@/lib/schemas/trip";
 import { nextTripId, nextSequentialId } from "@/lib/ids";
 import { getServiceClient } from "@/lib/supabase/server";
-import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById } from "@/lib/db/trips";
+import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError } from "@/lib/db/trips";
 import { upsertTripContent, upsertHighlights } from "@/lib/db/trip-content";
 import { saveTripItinerary, type ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import {
@@ -42,6 +42,19 @@ function parseTripFormData(formData: FormData): TripFormPayload {
   return JSON.parse(raw) as TripFormPayload;
 }
 
+/**
+ * Reject saves that try to enable is_listed or show_on_homepage on a trip
+ * whose status doesn't allow public listing (Draft or Cancelled). Returns
+ * an error message, or null if the combination is valid.
+ */
+function validateListableStatus(settings: TripFormPayload["settings"]): string | null {
+  const wantsPublic = settings.is_listed || settings.show_on_homepage;
+  if (wantsPublic && !isPubliclyListable(settings.status)) {
+    return `A trip in status "${settings.status}" cannot be listed on the website or shown on the homepage. Move it to Upcoming, Ongoing, or Completed first.`;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // Create
 // ---------------------------------------------------------------------------
@@ -55,6 +68,8 @@ export async function createTripAction(
     if (!parsed.success) {
       return { success: false, error: parsed.error.issues[0].message };
     }
+    const statusErr = validateListableStatus(payload.settings);
+    if (statusErr) return { success: false, error: statusErr };
 
     // Look up destination to build the trip ID
     let isDomestic = true;
@@ -77,6 +92,11 @@ export async function createTripAction(
       parsed.data.start_date ?? null,
     );
 
+    // If status doesn't allow public listing, force the flags off — even if
+    // the form sent them on. validateListableStatus already rejects that
+    // combination, but defense in depth.
+    const canBePublic = isPubliclyListable(payload.settings.status);
+
     // Create trip record
     await createTrip({
       trip_id: tripId,
@@ -85,8 +105,8 @@ export async function createTripAction(
       // Keep total_seats and total_slots in sync
       total_slots: parsed.data.total_slots,
       status: payload.settings.status,
-      is_listed: payload.settings.is_listed,
-      show_on_homepage: payload.settings.show_on_homepage,
+      is_listed: canBePublic ? payload.settings.is_listed : false,
+      show_on_homepage: canBePublic ? payload.settings.show_on_homepage : false,
       dossier_url: payload.settings.dossier_url,
       dossier_published_at: payload.settings.dossier_published_at,
     });
@@ -143,6 +163,8 @@ export async function updateTripAction(
     if (!parsed.success) {
       return { success: false, error: parsed.error.issues[0].message };
     }
+    const statusErr = validateListableStatus(payload.settings);
+    if (statusErr) return { success: false, error: statusErr };
 
     // Regenerate slug from current trip name (unique, excluding this trip)
     const slug = await generateUniqueSlug(
@@ -151,14 +173,18 @@ export async function updateTripAction(
       tripId,
     );
 
+    // If the user moves status to a non-listable state, force the flags off
+    // so a trip can never be marked Draft/Cancelled while still public.
+    const canBePublic = isPubliclyListable(payload.settings.status);
+
     // Update trip record
     await updateTrip(tripId, {
       ...parsed.data,
       slug,
       total_slots: parsed.data.total_slots,
       status: payload.settings.status,
-      is_listed: payload.settings.is_listed,
-      show_on_homepage: payload.settings.show_on_homepage,
+      is_listed: canBePublic ? payload.settings.is_listed : false,
+      show_on_homepage: canBePublic ? payload.settings.show_on_homepage : false,
       dossier_url: payload.settings.dossier_url,
       dossier_published_at: payload.settings.dossier_published_at,
     });
@@ -237,6 +263,9 @@ export async function toggleTripFieldAction(
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
+    if (err instanceof TripNotListableError) {
+      return { success: false, error: err.message };
+    }
     console.error("[toggleTripFieldAction]", err);
     return {
       success: false,

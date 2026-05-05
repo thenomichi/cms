@@ -185,8 +185,9 @@ describe("media/actions", () => {
 // ---------------------------------------------------------------------------
 
 describe("trips/actions", () => {
-  it("toggleTripFieldAction logs UPDATE", async () => {
+  it("toggleTripFieldAction allows is_listed=true when status is Upcoming and logs UPDATE", async () => {
     current = makeSupabaseFake({
+      "trips:select": { data: { status: "Upcoming" }, error: null },
       "trips:update": { data: null, error: null },
       "audit_log:insert": { data: null, error: null },
     });
@@ -195,6 +196,37 @@ describe("trips/actions", () => {
     expect(r.success).toBe(true);
     const audit = current.log.find((l) => l.op === "insert" && l.from === "audit_log") as any;
     expect(audit.payload.action).toBe("UPDATE");
+  });
+
+  it("toggleTripFieldAction REJECTS is_listed=true when trip is Draft", async () => {
+    current = makeSupabaseFake({
+      "trips:select": { data: { status: "Draft" }, error: null },
+    });
+    const { toggleTripFieldAction } = await import("@/app/(cms)/trips/actions");
+    const r = await toggleTripFieldAction("T1", "is_listed", true, "hampi");
+    expect(r.success).toBe(false);
+    expect(r.error).toMatch(/Upcoming, Ongoing, or Completed/);
+    // Did not write
+    expect(current.log.find((l) => l.op === "update")).toBeUndefined();
+  });
+
+  it("toggleTripFieldAction REJECTS show_on_homepage=true when trip is Cancelled", async () => {
+    current = makeSupabaseFake({
+      "trips:select": { data: { status: "Cancelled" }, error: null },
+    });
+    const { toggleTripFieldAction } = await import("@/app/(cms)/trips/actions");
+    const r = await toggleTripFieldAction("T1", "show_on_homepage", true, "hampi");
+    expect(r.success).toBe(false);
+  });
+
+  it("toggleTripFieldAction allows un-listing (value=false) regardless of status", async () => {
+    current = makeSupabaseFake({
+      "trips:update": { data: null, error: null },
+      "audit_log:insert": { data: null, error: null },
+    });
+    const { toggleTripFieldAction } = await import("@/app/(cms)/trips/actions");
+    const r = await toggleTripFieldAction("T1", "is_listed", false, "hampi");
+    expect(r.success).toBe(true);
   });
   it("deleteTripAction returns error on DB failure", async () => {
     current = makeSupabaseFake({

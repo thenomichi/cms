@@ -25,6 +25,26 @@ interface SettingsTabProps {
 }
 
 export function SettingsTab({ form, updateField }: SettingsTabProps) {
+  // Draft and Cancelled trips can never be marked Listed or Show-on-Homepage.
+  // Disable the toggles to make the constraint visible before save.
+  const canBePublic =
+    form.status === "Upcoming" ||
+    form.status === "Ongoing" ||
+    form.status === "Completed";
+
+  function handleStatusChange(newStatus: string) {
+    updateField("status", newStatus);
+    // Auto-clear public flags when status moves out of a listable state.
+    const stillPublic =
+      newStatus === "Upcoming" ||
+      newStatus === "Ongoing" ||
+      newStatus === "Completed";
+    if (!stillPublic) {
+      if (form.is_listed) updateField("is_listed", false);
+      if (form.show_on_homepage) updateField("show_on_homepage", false);
+    }
+  }
+
   return (
     <div className="space-y-5">
       {/* ── Publishing ── */}
@@ -34,7 +54,7 @@ export function SettingsTab({ form, updateField }: SettingsTabProps) {
             <select
               className={SELECT}
               value={form.status}
-              onChange={(e) => updateField("status", e.target.value)}
+              onChange={(e) => handleStatusChange(e.target.value)}
             >
               {TRIP_STATUS_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -44,7 +64,16 @@ export function SettingsTab({ form, updateField }: SettingsTabProps) {
             </select>
           </FormField>
 
-          <div className="flex items-center justify-between rounded-lg border border-line bg-surface2/50 p-4">
+          {!canBePublic && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              Public listing is locked while status is <strong>{form.status}</strong>. Move the trip to Upcoming, Ongoing, or Completed to enable.
+            </div>
+          )}
+
+          <div
+            className="flex items-center justify-between rounded-lg border border-line bg-surface2/50 p-4 aria-disabled:opacity-50"
+            aria-disabled={!canBePublic}
+          >
             <div>
               <p className="text-sm font-medium text-ink">Listed on Website</p>
               <p className="text-xs text-mid">
@@ -54,10 +83,14 @@ export function SettingsTab({ form, updateField }: SettingsTabProps) {
             <Toggle
               checked={form.is_listed}
               onChange={(v) => updateField("is_listed", v)}
+              disabled={!canBePublic}
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-line bg-surface2/50 p-4">
+          <div
+            className="flex items-center justify-between rounded-lg border border-line bg-surface2/50 p-4 aria-disabled:opacity-50"
+            aria-disabled={!canBePublic}
+          >
             <div>
               <p className="text-sm font-medium text-ink">Show on Homepage</p>
               <p className="text-xs text-mid">
@@ -67,6 +100,7 @@ export function SettingsTab({ form, updateField }: SettingsTabProps) {
             <Toggle
               checked={form.show_on_homepage}
               onChange={(v) => updateField("show_on_homepage", v)}
+              disabled={!canBePublic}
             />
           </div>
         </div>
