@@ -21,6 +21,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle?: string }> = {
   "/faqs": { title: "FAQs", subtitle: "Frequently asked questions" },
   "/team": { title: "Team", subtitle: "Manage team members" },
   "/careers": { title: "Careers", subtitle: "Job listings & openings" },
+  "/hero-images": { title: "Hero Images", subtitle: "Page-level hero images — light & dark variants" },
   "/settings": { title: "Website Config", subtitle: "Hero, contact, branding & footer" },
   "/activity": { title: "Activity Log", subtitle: "Recent changes made through the CMS" },
 };

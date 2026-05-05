@@ -14,6 +14,7 @@ import {
   Settings,
   Activity,
   LogOut,
+  ImagePlay,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const navItems: NavItem[] = [
   { id: "faqs", label: "FAQs", icon: HelpCircle },
   { id: "team", label: "Team", icon: Users },
   { id: "careers", label: "Careers", icon: Briefcase },
+  { id: "hero-images", label: "Hero Images", icon: ImagePlay },
   { id: "settings", label: "Website Config", icon: Settings },
   { id: "activity", label: "Activity Log", icon: Activity },
 ];
