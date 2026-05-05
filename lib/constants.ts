@@ -52,7 +52,7 @@ export const EXCLUSION_REPOSITORY = [
 // trip_type values mirror the live trips_trip_type_check CHECK constraint.
 // Updating this list also requires a DB migration.
 export const TRIP_TYPE_OPTIONS = [
-  { value: "Community", label: "Join a Trip (Community)" },
+  { value: "Community", label: "Soulful Escapes (Community)" },
   { value: "Beyond Ordinary", label: "Beyond Ordinary (Invite-Only)" },
   { value: "Signature Journey", label: "Signature Journey (Bespoke)" },
   { value: "Customized Trips Only", label: "Customized Trip" },

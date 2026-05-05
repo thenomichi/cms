@@ -18,7 +18,7 @@ interface Props {
 }
 
 const PAGE_LABELS: Record<PageHeroKey, string> = {
-  "soulful-escapes": "Soulful Escapes (Join a Trip)",
+  "soulful-escapes": "Soulful Escapes",
   "beyond-ordinary": "Beyond Ordinary",
   "signature-journeys": "Signature Journeys",
   home: "Home",

@@ -27,7 +27,7 @@ import {
 
 const FILTER_OPTIONS = [
   { value: "all", label: "All" },
-  { value: "Community", label: "Community" },
+  { value: "Community", label: "Soulful Escapes" },
   { value: "Beyond Ordinary", label: "Beyond Ordinary" },
   { value: "Signature Journey", label: "Signature" },
 ];
@@ -36,6 +36,16 @@ const FILTER_OPTIONS = [
 // Badge helpers
 // ---------------------------------------------------------------------------
 
+// User-facing label per trip_type DB value. "Community" was renamed to
+// "Soulful Escapes" on the website; the DB value stays "Community" for FK
+// compatibility. Update both maps together.
+const TRIP_TYPE_LABEL: Record<string, string> = {
+  Community: "Soulful Escapes",
+  "Beyond Ordinary": "Beyond Ordinary",
+  "Signature Journey": "Signature Journey",
+  "Customized Trips Only": "Customized Trips Only",
+};
+
 function typeBadge(type: string | null) {
   const map: Record<string, "blue" | "purple" | "amber" | "green"> = {
     Community: "blue",
@@ -43,7 +53,8 @@ function typeBadge(type: string | null) {
     "Signature Journey": "amber",
     "Customized Trips Only": "green",
   };
-  return <Badge variant={map[type ?? ""] ?? "gray"}>{type ?? "—"}</Badge>;
+  const label = type ? TRIP_TYPE_LABEL[type] ?? type : "—";
+  return <Badge variant={map[type ?? ""] ?? "gray"}>{label}</Badge>;
 }
 
 function statusBadge(status: string | null) {

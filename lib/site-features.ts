@@ -57,10 +57,10 @@ export const SITE_FEATURE_FIELDS: Array<{
 }> = [
   {
     key: "join_a_trip",
-    title: "Join a Trip",
+    title: "Soulful Escapes",
     group: "trip_discovery",
     description:
-      "Community trip pages and all their entry points. Hides desktop nav, mobile nav, footer links, homepage trip discovery, and blocks direct access.",
+      "Soulful Escapes (community trip) pages and all their entry points. Hides desktop nav, mobile nav, footer links, homepage trip discovery, and blocks direct access. Route remains /join-a-trip for backward compatibility.",
   },
   {
     key: "beyond_ordinary",

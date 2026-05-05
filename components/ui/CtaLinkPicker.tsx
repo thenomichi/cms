@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 // Static pages that are always available as CTA targets
 const STATIC_PAGES = [
-  { value: "/join-a-trip", label: "Join a Trip (listing page)" },
+  { value: "/join-a-trip", label: "Soulful Escapes (listing page)" },
   { value: "/beyond-ordinary", label: "Beyond Ordinary (listing page)" },
   { value: "/signature-journeys", label: "Signature Journeys (listing page)" },
   { value: "/plan-a-trip", label: "Plan a Trip (enquiry form)" },
