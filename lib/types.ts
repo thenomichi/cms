@@ -6,7 +6,7 @@
 export interface DbTrip {
   trip_id: string;
   slug: string | null;
-  trip_type: string | null; // "Community" | "Beyond Ordinary" | "Signature Journey" | "Plan a Trip"
+  trip_type: string | null; // "Community" | "Beyond Ordinary" | "Signature Journey" | "Customized Trips Only"
   trip_sub_type: string | null;
   trip_category: string | null;
   destination_id: string | null;

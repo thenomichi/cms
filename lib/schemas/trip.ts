@@ -1,18 +1,81 @@
 import { z } from "zod";
 
 // ---------------------------------------------------------------------------
+// Enum allowlists — mirror the live Postgres CHECK constraints exactly.
+// Source of truth: website/supabase/migrations/*. If a CHECK widens or
+// narrows, update this file in the same PR.
+// ---------------------------------------------------------------------------
+
+export const TRIP_TYPES = [
+  "Community",
+  "Beyond Ordinary",
+  "Signature Journey",
+  "Customized Trips Only",
+] as const;
+
+export const ANNOUNCEMENT_TAG_TYPES = [
+  "new",
+  "alert",
+  "offer",
+  "sold_out",
+  "event",
+] as const;
+
+export const TEAM_ROLES = [
+  "Admin",
+  "Sales",
+  "Operations",
+  "Finance",
+  "Marketing",
+  "Founder",
+  "Captain",
+  "Other",
+] as const;
+
+export const TRIP_CONTENT_TYPES = [
+  "overview",
+  "description",
+  "tagline",
+  "highlight",
+] as const;
+
+export const TRIP_INCLUSION_TYPES = ["inclusion", "exclusion"] as const;
+
+export const TRIP_GALLERY_CATEGORIES = [
+  "cover",
+  "hero",
+  "itinerary",
+  "accommodation",
+  "activity",
+  "gallery",
+] as const;
+
+export const SUGGESTION_PIPELINE_STATUSES = [
+  "New Request",
+  "In Discussion",
+  "Proposal Sent",
+  "Negotiating",
+  "Confirmed",
+  "Lost",
+  "Moved to Group Trip",
+] as const;
+
+export const TRIP_STATUSES = [
+  "Draft",
+  "Upcoming",
+  "Ongoing",
+  "Completed",
+  "Cancelled",
+] as const;
+
+// ---------------------------------------------------------------------------
 // Trip — basic fields for the create / edit form
 // ---------------------------------------------------------------------------
 
 export const tripBasicSchema = z.object({
   trip_name: z.string().min(2, "Trip name is required"),
   // slug is auto-generated server-side — not in the form schema
-  trip_type: z.enum([
-    "Community",
-    "Beyond Ordinary",
-    "Signature Journey",
-    "Plan a Trip",
-  ]),
+  trip_type: z.enum(TRIP_TYPES),
   trip_sub_type: z.string().nullable().optional(),
   trip_category: z.string().nullable().optional(),
   destination_id: z.string().nullable(),
@@ -54,7 +117,7 @@ export const tripItinerarySchema = z.object({
 // ---------------------------------------------------------------------------
 
 export const tripContentSchema = z.object({
-  content_type: z.string().min(1, "Content type is required"),
+  content_type: z.enum(TRIP_CONTENT_TYPES),
   content_text: z.string().min(1, "Content text is required"),
   content_order: z.coerce.number().min(0).default(0),
 });
@@ -68,14 +131,7 @@ export const tripGallerySchema = z.object({
   thumbnail_url: z.string().url().nullable().optional(),
   alt_text: z.string().nullable().optional(),
   caption: z.string().nullable().optional(),
-  category: z.enum([
-    "cover",
-    "hero",
-    "itinerary",
-    "accommodation",
-    "activity",
-    "gallery",
-  ]),
+  category: z.enum(TRIP_GALLERY_CATEGORIES),
   is_cover: z.boolean().default(false),
   photographer: z.string().nullable().optional(),
 });
@@ -85,7 +141,7 @@ export const tripGallerySchema = z.object({
 // ---------------------------------------------------------------------------
 
 export const tripInclusionSchema = z.object({
-  inclusion_type: z.enum(["inclusion", "exclusion"]),
+  inclusion_type: z.enum(TRIP_INCLUSION_TYPES),
   icon: z.string().nullable().optional(),
   name: z.string().min(1, "Name is required"),
   note: z.string().nullable().optional(),
@@ -122,18 +178,23 @@ export const reviewSchema = z.object({
 // Announcement
 // ---------------------------------------------------------------------------
 
-export const announcementSchema = z.object({
-  tag_type: z.string().min(1, "Tag type is required"),
-  headline: z.string().min(2, "Headline is required"),
-  sub_text: z.string().nullable().optional(),
-  cta_label: z.string().nullable().optional(),
-  cta_link: z.string().nullable().optional(),
-  background_image_url: z.string().url().nullable().optional(),
-  trip_id: z.string().nullable().optional(),
-  is_active: z.boolean().default(true),
-  starts_at: z.string().nullable().optional(),
-  ends_at: z.string().nullable().optional(),
-});
+export const announcementSchema = z
+  .object({
+    tag_type: z.enum(ANNOUNCEMENT_TAG_TYPES),
+    headline: z.string().min(2, "Headline is required"),
+    sub_text: z.string().nullable().optional(),
+    cta_label: z.string().nullable().optional(),
+    cta_link: z.string().nullable().optional(),
+    background_image_url: z.string().url().nullable().optional(),
+    trip_id: z.string().nullable().optional(),
+    is_active: z.boolean().default(true),
+    starts_at: z.string().nullable().optional(),
+    ends_at: z.string().nullable().optional(),
+  })
+  .refine(
+    (v) => !v.starts_at || !v.ends_at || new Date(v.starts_at) <= new Date(v.ends_at),
+    { message: "starts_at must be on or before ends_at", path: ["ends_at"] },
+  );
 
 // ---------------------------------------------------------------------------
 // Destination
@@ -177,7 +238,7 @@ export const teamMemberSchema = z.object({
   full_name: z.string().min(2, "Full name is required"),
   email: z.string().email().nullable().optional(),
   phone: z.string().nullable().optional(),
-  role: z.string().min(1, "Role is required"),
+  role: z.enum(TEAM_ROLES),
   bio: z.string().nullable().optional(),
   photo_url: z.string().url().nullable().optional(),
   instagram: z.string().nullable().optional(),
@@ -185,82 +246,10 @@ export const teamMemberSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Company value
+// Suggestion pipeline status
 // ---------------------------------------------------------------------------
 
-export const companyValueSchema = z.object({
-  icon: z.string().min(1, "Icon is required"),
-  title: z.string().min(2, "Title is required"),
-  description: z.string().nullable().optional(),
-  page_context: z.string().default("about"),
-  is_active: z.boolean().default(true),
-});
-
-// ---------------------------------------------------------------------------
-// Process step
-// ---------------------------------------------------------------------------
-
-export const processStepSchema = z.object({
-  step_number: z.string().min(1, "Step number is required"),
-  title: z.string().min(2, "Title is required"),
-  description: z.string().nullable().optional(),
-  is_active: z.boolean().default(true),
-});
-
-// ---------------------------------------------------------------------------
-// Footer section
-// ---------------------------------------------------------------------------
-
-export const footerSectionSchema = z.object({
-  title: z.string().min(1, "Section title is required"),
-  is_active: z.boolean().default(true),
-});
-
-// ---------------------------------------------------------------------------
-// Footer link
-// ---------------------------------------------------------------------------
-
-export const footerLinkSchema = z.object({
-  section_id: z.string().min(1, "Section is required"),
-  label: z.string().min(1, "Link label is required"),
-  href: z.string().min(1, "Link URL is required"),
-  is_active: z.boolean().default(true),
-});
-
-// ---------------------------------------------------------------------------
-// Gift occasion
-// ---------------------------------------------------------------------------
-
-export const giftOccasionSchema = z.object({
-  icon: z.string().min(1, "Icon is required"),
-  name: z.string().min(2, "Name is required"),
-  description: z.string().nullable().optional(),
-  is_active: z.boolean().default(true),
-});
-
-// ---------------------------------------------------------------------------
-// Gift amount
-// ---------------------------------------------------------------------------
-
-export const giftAmountSchema = z.object({
-  value: z.coerce.number().min(1, "Amount must be at least 1"),
-  label: z.string().min(1, "Label is required"),
-  subtitle: z.string().nullable().optional(),
-  is_active: z.boolean().default(true),
-});
-
-// ---------------------------------------------------------------------------
-// Gift design
-// ---------------------------------------------------------------------------
-
-export const giftDesignSchema = z.object({
-  design_key: z.string().min(1, "Design key is required"),
-  name: z.string().min(1, "Name is required"),
-  gradient: z.string().min(1, "Gradient CSS is required"),
-  is_active: z.boolean().default(true),
-});
+export const suggestionStatusSchema = z.enum(SUGGESTION_PIPELINE_STATUSES);
 
 // ---------------------------------------------------------------------------
 // Site gallery

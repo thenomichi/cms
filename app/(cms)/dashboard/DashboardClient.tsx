@@ -16,7 +16,7 @@ import type { DashboardStats } from "@/lib/db/dashboard";
 function typeBadge(type: string | null) {
   const map: Record<string, "blue" | "purple" | "amber" | "green"> = {
     Community: "blue", "Beyond Ordinary": "purple",
-    "Signature Journey": "amber", "Plan a Trip": "green",
+    "Signature Journey": "amber", "Customized Trips Only": "green",
   };
   return <Badge variant={map[type ?? ""] ?? "gray"}>{type ?? "—"}</Badge>;
 }

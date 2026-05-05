@@ -89,22 +89,14 @@ export async function toggleGalleryCover(
   tripId: string,
   galleryId: string,
 ): Promise<void> {
+  // Atomic: nm_set_trip_cover_image holds an advisory lock, demotes any
+  // existing cover, then promotes the chosen one — all in one transaction.
   const sb = getServiceClient();
-  // Unset all covers for this trip
-  const { error: unsetError } = await sb
-    .from("trip_gallery")
-    .update({ is_cover: false, updated_at: new Date().toISOString() })
-    .eq("trip_id", tripId);
-
-  if (unsetError) throw unsetError;
-
-  // Set the chosen one
-  const { error: setError } = await sb
-    .from("trip_gallery")
-    .update({ is_cover: true, updated_at: new Date().toISOString() })
-    .eq("gallery_id", galleryId);
-
-  if (setError) throw setError;
+  const { error } = await sb.rpc("nm_set_trip_cover_image", {
+    p_trip_id: tripId,
+    p_gallery_id: galleryId,
+  });
+  if (error) throw error;
 }
 
 // ---------------------------------------------------------------------------

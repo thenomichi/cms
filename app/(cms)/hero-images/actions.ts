@@ -4,18 +4,24 @@ import { revalidatePath } from "next/cache";
 import { getServiceClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/audit";
 
-export type PageHeroKey =
-  | "soulful-escapes"
-  | "beyond-ordinary"
-  | "signature-journeys"
-  | "home"
-  | "plan-a-trip"
-  | "about";
+export const PAGE_HERO_KEYS = [
+  "soulful-escapes",
+  "beyond-ordinary",
+  "signature-journeys",
+  "home",
+  "plan-a-trip",
+  "about",
+] as const;
+
+export type PageHeroKey = (typeof PAGE_HERO_KEYS)[number];
 
 export async function updatePageHeroImage(
   pageKey: PageHeroKey,
   data: { image_light?: string | null; image_dark?: string | null; alt_text?: string | null },
 ): Promise<{ success: boolean; error?: string }> {
+  if (!(PAGE_HERO_KEYS as readonly string[]).includes(pageKey)) {
+    return { success: false, error: `Invalid page_key: ${pageKey}` };
+  }
   try {
     const sb = getServiceClient();
     const { error } = await sb

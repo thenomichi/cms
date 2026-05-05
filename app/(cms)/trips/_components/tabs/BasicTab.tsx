@@ -21,7 +21,7 @@ interface BasicTabProps {
 
 export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
   const previewSlug = slugify(form.trip_name);
-  const isCustomTrip = form.trip_type === "Signature Journey" || form.trip_type === "Plan a Trip";
+  const isCustomTrip = form.trip_type === "Signature Journey" || form.trip_type === "Customized Trips Only";
 
   return (
     <div className="space-y-5">

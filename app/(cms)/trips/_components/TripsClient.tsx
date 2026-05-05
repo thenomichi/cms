@@ -41,7 +41,7 @@ function typeBadge(type: string | null) {
     Community: "blue",
     "Beyond Ordinary": "purple",
     "Signature Journey": "amber",
-    "Plan a Trip": "green",
+    "Customized Trips Only": "green",
   };
   return <Badge variant={map[type ?? ""] ?? "gray"}>{type ?? "—"}</Badge>;
 }
