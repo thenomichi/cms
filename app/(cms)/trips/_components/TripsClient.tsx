@@ -27,7 +27,7 @@ import {
 
 const FILTER_OPTIONS = [
   { value: "all", label: "All" },
-  { value: "Community", label: "Community" },
+  { value: "Community", label: "Soulful Escapes" },
   { value: "Beyond Ordinary", label: "Beyond Ordinary" },
   { value: "Signature Journey", label: "Signature" },
 ];
@@ -36,14 +36,25 @@ const FILTER_OPTIONS = [
 // Badge helpers
 // ---------------------------------------------------------------------------
 
+// User-facing label per trip_type DB value. "Community" was renamed to
+// "Soulful Escapes" on the website; the DB value stays "Community" for FK
+// compatibility. Update both maps together.
+const TRIP_TYPE_LABEL: Record<string, string> = {
+  Community: "Soulful Escapes",
+  "Beyond Ordinary": "Beyond Ordinary",
+  "Signature Journey": "Signature Journey",
+  "Customized Trips Only": "Customized Trips Only",
+};
+
 function typeBadge(type: string | null) {
   const map: Record<string, "blue" | "purple" | "amber" | "green"> = {
     Community: "blue",
     "Beyond Ordinary": "purple",
     "Signature Journey": "amber",
-    "Plan a Trip": "green",
+    "Customized Trips Only": "green",
   };
-  return <Badge variant={map[type ?? ""] ?? "gray"}>{type ?? "—"}</Badge>;
+  const label = type ? TRIP_TYPE_LABEL[type] ?? type : "—";
+  return <Badge variant={map[type ?? ""] ?? "gray"}>{label}</Badge>;
 }
 
 function statusBadge(status: string | null) {
@@ -146,6 +157,12 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
     field: "is_listed" | "show_on_homepage",
     value: boolean,
   ) {
+    // Draft and Cancelled trips can never be listed publicly. Bail early
+     // with a clear message instead of round-tripping to the server.
+    if (value && trip.status !== "Upcoming" && trip.status !== "Ongoing" && trip.status !== "Completed") {
+      toast.error(`Trip is "${trip.status ?? "Draft"}". Move it to Upcoming, Ongoing, or Completed first.`);
+      return;
+    }
     // Block listing a trip without dates set
     if (value && (field === "is_listed" || field === "show_on_homepage") && !trip.start_date) {
       toast.error("Set the trip dates before listing it on the website.");
@@ -346,12 +363,21 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
       header: "Listed",
       render: (row) => {
         const t = row as TripWithDestination;
+        const lockedByStatus = t.status === "Draft" || t.status === "Cancelled";
         return (
-          <Toggle
-            checked={t.is_listed ?? false}
-            onChange={(v) => handleToggle(t, "is_listed", v)}
-            disabled={isPending}
-          />
+          <span
+            title={
+              lockedByStatus
+                ? `Trip is ${t.status}. Move it to Upcoming, Ongoing, or Completed to allow listing.`
+                : undefined
+            }
+          >
+            <Toggle
+              checked={t.is_listed ?? false}
+              onChange={(v) => handleToggle(t, "is_listed", v)}
+              disabled={isPending || lockedByStatus}
+            />
+          </span>
         );
       },
     },
@@ -360,12 +386,21 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
       header: "Homepage",
       render: (row) => {
         const t = row as TripWithDestination;
+        const lockedByStatus = t.status === "Draft" || t.status === "Cancelled";
         return (
-          <Toggle
-            checked={t.show_on_homepage ?? false}
-            onChange={(v) => handleToggle(t, "show_on_homepage", v)}
-            disabled={isPending}
-          />
+          <span
+            title={
+              lockedByStatus
+                ? `Trip is ${t.status}. Move it to Upcoming, Ongoing, or Completed to allow listing.`
+                : undefined
+            }
+          >
+            <Toggle
+              checked={t.show_on_homepage ?? false}
+              onChange={(v) => handleToggle(t, "show_on_homepage", v)}
+              disabled={isPending || lockedByStatus}
+            />
+          </span>
         );
       },
     },

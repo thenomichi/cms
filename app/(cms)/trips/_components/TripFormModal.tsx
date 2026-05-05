@@ -54,8 +54,9 @@ export interface TripFormState {
   status: string;
   is_listed: boolean;
   show_on_homepage: boolean;
+  // Trip Itinerary PDF URL (DB column is dossier_url for historical reasons —
+  // the website's "Download Itinerary" button reads this column).
   dossier_url: string;
-  dossier_published_at: string;
 }
 
 function buildInitialState(trip: TripFull | null): TripFormState {
@@ -70,7 +71,7 @@ function buildInitialState(trip: TripFull | null): TripFormState {
       overview: "", description: "", tagline: "", highlights: [],
       itinerary: [], inclusions: [], exclusions: [],
       status: "Draft", is_listed: false, show_on_homepage: false,
-      dossier_url: "", dossier_published_at: "",
+      dossier_url: "",
     };
   }
 
@@ -109,7 +110,7 @@ function buildInitialState(trip: TripFull | null): TripFormState {
       .map((i) => ({ name: i.name })),
     status: trip.status ?? "Draft", is_listed: trip.is_listed ?? false,
     show_on_homepage: trip.show_on_homepage ?? false,
-    dossier_url: trip.dossier_url ?? "", dossier_published_at: trip.dossier_published_at ?? "",
+    dossier_url: trip.dossier_url ?? "",
   };
 }
 
@@ -233,7 +234,6 @@ export function TripFormModal({ open, onClose, trip, destinations }: TripFormMod
         status: form.status, is_listed: form.is_listed,
         show_on_homepage: form.show_on_homepage,
         dossier_url: form.dossier_url || null,
-        dossier_published_at: form.dossier_published_at || null,
       },
     };
 
@@ -402,7 +402,11 @@ export function TripFormModal({ open, onClose, trip, destinations }: TripFormMod
         )}
         {activeStep === "settings" && (
           <>
-            <SettingsTab form={form} updateField={updateField} />
+            <SettingsTab
+              form={form}
+              updateField={updateField}
+              tripId={trip?.trip_id ?? null}
+            />
             {/* Create mode: show summary before creating */}
             {!isEditing && form.trip_name && (
               <div className="rounded-lg border border-line bg-surface p-4">

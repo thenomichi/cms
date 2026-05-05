@@ -3,7 +3,7 @@
 import { tripBasicSchema } from "@/lib/schemas/trip";
 import { nextTripId, nextSequentialId } from "@/lib/ids";
 import { getServiceClient } from "@/lib/supabase/server";
-import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById } from "@/lib/db/trips";
+import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError } from "@/lib/db/trips";
 import { upsertTripContent, upsertHighlights } from "@/lib/db/trip-content";
 import { saveTripItinerary, type ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import {
@@ -32,14 +32,28 @@ interface TripFormPayload {
     status: string;
     is_listed: boolean;
     show_on_homepage: boolean;
+    // dossier_url is historical naming — the website's "Download Itinerary"
+    // link reads this column. CMS exposes it as "Trip Itinerary".
     dossier_url: string | null;
-    dossier_published_at: string | null;
   };
 }
 
 function parseTripFormData(formData: FormData): TripFormPayload {
   const raw = formData.get("payload") as string;
   return JSON.parse(raw) as TripFormPayload;
+}
+
+/**
+ * Reject saves that try to enable is_listed or show_on_homepage on a trip
+ * whose status doesn't allow public listing (Draft or Cancelled). Returns
+ * an error message, or null if the combination is valid.
+ */
+function validateListableStatus(settings: TripFormPayload["settings"]): string | null {
+  const wantsPublic = settings.is_listed || settings.show_on_homepage;
+  if (wantsPublic && !isPubliclyListable(settings.status)) {
+    return `A trip in status "${settings.status}" cannot be listed on the website or shown on the homepage. Move it to Upcoming, Ongoing, or Completed first.`;
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +69,8 @@ export async function createTripAction(
     if (!parsed.success) {
       return { success: false, error: parsed.error.issues[0].message };
     }
+    const statusErr = validateListableStatus(payload.settings);
+    if (statusErr) return { success: false, error: statusErr };
 
     // Look up destination to build the trip ID
     let isDomestic = true;
@@ -77,6 +93,11 @@ export async function createTripAction(
       parsed.data.start_date ?? null,
     );
 
+    // If status doesn't allow public listing, force the flags off — even if
+    // the form sent them on. validateListableStatus already rejects that
+    // combination, but defense in depth.
+    const canBePublic = isPubliclyListable(payload.settings.status);
+
     // Create trip record
     await createTrip({
       trip_id: tripId,
@@ -85,10 +106,13 @@ export async function createTripAction(
       // Keep total_seats and total_slots in sync
       total_slots: parsed.data.total_slots,
       status: payload.settings.status,
-      is_listed: payload.settings.is_listed,
-      show_on_homepage: payload.settings.show_on_homepage,
+      is_listed: canBePublic ? payload.settings.is_listed : false,
+      show_on_homepage: canBePublic ? payload.settings.show_on_homepage : false,
       dossier_url: payload.settings.dossier_url,
-      dossier_published_at: payload.settings.dossier_published_at,
+      // dossier_published_at retired from the CMS form. Always null so the
+      // website's bookings page shows the itinerary as soon as dossier_url
+      // is set, instead of gating on a date that admins no longer fill.
+      dossier_published_at: null,
     });
 
     // Save content
@@ -143,6 +167,8 @@ export async function updateTripAction(
     if (!parsed.success) {
       return { success: false, error: parsed.error.issues[0].message };
     }
+    const statusErr = validateListableStatus(payload.settings);
+    if (statusErr) return { success: false, error: statusErr };
 
     // Regenerate slug from current trip name (unique, excluding this trip)
     const slug = await generateUniqueSlug(
@@ -151,16 +177,21 @@ export async function updateTripAction(
       tripId,
     );
 
+    // If the user moves status to a non-listable state, force the flags off
+    // so a trip can never be marked Draft/Cancelled while still public.
+    const canBePublic = isPubliclyListable(payload.settings.status);
+
     // Update trip record
     await updateTrip(tripId, {
       ...parsed.data,
       slug,
       total_slots: parsed.data.total_slots,
       status: payload.settings.status,
-      is_listed: payload.settings.is_listed,
-      show_on_homepage: payload.settings.show_on_homepage,
+      is_listed: canBePublic ? payload.settings.is_listed : false,
+      show_on_homepage: canBePublic ? payload.settings.show_on_homepage : false,
       dossier_url: payload.settings.dossier_url,
-      dossier_published_at: payload.settings.dossier_published_at,
+      // dossier_published_at retired from the CMS form (see createTripAction).
+      dossier_published_at: null,
     });
 
     // Save content
@@ -222,6 +253,56 @@ export async function deleteTripAction(
 }
 
 // ---------------------------------------------------------------------------
+// Itinerary PDF upload
+//
+// Stores the PDF at cms-media/trip-itinerary/{tripId}-{ts}.pdf and returns
+// the public URL. The caller writes the URL into trips.dossier_url (the
+// column name is historical — the website uses it as the "Download
+// Itinerary" link).
+// ---------------------------------------------------------------------------
+
+const ITINERARY_PDF_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+const ITINERARY_BUCKET_PATH = "trip-itinerary";
+
+export async function uploadTripItineraryAction(
+  tripId: string,
+  file: File,
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  if (!tripId || !/^[A-Za-z0-9_-]+$/.test(tripId)) {
+    return { success: false, error: "Invalid trip id" };
+  }
+  if (file.type !== "application/pdf") {
+    return { success: false, error: "Only PDF files are allowed" };
+  }
+  if (file.size > ITINERARY_PDF_MAX_BYTES) {
+    return { success: false, error: `File exceeds 25MB limit` };
+  }
+
+  try {
+    // Make sure the cms-media bucket has application/pdf in its allowlist.
+    // No-op on bucket configurations that already include it; idempotent.
+    const { ensureCmsMediaBucketAllowsItineraryUploads } = await import(
+      "@/app/(cms)/settings/actions"
+    );
+    await ensureCmsMediaBucketAllowsItineraryUploads();
+
+    const { uploadImage } = await import("@/lib/storage/upload");
+    const path = `${ITINERARY_BUCKET_PATH}/${tripId}-${Date.now()}.pdf`;
+    const url = await uploadImage(file, path);
+    await logActivity({
+      table_name: "trips",
+      record_id: tripId,
+      action: "UPDATE",
+      new_values: { itinerary_uploaded: true, itinerary_path: path },
+    });
+    return { success: true, url };
+  } catch (err) {
+    console.error("[uploadTripItineraryAction]", err);
+    return { success: false, error: err instanceof Error ? err.message : "Upload failed" };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Toggle
 // ---------------------------------------------------------------------------
 
@@ -237,6 +318,9 @@ export async function toggleTripFieldAction(
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
+    if (err instanceof TripNotListableError) {
+      return { success: false, error: err.message };
+    }
     console.error("[toggleTripFieldAction]", err);
     return {
       success: false,

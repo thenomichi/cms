@@ -25,7 +25,13 @@ type MediaResponse = { success: boolean; url?: string; error?: string };
 const CMS_MEDIA_BUCKET = "cms-media";
 const HERO_IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const HERO_VIDEO_MIME_TYPES = ["video/mp4", "video/webm", "video/quicktime"] as const;
-const HERO_MEDIA_MIME_TYPES = [...HERO_IMAGE_MIME_TYPES, ...HERO_VIDEO_MIME_TYPES] as const;
+// PDF is needed for trip itinerary uploads (app/(cms)/trips/actions.ts).
+const ITINERARY_DOC_MIME_TYPES = ["application/pdf"] as const;
+const HERO_MEDIA_MIME_TYPES = [
+  ...HERO_IMAGE_MIME_TYPES,
+  ...HERO_VIDEO_MIME_TYPES,
+  ...ITINERARY_DOC_MIME_TYPES,
+] as const;
 const HERO_MEDIA_FILE_SIZE_LIMIT_BYTES = 50 * 1024 * 1024;
 
 function getBucketAllowedMimeTypes(bucket: unknown): string[] {
@@ -67,6 +73,14 @@ export async function fetchHeroMediaImagesAction(): Promise<{ url: string; alt?:
   } catch {
     return [];
   }
+}
+
+/**
+ * Re-exposed for trip itinerary uploads. Same logic, narrower public name.
+ * Keeps a single place that mutates the cms-media bucket.
+ */
+export async function ensureCmsMediaBucketAllowsItineraryUploads(): Promise<void> {
+  return ensureCmsMediaBucketSupportsHeroMediaUploads();
 }
 
 async function ensureCmsMediaBucketSupportsHeroMediaUploads(): Promise<void> {

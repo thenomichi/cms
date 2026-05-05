@@ -214,6 +214,7 @@ describe("updateSettingsAction", () => {
           "video/mp4",
           "video/webm",
           "video/quicktime",
+          "application/pdf",
         ],
       },
       error: null,

@@ -13,12 +13,20 @@ import type { DashboardStats } from "@/lib/db/dashboard";
 // Helpers
 // ---------------------------------------------------------------------------
 
+const TRIP_TYPE_LABEL: Record<string, string> = {
+  Community: "Soulful Escapes",
+  "Beyond Ordinary": "Beyond Ordinary",
+  "Signature Journey": "Signature Journey",
+  "Customized Trips Only": "Customized Trips Only",
+};
+
 function typeBadge(type: string | null) {
   const map: Record<string, "blue" | "purple" | "amber" | "green"> = {
     Community: "blue", "Beyond Ordinary": "purple",
-    "Signature Journey": "amber", "Plan a Trip": "green",
+    "Signature Journey": "amber", "Customized Trips Only": "green",
   };
-  return <Badge variant={map[type ?? ""] ?? "gray"}>{type ?? "—"}</Badge>;
+  const label = type ? TRIP_TYPE_LABEL[type] ?? type : "—";
+  return <Badge variant={map[type ?? ""] ?? "gray"}>{label}</Badge>;
 }
 
 function statusBadge(status: string | null) {
