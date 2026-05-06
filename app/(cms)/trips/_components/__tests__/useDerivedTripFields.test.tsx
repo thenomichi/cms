@@ -104,3 +104,29 @@ describe("useDerivedTripFields — selling_price", () => {
     expect(result.current.form.selling_price).toBeNull();
   });
 });
+
+describe("useDerivedTripFields — selling_price with discount_amount", () => {
+  it("subtracts discount_amount from mrp_price when set", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 30000, discount_amount: 5000 }));
+    });
+    expect(result.current.form.selling_price).toBe(25000);
+  });
+
+  it("clamps selling_price at 0 when discount_amount exceeds mrp", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 5000, discount_amount: 8000 }));
+    });
+    expect(result.current.form.selling_price).toBe(0);
+  });
+
+  it("prefers discount_pct over discount_amount when both are set (defensive)", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 10000, discount_pct: 50, discount_amount: 2000 }));
+    });
+    expect(result.current.form.selling_price).toBe(5000);
+  });
+});
