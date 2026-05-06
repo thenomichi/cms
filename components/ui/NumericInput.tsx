@@ -10,6 +10,9 @@ interface NumericInputProps {
   min?: number;
   max?: number;
   allowDecimal?: boolean;
+  allowNull?: boolean;       // default true (preserves existing behavior)
+  step?: number;             // default 1, used by steppers (Task 3)
+  showSteppers?: boolean;    // default false (Task 3 toggles this in BasicTab consumers)
   suffix?: string;
   prefix?: string;
   disabled?: boolean;
@@ -31,6 +34,9 @@ export function NumericInput({
   min,
   max,
   allowDecimal = false,
+  allowNull = true,
+  step = 1,
+  showSteppers = false,
   suffix,
   prefix,
   disabled,
@@ -82,10 +88,15 @@ export function NumericInput({
 
   // Validate on blur — apply min constraint only when user is done typing
   const handleBlur = () => {
-    if (displayValue === "") return; // empty is allowed
+    if (displayValue === "") {
+      if (!allowNull) {
+        onChange(min ?? 0);
+      }
+      return;
+    }
     const num = allowDecimal ? parseFloat(displayValue) : parseInt(displayValue, 10);
     if (isNaN(num)) {
-      onChange(null);
+      onChange(allowNull ? null : (min ?? 0));
       return;
     }
     if (min !== undefined && num < min) {

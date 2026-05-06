@@ -65,3 +65,32 @@ describe("NumericInput — existing behavior", () => {
     expect(calls).not.toContain(150);
   });
 });
+
+describe("NumericInput — allowNull", () => {
+  it("snaps empty back to min on blur when allowNull is false", async () => {
+    const onChange = vi.fn();
+    render(<Controlled initial={3} min={1} allowNull={false} onChange={onChange} />);
+    const input = screen.getByRole("textbox");
+    await userEvent.clear(input);
+    input.blur();
+    expect(onChange).toHaveBeenLastCalledWith(1);
+  });
+
+  it("snaps empty to 0 when allowNull is false and no min set", async () => {
+    const onChange = vi.fn();
+    render(<Controlled initial={3} allowNull={false} onChange={onChange} />);
+    const input = screen.getByRole("textbox");
+    await userEvent.clear(input);
+    input.blur();
+    expect(onChange).toHaveBeenLastCalledWith(0);
+  });
+
+  it("allows null on blur when allowNull is true (default)", async () => {
+    const onChange = vi.fn();
+    render(<Controlled initial={3} min={1} onChange={onChange} />);
+    const input = screen.getByRole("textbox");
+    await userEvent.clear(input);
+    input.blur();
+    expect(onChange).toHaveBeenLastCalledWith(null);
+  });
+});
