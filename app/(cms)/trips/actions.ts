@@ -26,6 +26,27 @@ function logActivityAsync(input: Parameters<typeof logActivity>[0]): void {
   });
 }
 
+// Memoize the bucket allowlist check at module scope. The check is
+// idempotent and read-mostly; running it once per server lifetime is
+// safe and removes a hot-path import + roundtrip per upload.
+let _bucketAllowlistReady: Promise<void> | null = null;
+function ensureBucketAllowlistOnce(): Promise<void> {
+  if (!_bucketAllowlistReady) {
+    _bucketAllowlistReady = (async () => {
+      const { ensureCmsMediaBucketAllowsItineraryUploads } = await import(
+        "@/app/(cms)/settings/actions"
+      );
+      await ensureCmsMediaBucketAllowsItineraryUploads();
+    })().catch((err) => {
+      // If the check fails, clear the cache so the next upload retries
+      // (rather than poisoning the cache for the rest of the process).
+      _bucketAllowlistReady = null;
+      throw err;
+    });
+  }
+  return _bucketAllowlistReady;
+}
+
 // ---------------------------------------------------------------------------
 // Shared form-data parsing
 // ---------------------------------------------------------------------------
@@ -292,10 +313,7 @@ export async function uploadTripItineraryAction(
   try {
     // Make sure the cms-media bucket has application/pdf in its allowlist.
     // No-op on bucket configurations that already include it; idempotent.
-    const { ensureCmsMediaBucketAllowsItineraryUploads } = await import(
-      "@/app/(cms)/settings/actions"
-    );
-    await ensureCmsMediaBucketAllowsItineraryUploads();
+    await ensureBucketAllowlistOnce();
 
     const { uploadImage } = await import("@/lib/storage/upload");
     const path = `${ITINERARY_BUCKET_PATH}/${tripId}-${Date.now()}.pdf`;
