@@ -161,6 +161,7 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
                   min={0}
                   max={100}
                   suffix="%"
+                  allowNull={false}
                 />
               </FormField>
             </div>
@@ -221,7 +222,7 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
               value={form.total_slots}
               onChange={(val) => updateField("total_slots", val)}
               placeholder="e.g. 16"
-              min={0}
+              min={1}
               showSteppers
             />
           </FormField>
