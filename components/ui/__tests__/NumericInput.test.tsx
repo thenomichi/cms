@@ -1,0 +1,67 @@
+import { describe, it, expect, vi } from "vitest";
+import { useState } from "react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { NumericInput } from "../NumericInput";
+
+function Controlled({
+  initial = null,
+  onChange,
+  ...rest
+}: {
+  initial?: number | null;
+  onChange?: (v: number | null) => void;
+  min?: number;
+  max?: number;
+  allowNull?: boolean;
+  showSteppers?: boolean;
+  step?: number;
+}) {
+  const [val, setVal] = useState<number | null>(initial);
+  return (
+    <NumericInput
+      value={val}
+      onChange={(v) => {
+        setVal(v);
+        onChange?.(v);
+      }}
+      {...rest}
+    />
+  );
+}
+
+describe("NumericInput — existing behavior", () => {
+  it("renders the value as a string", () => {
+    render(<NumericInput value={42} onChange={() => {}} />);
+    expect(screen.getByRole("textbox")).toHaveValue("42");
+  });
+
+  it("renders empty for null", () => {
+    render(<NumericInput value={null} onChange={() => {}} />);
+    expect(screen.getByRole("textbox")).toHaveValue("");
+  });
+
+  it("strips non-numeric input", async () => {
+    const onChange = vi.fn();
+    render(<Controlled onChange={onChange} />);
+    await userEvent.type(screen.getByRole("textbox"), "12abc34");
+    expect(onChange).toHaveBeenLastCalledWith(1234);
+  });
+
+  it("clamps to min on blur when below min (allowNull undefined defaults to existing behavior)", async () => {
+    const onChange = vi.fn();
+    render(<NumericInput value={2} onChange={onChange} min={5} />);
+    const input = screen.getByRole("textbox");
+    await userEvent.click(input);
+    input.blur();
+    expect(onChange).toHaveBeenLastCalledWith(5);
+  });
+
+  it("blocks values above max while typing", async () => {
+    const onChange = vi.fn();
+    render(<NumericInput value={null} onChange={onChange} max={100} />);
+    await userEvent.type(screen.getByRole("textbox"), "150");
+    const calls = onChange.mock.calls.map((c) => c[0]);
+    expect(calls).not.toContain(150);
+  });
+});
