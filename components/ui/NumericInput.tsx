@@ -10,6 +10,9 @@ interface NumericInputProps {
   min?: number;
   max?: number;
   allowDecimal?: boolean;
+  allowNull?: boolean;       // default true (preserves existing behavior)
+  step?: number;             // default 1, used by steppers (Task 3)
+  showSteppers?: boolean;    // default false (Task 3 toggles this in BasicTab consumers)
   suffix?: string;
   prefix?: string;
   disabled?: boolean;
@@ -31,6 +34,9 @@ export function NumericInput({
   min,
   max,
   allowDecimal = false,
+  allowNull = true,
+  step = 1,
+  showSteppers = false,
   suffix,
   prefix,
   disabled,
@@ -82,10 +88,15 @@ export function NumericInput({
 
   // Validate on blur — apply min constraint only when user is done typing
   const handleBlur = () => {
-    if (displayValue === "") return; // empty is allowed
+    if (displayValue === "") {
+      if (!allowNull) {
+        onChange(min ?? 0);
+      }
+      return;
+    }
     const num = allowDecimal ? parseFloat(displayValue) : parseInt(displayValue, 10);
     if (isNaN(num)) {
-      onChange(null);
+      onChange(allowNull ? null : (min ?? 0));
       return;
     }
     if (min !== undefined && num < min) {
@@ -93,17 +104,30 @@ export function NumericInput({
     }
   };
 
+  const numericValue = typeof value === "number" ? value : value ? Number(value) : 0;
+  const decDisabled = disabled || (min !== undefined && numericValue <= min);
+  const incDisabled = disabled || (max !== undefined && numericValue >= max);
+
+  const stepBy = (delta: number) => {
+    const base = typeof value === "number" ? value : 0;
+    let next = base + delta;
+    if (min !== undefined && next < min) next = min;
+    if (max !== undefined && next > max) next = max;
+    onChange(next);
+  };
+
   const pl = prefix ? "pl-10" : "pl-3";
   const pr = suffix ? "pr-10" : "pr-3";
   const inputClasses = cn(
     "h-9 w-full rounded-lg border border-line bg-surface text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20",
+    showSteppers ? "text-center" : "",
     pl,
     pr,
     className,
   );
 
-  return (
-    <div className="relative">
+  const inputEl = (
+    <div className="relative flex-1">
       {prefix && (
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-mid/60">
           {prefix}
@@ -126,6 +150,32 @@ export function NumericInput({
           {suffix}
         </span>
       )}
+    </div>
+  );
+
+  if (!showSteppers) return inputEl;
+
+  return (
+    <div className="flex items-stretch gap-1">
+      <button
+        type="button"
+        aria-label="Decrease"
+        disabled={decDisabled}
+        onClick={() => stepBy(-step)}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-mid hover:bg-surface3 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      >
+        −
+      </button>
+      {inputEl}
+      <button
+        type="button"
+        aria-label="Increase"
+        disabled={incDisabled}
+        onClick={() => stepBy(step)}
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-mid hover:bg-surface3 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      >
+        +
+      </button>
     </div>
   );
 }

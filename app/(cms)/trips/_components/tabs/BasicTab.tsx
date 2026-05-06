@@ -97,6 +97,8 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
                 }}
                 min={1}
                 max={90}
+                allowNull={false}
+                showSteppers
               />
             </FormField>
             <div>
@@ -159,6 +161,7 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
                   min={0}
                   max={100}
                   suffix="%"
+                  allowNull={false}
                 />
               </FormField>
             </div>
@@ -194,6 +197,7 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
                 min={0}
                 max={100}
                 suffix="%"
+                allowNull={false}
               />
             </FormField>
             {(form.discount_pct ?? 0) > 0 && (form.mrp_price ?? 0) > 0 && (
@@ -218,7 +222,8 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
               value={form.total_slots}
               onChange={(val) => updateField("total_slots", val)}
               placeholder="e.g. 16"
-              min={0}
+              min={1}
+              showSteppers
             />
           </FormField>
           <FormField label="Departure City">
