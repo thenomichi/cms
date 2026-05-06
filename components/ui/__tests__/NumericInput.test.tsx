@@ -94,3 +94,51 @@ describe("NumericInput — allowNull", () => {
     expect(onChange).toHaveBeenLastCalledWith(null);
   });
 });
+
+describe("NumericInput — steppers", () => {
+  it("renders +/- buttons when showSteppers is true", () => {
+    render(<NumericInput value={5} onChange={() => {}} showSteppers min={0} max={10} />);
+    expect(screen.getByLabelText("Decrease")).toBeInTheDocument();
+    expect(screen.getByLabelText("Increase")).toBeInTheDocument();
+  });
+
+  it("does not render steppers by default", () => {
+    render(<NumericInput value={5} onChange={() => {}} />);
+    expect(screen.queryByLabelText("Decrease")).not.toBeInTheDocument();
+  });
+
+  it("increments by step", async () => {
+    const onChange = vi.fn();
+    render(<NumericInput value={5} onChange={onChange} showSteppers step={2} />);
+    await userEvent.click(screen.getByLabelText("Increase"));
+    expect(onChange).toHaveBeenLastCalledWith(7);
+  });
+
+  it("decrements by step", async () => {
+    const onChange = vi.fn();
+    render(<NumericInput value={5} onChange={onChange} showSteppers step={1} />);
+    await userEvent.click(screen.getByLabelText("Decrease"));
+    expect(onChange).toHaveBeenLastCalledWith(4);
+  });
+
+  it("stops at min", async () => {
+    const onChange = vi.fn();
+    render(<NumericInput value={1} onChange={onChange} showSteppers min={1} />);
+    const dec = screen.getByLabelText("Decrease");
+    expect(dec).toBeDisabled();
+  });
+
+  it("stops at max", async () => {
+    const onChange = vi.fn();
+    render(<NumericInput value={10} onChange={onChange} showSteppers max={10} />);
+    const inc = screen.getByLabelText("Increase");
+    expect(inc).toBeDisabled();
+  });
+
+  it("treats null as 0 baseline for increment", async () => {
+    const onChange = vi.fn();
+    render(<NumericInput value={null} onChange={onChange} showSteppers step={5} />);
+    await userEvent.click(screen.getByLabelText("Increase"));
+    expect(onChange).toHaveBeenLastCalledWith(5);
+  });
+});
