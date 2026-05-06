@@ -20,6 +20,7 @@ import { PreviewFrame } from "./preview/PreviewFrame";
 import { usePreviewBridge } from "./preview/usePreviewBridge";
 import { useUnsavedChanges } from "./preview/useUnsavedChanges";
 import { useDragResize } from "./preview/useDragResize";
+import { useDerivedTripFields } from "./useDerivedTripFields";
 import {
   type TripFormState,
   buildInitialState,
@@ -41,6 +42,9 @@ export function TripEditor({ trip, destinations, websiteUrl }: TripEditorProps) 
 
   const [form, setForm] = useState<TripFormState>(() => buildInitialState(trip));
   const [initialForm, setInitialForm] = useState<TripFormState>(() => buildInitialState(trip));
+
+  useDerivedTripFields(form, setForm);
+
   const [stepIndex, setStepIndex] = useState(0);
   const [previewMode, setPreviewMode] = useState<"card" | "detail">("card");
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
