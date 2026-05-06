@@ -9,7 +9,7 @@ function makeState(overrides: Partial<TripFormState> = {}): TripFormState {
     trip_name: "", slug: "", trip_type: "Community", trip_sub_type: "",
     trip_category: "", destination_id: "", duration_days: 1, duration_nights: 0,
     start_date: "", end_date: "", mrp_price: null, selling_price: null,
-    discount_pct: null, quoted_price: null, advance_pct: 50, total_slots: null,
+    discount_pct: null, discount_amount: null, quoted_price: null, advance_pct: 50, total_slots: null,
     batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
     booking_kind: "trip", currency_code: "INR",
     overview: "", description: "", tagline: "", highlights: [],
@@ -102,5 +102,31 @@ describe("useDerivedTripFields — selling_price", () => {
       useTestHarness(makeState({ mrp_price: null, selling_price: null })),
     );
     expect(result.current.form.selling_price).toBeNull();
+  });
+});
+
+describe("useDerivedTripFields — selling_price with discount_amount", () => {
+  it("subtracts discount_amount from mrp_price when set", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 30000, discount_amount: 5000 }));
+    });
+    expect(result.current.form.selling_price).toBe(25000);
+  });
+
+  it("clamps selling_price at 0 when discount_amount exceeds mrp", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 5000, discount_amount: 8000 }));
+    });
+    expect(result.current.form.selling_price).toBe(0);
+  });
+
+  it("prefers discount_pct over discount_amount when both are set (defensive)", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 10000, discount_pct: 50, discount_amount: 2000 }));
+    });
+    expect(result.current.form.selling_price).toBe(5000);
   });
 });

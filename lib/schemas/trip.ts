@@ -86,6 +86,7 @@ export const tripBasicSchema = z.object({
   mrp_price: z.coerce.number().min(0).nullable(),
   selling_price: z.coerce.number().min(0).nullable(),
   discount_pct: z.coerce.number().min(0).max(100).nullable(),
+  discount_amount: z.coerce.number().min(0).nullable(),
   quoted_price: z.coerce.number().min(0).nullable(),
   advance_pct: z.coerce.number().min(0).max(100).default(50),
   total_slots: z.coerce.number().min(0).nullable(),
@@ -96,7 +97,10 @@ export const tripBasicSchema = z.object({
   departure_airport: z.string().nullable().optional(),
   booking_kind: z.string().default("trip"),
   currency_code: z.string().default("INR"),
-});
+}).refine(
+  (v) => v.discount_pct == null || v.discount_amount == null,
+  { message: "Use either discount % or flat amount, not both", path: ["discount_amount"] },
+);
 
 // ---------------------------------------------------------------------------
 // Trip itinerary day

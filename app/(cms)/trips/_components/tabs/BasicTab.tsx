@@ -169,17 +169,52 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
         ) : (
           // Community / Beyond Ordinary — fixed pricing with optional discount
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField label="Trip Price" hint="Per person" required>
-                <NumericInput
-                  value={form.mrp_price}
-                  onChange={(val) => updateField("mrp_price", val)}
-                  placeholder="e.g. 28000"
-                  min={0}
-                  prefix="₹"
-                />
-              </FormField>
-              <FormField label="Offer Discount" hint="Optional — leave empty for no discount">
+            <FormField label="Trip Price" hint="Per person" required>
+              <NumericInput
+                value={form.mrp_price}
+                onChange={(val) => updateField("mrp_price", val)}
+                placeholder="e.g. 28000"
+                min={0}
+                prefix="₹"
+              />
+            </FormField>
+
+            <FormField label="Offer Discount" hint="Optional — choose one type">
+              <div className="flex flex-wrap gap-2 mb-2">
+                {(["none", "percent", "amount"] as const).map((type) => {
+                  const current =
+                    form.discount_pct != null ? "percent" :
+                    form.discount_amount != null ? "amount" : "none";
+                  const checked = current === type;
+                  const label = type === "none" ? "No discount" : type === "percent" ? "Percentage" : "Flat amount";
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => {
+                        if (type === "none") {
+                          updateField("discount_pct", null);
+                          updateField("discount_amount", null);
+                        } else if (type === "percent") {
+                          updateField("discount_amount", null);
+                          if (form.discount_pct == null) updateField("discount_pct", 0);
+                        } else {
+                          updateField("discount_pct", null);
+                          if (form.discount_amount == null) updateField("discount_amount", 0);
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        checked
+                          ? "bg-rust/10 border-rust text-rust"
+                          : "bg-surface border-line text-mid hover:bg-surface3"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              {form.discount_pct != null && (
                 <NumericInput
                   value={form.discount_pct}
                   onChange={(val) => updateField("discount_pct", val)}
@@ -188,8 +223,18 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
                   max={100}
                   suffix="%"
                 />
-              </FormField>
-            </div>
+              )}
+              {form.discount_amount != null && (
+                <NumericInput
+                  value={form.discount_amount}
+                  onChange={(val) => updateField("discount_amount", val)}
+                  placeholder="0"
+                  min={0}
+                  prefix={form.currency_code === "INR" ? "₹" : form.currency_code}
+                />
+              )}
+            </FormField>
+
             <FormField label="Advance Payment %" hint="Collected at booking (default 50%)">
               <NumericInput
                 value={form.advance_pct}
@@ -200,13 +245,18 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
                 allowNull={false}
               />
             </FormField>
-            {(form.discount_pct ?? 0) > 0 && (form.mrp_price ?? 0) > 0 && (
+
+            {(((form.discount_pct ?? 0) > 0) || ((form.discount_amount ?? 0) > 0)) && (form.mrp_price ?? 0) > 0 && (
               <div className="rounded-lg border border-sem-green/20 bg-sem-green-bg px-4 py-2.5">
                 <p className="text-sm text-sem-green">
                   <span className="line-through text-mid">₹{(form.mrp_price ?? 0).toLocaleString("en-IN")}</span>
                   {" → "}
                   <span className="font-bold">₹{(form.selling_price ?? 0).toLocaleString("en-IN")}</span>
-                  <span className="ml-2 text-xs">({form.discount_pct}% off — traveller saves ₹{((form.mrp_price ?? 0) - (form.selling_price ?? 0)).toLocaleString("en-IN")})</span>
+                  <span className="ml-2 text-xs">
+                    {form.discount_amount != null
+                      ? `(₹${form.discount_amount.toLocaleString("en-IN")} off)`
+                      : `(${form.discount_pct}% off — traveller saves ₹${((form.mrp_price ?? 0) - (form.selling_price ?? 0)).toLocaleString("en-IN")})`}
+                  </span>
                 </p>
               </div>
             )}

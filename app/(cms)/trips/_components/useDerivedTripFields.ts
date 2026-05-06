@@ -28,14 +28,19 @@ export function useDerivedTripFields(
     }
   }, [form.start_date, form.duration_days, form.end_date, setForm]);
 
-  // selling_price <- mrp_price - discount_pct (PR 3 will add discount_amount)
+  // selling_price <- mrp_price minus (discount_pct OR discount_amount)
+  // Pct takes precedence if both are set (defensive — DB CHECK enforces either/or).
   useEffect(() => {
     const mrp = form.mrp_price;
     if (mrp == null) return;
-    const pct = form.discount_pct ?? 0;
-    const selling = pct > 0 ? Math.round(mrp * (1 - pct / 100)) : mrp;
+    let selling = mrp;
+    if (form.discount_pct && form.discount_pct > 0) {
+      selling = Math.round(mrp * (1 - form.discount_pct / 100));
+    } else if (form.discount_amount && form.discount_amount > 0) {
+      selling = Math.max(0, mrp - form.discount_amount);
+    }
     if (selling !== form.selling_price) {
       setForm((prev) => ({ ...prev, selling_price: selling }));
     }
-  }, [form.mrp_price, form.discount_pct, form.selling_price, setForm]);
+  }, [form.mrp_price, form.discount_pct, form.discount_amount, form.selling_price, setForm]);
 }

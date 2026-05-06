@@ -20,6 +20,7 @@ export interface DbTrip {
   mrp_price: number | null;
   selling_price: number | null;
   discount_pct: number | null;
+  discount_amount: number | null;
   quoted_price: number | null;
   advance_pct: number | null;
   price_per: string | null;

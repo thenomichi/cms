@@ -323,6 +323,7 @@ export async function cloneAsBatch(
     mrp_price: source.mrp_price,
     selling_price: source.selling_price,
     discount_pct: source.discount_pct,
+    discount_amount: source.discount_amount,
     quoted_price: source.quoted_price,
     total_slots: source.total_slots,
     booked_slots: 0,

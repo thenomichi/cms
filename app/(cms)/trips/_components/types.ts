@@ -20,6 +20,7 @@ export interface TripFormState {
   mrp_price: number | null;
   selling_price: number | null;
   discount_pct: number | null;
+  discount_amount: number | null;
   quoted_price: number | null;
   advance_pct: number;
   total_slots: number | null;
@@ -50,7 +51,7 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
       trip_name: "", slug: "", trip_type: "Community", trip_sub_type: "",
       trip_category: "", destination_id: "", duration_days: 1, duration_nights: 0,
       start_date: "", end_date: "", mrp_price: null, selling_price: null,
-      discount_pct: null, quoted_price: null, advance_pct: 50, total_slots: null,
+      discount_pct: null, discount_amount: null, quoted_price: null, advance_pct: 50, total_slots: null,
       batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
       booking_kind: "trip", currency_code: "INR",
       overview: "", description: "", tagline: "", highlights: [],
@@ -75,7 +76,7 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
     duration_days: trip.duration_days ?? 1, duration_nights: trip.duration_nights ?? 0,
     start_date: trip.start_date ?? "", end_date: trip.end_date ?? "",
     mrp_price: trip.mrp_price, selling_price: trip.selling_price,
-    discount_pct: trip.discount_pct, quoted_price: trip.quoted_price,
+    discount_pct: trip.discount_pct, discount_amount: trip.discount_amount, quoted_price: trip.quoted_price,
     advance_pct: trip.advance_pct ?? 50, total_slots: trip.total_slots,
     batch_number: trip.batch_number ?? "",
     group_slug: trip.group_slug ?? null,
