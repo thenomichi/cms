@@ -27,4 +27,15 @@ export function useDerivedTripFields(
       setForm((prev) => ({ ...prev, end_date: newEnd }));
     }
   }, [form.start_date, form.duration_days, form.end_date, setForm]);
+
+  // selling_price <- mrp_price - discount_pct (PR 3 will add discount_amount)
+  useEffect(() => {
+    const mrp = form.mrp_price;
+    if (mrp == null) return;
+    const pct = form.discount_pct ?? 0;
+    const selling = pct > 0 ? Math.round(mrp * (1 - pct / 100)) : mrp;
+    if (selling !== form.selling_price) {
+      setForm((prev) => ({ ...prev, selling_price: selling }));
+    }
+  }, [form.mrp_price, form.discount_pct, form.selling_price, setForm]);
 }

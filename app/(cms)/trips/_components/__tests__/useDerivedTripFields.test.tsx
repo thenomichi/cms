@@ -69,3 +69,38 @@ describe("useDerivedTripFields — end_date", () => {
     expect(renderCount).toBeLessThanOrEqual(4);
   });
 });
+
+describe("useDerivedTripFields — selling_price", () => {
+  it("computes selling_price from mrp_price + discount_pct", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 10000, discount_pct: 20 }));
+    });
+    expect(result.current.form.selling_price).toBe(8000);
+  });
+
+  it("falls back to mrp_price when discount is null", () => {
+    const { result } = renderHook(() => useTestHarness(makeState()));
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 10000, discount_pct: null }));
+    });
+    expect(result.current.form.selling_price).toBe(10000);
+  });
+
+  it("recomputes when mrp_price changes (no stale closure)", () => {
+    const { result } = renderHook(() =>
+      useTestHarness(makeState({ mrp_price: 10000, discount_pct: 10, selling_price: 9000 })),
+    );
+    act(() => {
+      result.current.setForm((p) => ({ ...p, mrp_price: 20000 }));
+    });
+    expect(result.current.form.selling_price).toBe(18000);
+  });
+
+  it("does not touch selling_price when mrp_price is null", () => {
+    const { result } = renderHook(() =>
+      useTestHarness(makeState({ mrp_price: null, selling_price: null })),
+    );
+    expect(result.current.form.selling_price).toBeNull();
+  });
+});
