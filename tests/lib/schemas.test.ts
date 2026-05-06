@@ -29,7 +29,7 @@ const baseTrip = {
   duration_days: 3, duration_nights: 2,
   start_date: null, end_date: null,
   mrp_price: 30000, selling_price: 25000,
-  discount_pct: 16, quoted_price: null,
+  discount_pct: 16, discount_amount: null, quoted_price: null,
   total_slots: 10,
   batch_number: null,
 };
