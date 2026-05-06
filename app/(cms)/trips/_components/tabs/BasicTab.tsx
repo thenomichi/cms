@@ -3,7 +3,7 @@
 import { FormField } from "@/components/ui/FormField";
 import { FormSection } from "@/components/ui/FormSection";
 import { NumericInput } from "@/components/ui/NumericInput";
-import type { TripFormState } from "../TripFormModal";
+import type { TripFormState } from "../types";
 import type { DbDestination } from "@/lib/types";
 import { TRIP_TYPE_OPTIONS } from "@/lib/constants";
 import { slugify } from "@/lib/utils";

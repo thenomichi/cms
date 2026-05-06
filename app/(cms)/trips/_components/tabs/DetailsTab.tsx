@@ -4,7 +4,7 @@ import { FormField } from "@/components/ui/FormField";
 import { FormSection } from "@/components/ui/FormSection";
 import { ListBuilder } from "@/components/ui/ListBuilder";
 import { RichEditor } from "@/components/ui/RichEditor";
-import type { TripFormState } from "../TripFormModal";
+import type { TripFormState } from "../types";
 
 const INPUT =
   "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";

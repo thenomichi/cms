@@ -7,7 +7,7 @@ import { FormSection } from "@/components/ui/FormSection";
 import { Toggle } from "@/components/ui/Toggle";
 import { TRIP_STATUS_OPTIONS } from "@/lib/constants";
 import { uploadTripItineraryAction } from "../../actions";
-import type { TripFormState } from "../TripFormModal";
+import type { TripFormState } from "../types";
 
 // ---------------------------------------------------------------------------
 // Shared input classes

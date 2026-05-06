@@ -5,7 +5,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
 import { SortableList } from "@/components/ui/SortableList";
-import type { TripFormState } from "../TripFormModal";
+import type { TripFormState } from "../types";
 import type { ItineraryDayInput } from "@/lib/db/trip-itinerary";
 
 const INPUT =
