@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback, useRef, useMemo } from "react";
+import { useState, useTransition, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
@@ -21,6 +21,7 @@ import { usePreviewBridge } from "./preview/usePreviewBridge";
 import { useUnsavedChanges } from "./preview/useUnsavedChanges";
 import { useDragResize } from "./preview/useDragResize";
 import { useDerivedTripFields } from "./useDerivedTripFields";
+import { useTripDirty } from "./useTripDirty";
 import {
   type TripFormState,
   buildInitialState,
@@ -56,10 +57,7 @@ export function TripEditor({ trip, destinations, websiteUrl }: TripEditorProps) 
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const { leftPct, isDragging, containerRef: splitRef, onMouseDown: onDividerMouseDown } = useDragResize(55);
 
-  const isDirty = useMemo(
-    () => JSON.stringify(form) !== JSON.stringify(initialForm),
-    [form, initialForm],
-  );
+  const { isDirty, markDirty, reset: resetDirty } = useTripDirty();
 
   useUnsavedChanges(isDirty);
 
@@ -78,8 +76,9 @@ export function TripEditor({ trip, destinations, websiteUrl }: TripEditorProps) 
   const updateField = useCallback(
     <K extends keyof TripFormState>(key: K, value: TripFormState[K]) => {
       setForm((prev) => ({ ...prev, [key]: value }));
+      markDirty(String(key));
     },
-    [],
+    [markDirty],
   );
 
   function handleModeChange(mode: "card" | "detail") {
@@ -145,6 +144,7 @@ export function TripEditor({ trip, destinations, websiteUrl }: TripEditorProps) 
         if (isEditing) {
           toast.success("Trip updated");
           setInitialForm({ ...form });
+          resetDirty();
         } else {
           toast.success("Trip created!");
           router.push("/trips");
