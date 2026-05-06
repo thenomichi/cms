@@ -9,7 +9,7 @@ function makeState(overrides: Partial<TripFormState> = {}): TripFormState {
     trip_name: "", slug: "", trip_type: "Community", trip_sub_type: "",
     trip_category: "", destination_id: "", duration_days: 1, duration_nights: 0,
     start_date: "", end_date: "", mrp_price: null, selling_price: null,
-    discount_pct: null, quoted_price: null, advance_pct: 50, total_slots: null,
+    discount_pct: null, discount_amount: null, quoted_price: null, advance_pct: 50, total_slots: null,
     batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
     booking_kind: "trip", currency_code: "INR",
     overview: "", description: "", tagline: "", highlights: [],

@@ -115,7 +115,7 @@ export function TripEditor({ trip, destinations, websiteUrl }: TripEditorProps) 
         duration_days: form.duration_days, duration_nights: form.duration_nights,
         start_date: form.start_date || null, end_date: form.end_date || null,
         mrp_price: form.mrp_price, selling_price: form.selling_price,
-        discount_pct: form.discount_pct, quoted_price: form.quoted_price,
+        discount_pct: form.discount_pct, discount_amount: form.discount_amount, quoted_price: form.quoted_price,
         advance_pct: form.advance_pct, total_slots: form.total_slots,
         batch_number: form.batch_number || null, group_slug: form.group_slug,
         tagline: form.tagline || null,
