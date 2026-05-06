@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Copy } from "lucide-react";
-import type { TripWithDestination, TripFull } from "@/lib/db/trips";
+import type { TripWithDestination } from "@/lib/db/trips";
 import type { DbDestination } from "@/lib/types";
 import { cn, formatPrice, formatDate } from "@/lib/utils";
 import { SearchInput } from "@/components/ui/SearchInput";
@@ -14,7 +14,6 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Toggle } from "@/components/ui/Toggle";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { TripFormModal } from "./TripFormModal";
 import {
   deleteTripAction,
   toggleTripFieldAction,
@@ -87,8 +86,6 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
   }, [initialTrips]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editTrip, setEditTrip] = useState<TripFull | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TripWithDestination | null>(null);
   const [cloning, setCloning] = useState<string | null>(null);
   const [batchTarget, setBatchTarget] = useState<TripWithDestination | null>(null);
@@ -228,40 +225,6 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
       }
     } finally {
       setCloning(null);
-    }
-  }
-
-  // Open edit modal (fetch full trip data)
-  async function handleEdit(trip: TripWithDestination) {
-    try {
-      const response = await fetch(`/api/trips/${trip.trip_id}`);
-      if (!response.ok) {
-        // Fall back to basic trip data if API not available
-        setEditTrip({
-          ...trip,
-          content: [],
-          itinerary: [],
-          inclusions: [],
-          faqs: [],
-          gallery: [],
-        } as TripFull);
-        setModalOpen(true);
-        return;
-      }
-      const data = await response.json();
-      setEditTrip(data);
-      setModalOpen(true);
-    } catch {
-      // Fall back to basic trip data
-      setEditTrip({
-        ...trip,
-        content: [],
-        itinerary: [],
-        inclusions: [],
-        faqs: [],
-        gallery: [],
-      } as TripFull);
-      setModalOpen(true);
     }
   }
 
@@ -438,7 +401,7 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
               icon
               onClick={(e) => {
                 e.stopPropagation();
-                handleEdit(t);
+                router.push(`/trips/${(row as TripWithDestination).trip_id}/edit`);
               }}
             >
               <Pencil className="h-3.5 w-3.5" />
@@ -477,7 +440,7 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
             onChange={setFilter}
           />
         </div>
-        <Button onClick={() => { setEditTrip(null); setModalOpen(true); }}>
+        <Button onClick={() => router.push("/trips/new")}>
           <Plus className="h-4 w-4" />
           New Trip
         </Button>
@@ -493,14 +456,6 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
         }}
         emptyMessage="No trips found"
         emptyIcon="✈️"
-      />
-
-      {/* Trip Form Modal */}
-      <TripFormModal
-        open={modalOpen}
-        onClose={() => { setModalOpen(false); setEditTrip(null); router.refresh(); }}
-        trip={editTrip}
-        destinations={destinations}
       />
 
       {/* Delete Confirmation */}

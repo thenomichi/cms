@@ -7,7 +7,7 @@ import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { Button } from "@/components/ui/Button";
 import { SortableList } from "@/components/ui/SortableList";
 import { INCLUSION_REPOSITORY, EXCLUSION_REPOSITORY } from "@/lib/constants";
-import type { TripFormState } from "../TripFormModal";
+import type { TripFormState } from "../types";
 import type { InclusionInput, ExclusionInput } from "@/lib/db/trip-inclusions";
 
 const INPUT =
