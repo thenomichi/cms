@@ -47,6 +47,17 @@ function ensureBucketAllowlistOnce(): Promise<void> {
   return _bucketAllowlistReady;
 }
 
+const IS_DEV = process.env.NODE_ENV !== "production";
+async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  if (!IS_DEV) return fn();
+  const start = performance.now();
+  try {
+    return await fn();
+  } finally {
+    console.log(`[trips] ${label}: ${Math.round(performance.now() - start)}ms`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Shared form-data parsing
 // ---------------------------------------------------------------------------
@@ -148,7 +159,7 @@ export async function createTripAction(
     });
 
     // Save content
-    await Promise.all([
+    await timed("createTrip:content", () => Promise.all([
       payload.overview
         ? upsertTripContent(tripId, "overview", payload.overview)
         : Promise.resolve(),
@@ -159,19 +170,19 @@ export async function createTripAction(
         ? upsertTripContent(tripId, "tagline", payload.tagline)
         : Promise.resolve(),
       upsertHighlights(tripId, payload.highlights.filter(Boolean)),
-    ]);
+    ]));
 
     // Save itinerary
     if (payload.itinerary.length > 0) {
-      await saveTripItinerary(tripId, payload.itinerary);
+      await timed("createTrip:itinerary", () => saveTripItinerary(tripId, payload.itinerary));
     }
 
     // Save inclusions / exclusions
-    await saveTripInclusions(
+    await timed("createTrip:inclusions", () => saveTripInclusions(
       tripId,
       payload.inclusions,
       payload.exclusions,
-    );
+    ));
 
     logActivityAsync({ table_name: "trips", record_id: tripId, action: "INSERT", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
@@ -227,7 +238,7 @@ export async function updateTripAction(
     });
 
     // Save content
-    await Promise.all([
+    await timed("updateTrip:content", () => Promise.all([
       payload.overview
         ? upsertTripContent(tripId, "overview", payload.overview)
         : Promise.resolve(),
@@ -238,17 +249,17 @@ export async function updateTripAction(
         ? upsertTripContent(tripId, "tagline", payload.tagline)
         : Promise.resolve(),
       upsertHighlights(tripId, payload.highlights.filter(Boolean)),
-    ]);
+    ]));
 
     // Save itinerary
-    await saveTripItinerary(tripId, payload.itinerary);
+    await timed("updateTrip:itinerary", () => saveTripItinerary(tripId, payload.itinerary));
 
     // Save inclusions / exclusions
-    await saveTripInclusions(
+    await timed("updateTrip:inclusions", () => saveTripInclusions(
       tripId,
       payload.inclusions,
       payload.exclusions,
-    );
+    ));
 
     logActivityAsync({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
