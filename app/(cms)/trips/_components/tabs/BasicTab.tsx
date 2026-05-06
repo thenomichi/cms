@@ -121,16 +121,7 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
                 className={INPUT}
                 min={new Date().toISOString().split("T")[0]}
                 value={form.start_date}
-                onChange={(e) => {
-                  const startDate = e.target.value;
-                  updateField("start_date", startDate);
-                  // Auto-calculate end date from start date + duration
-                  if (startDate && form.duration_days > 0) {
-                    const end = new Date(startDate);
-                    end.setDate(end.getDate() + form.duration_days - 1);
-                    updateField("end_date", end.toISOString().split("T")[0]);
-                  }
-                }}
+                onChange={(e) => updateField("start_date", e.target.value)}
               />
             </FormField>
             <FormField label="End Date" hint={form.start_date ? "Auto-calculated from start date + days" : undefined}>
@@ -179,12 +170,7 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
               <FormField label="Trip Price" hint="Per person" required>
                 <NumericInput
                   value={form.mrp_price}
-                  onChange={(val) => {
-                    updateField("mrp_price", val);
-                    const mrp = val ?? 0;
-                    const disc = form.discount_pct ?? 0;
-                    updateField("selling_price", disc > 0 ? Math.round(mrp * (1 - disc / 100)) : mrp);
-                  }}
+                  onChange={(val) => updateField("mrp_price", val)}
                   placeholder="e.g. 28000"
                   min={0}
                   prefix="₹"
@@ -193,12 +179,7 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
               <FormField label="Offer Discount" hint="Optional — leave empty for no discount">
                 <NumericInput
                   value={form.discount_pct}
-                  onChange={(val) => {
-                    updateField("discount_pct", val);
-                    const mrp = form.mrp_price ?? 0;
-                    const disc = val ?? 0;
-                    updateField("selling_price", disc > 0 ? Math.round(mrp * (1 - disc / 100)) : mrp);
-                  }}
+                  onChange={(val) => updateField("discount_pct", val)}
                   placeholder="0"
                   min={0}
                   max={100}

@@ -15,6 +15,49 @@ import { revalidateTrip } from "@/lib/revalidate";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/lib/audit";
 
+/**
+ * Fire `logActivity` without awaiting. Errors are logged but never
+ * propagated to the caller — activity logging is best-effort and
+ * should never block the user-visible save path.
+ */
+function logActivityAsync(input: Parameters<typeof logActivity>[0]): void {
+  void logActivity(input).catch((err) => {
+    console.error("[logActivity] swallowed error:", err);
+  });
+}
+
+// Memoize the bucket allowlist check at module scope. The check is
+// idempotent and read-mostly; running it once per server lifetime is
+// safe and removes a hot-path import + roundtrip per upload.
+let _bucketAllowlistReady: Promise<void> | null = null;
+function ensureBucketAllowlistOnce(): Promise<void> {
+  if (!_bucketAllowlistReady) {
+    _bucketAllowlistReady = (async () => {
+      const { ensureCmsMediaBucketAllowsItineraryUploads } = await import(
+        "@/app/(cms)/settings/actions"
+      );
+      await ensureCmsMediaBucketAllowsItineraryUploads();
+    })().catch((err) => {
+      // If the check fails, clear the cache so the next upload retries
+      // (rather than poisoning the cache for the rest of the process).
+      _bucketAllowlistReady = null;
+      throw err;
+    });
+  }
+  return _bucketAllowlistReady;
+}
+
+const IS_DEV = process.env.NODE_ENV !== "production";
+async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  if (!IS_DEV) return fn();
+  const start = performance.now();
+  try {
+    return await fn();
+  } finally {
+    console.log(`[trips] ${label}: ${Math.round(performance.now() - start)}ms`);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Shared form-data parsing
 // ---------------------------------------------------------------------------
@@ -116,7 +159,7 @@ export async function createTripAction(
     });
 
     // Save content
-    await Promise.all([
+    await timed("createTrip:content", () => Promise.all([
       payload.overview
         ? upsertTripContent(tripId, "overview", payload.overview)
         : Promise.resolve(),
@@ -127,21 +170,21 @@ export async function createTripAction(
         ? upsertTripContent(tripId, "tagline", payload.tagline)
         : Promise.resolve(),
       upsertHighlights(tripId, payload.highlights.filter(Boolean)),
-    ]);
+    ]));
 
     // Save itinerary
     if (payload.itinerary.length > 0) {
-      await saveTripItinerary(tripId, payload.itinerary);
+      await timed("createTrip:itinerary", () => saveTripItinerary(tripId, payload.itinerary));
     }
 
     // Save inclusions / exclusions
-    await saveTripInclusions(
+    await timed("createTrip:inclusions", () => saveTripInclusions(
       tripId,
       payload.inclusions,
       payload.exclusions,
-    );
+    ));
 
-    await logActivity({ table_name: "trips", record_id: tripId, action: "INSERT", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "INSERT", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -195,7 +238,7 @@ export async function updateTripAction(
     });
 
     // Save content
-    await Promise.all([
+    await timed("updateTrip:content", () => Promise.all([
       payload.overview
         ? upsertTripContent(tripId, "overview", payload.overview)
         : Promise.resolve(),
@@ -206,19 +249,19 @@ export async function updateTripAction(
         ? upsertTripContent(tripId, "tagline", payload.tagline)
         : Promise.resolve(),
       upsertHighlights(tripId, payload.highlights.filter(Boolean)),
-    ]);
+    ]));
 
     // Save itinerary
-    await saveTripItinerary(tripId, payload.itinerary);
+    await timed("updateTrip:itinerary", () => saveTripItinerary(tripId, payload.itinerary));
 
     // Save inclusions / exclusions
-    await saveTripInclusions(
+    await timed("updateTrip:inclusions", () => saveTripInclusions(
       tripId,
       payload.inclusions,
       payload.exclusions,
-    );
+    ));
 
-    await logActivity({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -240,7 +283,7 @@ export async function deleteTripAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteTrip(tripId);
-    await logActivity({ table_name: "trips", record_id: tripId, action: "DELETE" });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "DELETE" });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -281,15 +324,12 @@ export async function uploadTripItineraryAction(
   try {
     // Make sure the cms-media bucket has application/pdf in its allowlist.
     // No-op on bucket configurations that already include it; idempotent.
-    const { ensureCmsMediaBucketAllowsItineraryUploads } = await import(
-      "@/app/(cms)/settings/actions"
-    );
-    await ensureCmsMediaBucketAllowsItineraryUploads();
+    await ensureBucketAllowlistOnce();
 
     const { uploadImage } = await import("@/lib/storage/upload");
     const path = `${ITINERARY_BUCKET_PATH}/${tripId}-${Date.now()}.pdf`;
     const url = await uploadImage(file, path);
-    await logActivity({
+    logActivityAsync({
       table_name: "trips",
       record_id: tripId,
       action: "UPDATE",
@@ -314,7 +354,7 @@ export async function toggleTripFieldAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleTripField(tripId, field, value);
-    await logActivity({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { [field]: value } });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { [field]: value } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -370,7 +410,7 @@ export async function cloneAsBatchAction(
 
     await cloneAsBatch(sourceTripId, newTripId, newSlug);
 
-    await logActivity({
+    logActivityAsync({
       table_name: "trips",
       record_id: newTripId,
       action: "INSERT",
