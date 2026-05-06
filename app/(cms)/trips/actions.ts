@@ -15,6 +15,17 @@ import { revalidateTrip } from "@/lib/revalidate";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/lib/audit";
 
+/**
+ * Fire `logActivity` without awaiting. Errors are logged but never
+ * propagated to the caller — activity logging is best-effort and
+ * should never block the user-visible save path.
+ */
+function logActivityAsync(input: Parameters<typeof logActivity>[0]): void {
+  void logActivity(input).catch((err) => {
+    console.error("[logActivity] swallowed error:", err);
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Shared form-data parsing
 // ---------------------------------------------------------------------------
@@ -141,7 +152,7 @@ export async function createTripAction(
       payload.exclusions,
     );
 
-    await logActivity({ table_name: "trips", record_id: tripId, action: "INSERT", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "INSERT", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -218,7 +229,7 @@ export async function updateTripAction(
       payload.exclusions,
     );
 
-    await logActivity({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -240,7 +251,7 @@ export async function deleteTripAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await deleteTrip(tripId);
-    await logActivity({ table_name: "trips", record_id: tripId, action: "DELETE" });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "DELETE" });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -289,7 +300,7 @@ export async function uploadTripItineraryAction(
     const { uploadImage } = await import("@/lib/storage/upload");
     const path = `${ITINERARY_BUCKET_PATH}/${tripId}-${Date.now()}.pdf`;
     const url = await uploadImage(file, path);
-    await logActivity({
+    logActivityAsync({
       table_name: "trips",
       record_id: tripId,
       action: "UPDATE",
@@ -314,7 +325,7 @@ export async function toggleTripFieldAction(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await toggleTripField(tripId, field, value);
-    await logActivity({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { [field]: value } });
+    logActivityAsync({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { [field]: value } });
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
@@ -370,7 +381,7 @@ export async function cloneAsBatchAction(
 
     await cloneAsBatch(sourceTripId, newTripId, newSlug);
 
-    await logActivity({
+    logActivityAsync({
       table_name: "trips",
       record_id: newTripId,
       action: "INSERT",
