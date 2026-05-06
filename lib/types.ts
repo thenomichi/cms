@@ -370,3 +370,15 @@ export interface DbCustomizedTripRequest {
   created_at: string;
   updated_at: string;
 }
+
+export interface DbDepartureCity {
+  departure_city_id: string;
+  city_name: string;
+  country_code: string;
+  country_name: string;
+  is_popular: boolean;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
