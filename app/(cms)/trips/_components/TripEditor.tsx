@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
 import type { TripFull } from "@/lib/db/trips";
-import type { DbDestination, DbTripGallery } from "@/lib/types";
+import type { DbDepartureCity, DbDestination, DbTripGallery } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createTripAction, updateTripAction } from "../actions";
@@ -33,10 +33,11 @@ import {
 interface TripEditorProps {
   trip: TripFull | null;
   destinations: DbDestination[];
+  departureCities: DbDepartureCity[];
   websiteUrl: string;
 }
 
-export function TripEditor({ trip, destinations, websiteUrl }: TripEditorProps) {
+export function TripEditor({ trip, destinations, departureCities, websiteUrl }: TripEditorProps) {
   const router = useRouter();
   const isEditing = !!trip;
   const steps = isEditing ? STEPS_EDIT : STEPS_CREATE;
@@ -288,7 +289,7 @@ export function TripEditor({ trip, destinations, websiteUrl }: TripEditorProps) 
 
             {/* Step content */}
             {activeStep === "basic" && (
-              <BasicTab form={form} updateField={updateField} destinations={destinations} />
+              <BasicTab form={form} updateField={updateField} destinations={destinations} departureCities={departureCities} />
             )}
             {activeStep === "details" && (
               <DetailsTab form={form} updateField={updateField} />

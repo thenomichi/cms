@@ -4,7 +4,8 @@ import { FormField } from "@/components/ui/FormField";
 import { FormSection } from "@/components/ui/FormSection";
 import { NumericInput } from "@/components/ui/NumericInput";
 import type { TripFormState } from "../types";
-import type { DbDestination } from "@/lib/types";
+import type { DbDepartureCity, DbDestination } from "@/lib/types";
+import { CityCombobox } from "../CityCombobox";
 import { TRIP_TYPE_OPTIONS } from "@/lib/constants";
 import { slugify } from "@/lib/utils";
 
@@ -17,9 +18,10 @@ interface BasicTabProps {
   form: TripFormState;
   updateField: <K extends keyof TripFormState>(key: K, val: TripFormState[K]) => void;
   destinations: DbDestination[];
+  departureCities: DbDepartureCity[];
 }
 
-export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
+export function BasicTab({ form, updateField, destinations, departureCities }: BasicTabProps) {
   const previewSlug = slugify(form.trip_name);
   const isCustomTrip = form.trip_type === "Signature Journey" || form.trip_type === "Customized Trips Only";
 
@@ -277,12 +279,10 @@ export function BasicTab({ form, updateField, destinations }: BasicTabProps) {
             />
           </FormField>
           <FormField label="Departure City">
-            <input
-              type="text"
-              className={INPUT}
+            <CityCombobox
               value={form.departure_city}
-              onChange={(e) => updateField("departure_city", e.target.value)}
-              placeholder="e.g. Bengaluru"
+              onChange={(name) => updateField("departure_city", name)}
+              cities={departureCities}
             />
           </FormField>
         </div>
