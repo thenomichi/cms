@@ -101,28 +101,30 @@ export function usePreviewBridge({
   const sendPayload = useCallback(() => {
     iframeRef.current?.contentWindow?.postMessage(
       { type: "PREVIEW_UPDATE", payload: payloadRef.current },
-      websiteUrl,
+      "*",
     );
-  }, [iframeRef, websiteUrl]);
+  }, [iframeRef]);
 
   // Track current mode in a ref so the ready handler always has the latest
   const modeRef = useRef(currentMode);
   modeRef.current = currentMode;
 
-  // Listen for PREVIEW_READY — send mode + data immediately every time it fires
+  // Listen for PREVIEW_READY — send mode + data immediately every time it fires.
+  // We accept this from any origin since it's just a readiness signal with no payload.
   useEffect(() => {
     function onMessage(e: MessageEvent) {
-      if (e.origin !== websiteUrl) return;
-      if (e.data?.type === "PREVIEW_READY") {
-        setIframeReady(true);
-        setTimeout(() => {
-          iframeRef.current?.contentWindow?.postMessage(
-            { type: "SET_MODE", mode: modeRef.current },
-            websiteUrl,
-          );
-          sendPayload();
-        }, 50);
-      }
+      if (e.data?.type !== "PREVIEW_READY") return;
+      setIframeReady(true);
+      setTimeout(() => {
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: "SET_MODE", mode: modeRef.current },
+          "*",
+        );
+        iframeRef.current?.contentWindow?.postMessage(
+          { type: "PREVIEW_UPDATE", payload: payloadRef.current },
+          "*",
+        );
+      }, 50);
     }
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
@@ -142,20 +144,20 @@ export function usePreviewBridge({
     (mode: "card" | "detail") => {
       iframeRef.current?.contentWindow?.postMessage(
         { type: "SET_MODE", mode },
-        websiteUrl,
+        "*",
       );
     },
-    [iframeRef, websiteUrl],
+    [iframeRef],
   );
 
   const setDarkMode = useCallback(
     (dark: boolean) => {
       iframeRef.current?.contentWindow?.postMessage(
         { type: "SET_THEME", dark },
-        websiteUrl,
+        "*",
       );
     },
-    [iframeRef, websiteUrl],
+    [iframeRef],
   );
 
   return { iframeReady, setMode, setDarkMode };
