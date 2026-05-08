@@ -27,6 +27,13 @@ interface Props {
 // keep working.
 const DEFAULT_CATEGORY = "gallery";
 
+// Hard cap on how many gallery images can be Featured. The website's
+// gallery mosaic only renders the first non-cover slot pair (positions
+// 1 & 2 after sort), so any 3rd+ featured image is invisible to users
+// and creates "I clicked Feature but nothing happened" confusion in
+// the preview pane.
+const MAX_FEATURED = 2;
+
 export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }: Props) {
   const [images, setImages] = useState(initialGallery);
   const [uploading, setUploading] = useState(false);
@@ -95,6 +102,16 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
   };
 
   const handleToggleFeatured = async (id: string, current: boolean) => {
+    // Block a 3rd Feature; un-featuring is always allowed.
+    if (!current) {
+      const featuredCount = images.filter((g) => g.is_featured).length;
+      if (featuredCount >= MAX_FEATURED) {
+        toast.error(
+          `Only ${MAX_FEATURED} images can be featured at a time. Unfeature one first.`,
+        );
+        return;
+      }
+    }
     applyImages((prev) =>
       prev.map((g) => (g.gallery_id === id ? { ...g, is_featured: !current } : g)),
     );
@@ -112,6 +129,10 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
       await refreshGallery();
     }
   };
+
+  // Cap-aware UI state for the per-image Featured button.
+  const featuredCount = images.filter((g) => g.is_featured).length;
+  const featuredCapReached = featuredCount >= MAX_FEATURED;
 
   return (
     <div className="space-y-4">
@@ -143,8 +164,10 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
             cards and at the top of the trip detail page. Pick one.
           </p>
           <p>
-            <span className="font-semibold text-ink">Featured</span> images appear larger in the
-            gallery. Use this for your best 2–3 shots. Other uploads sit in the regular gallery.
+            <span className="font-semibold text-ink">Featured</span> images appear next to the
+            cover at the top of the gallery section on the website. Pick up to{" "}
+            <span className="font-semibold text-ink">{MAX_FEATURED}</span>. Other uploads sit in
+            the regular gallery and show in the lightbox.
           </p>
         </div>
       )}
@@ -197,10 +220,18 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
                   onClick={() =>
                     handleToggleFeatured(img.gallery_id, img.is_featured ?? false)
                   }
+                  disabled={!img.is_featured && featuredCapReached}
+                  title={
+                    !img.is_featured && featuredCapReached
+                      ? `Up to ${MAX_FEATURED} featured. Unfeature one to swap.`
+                      : undefined
+                  }
                   className={`flex h-9 items-center justify-center gap-1 border-x border-line px-2 transition-colors ${
                     img.is_featured
                       ? "bg-sem-amber/10 font-semibold text-sem-amber"
-                      : "text-mid hover:bg-surface3 hover:text-ink"
+                      : featuredCapReached
+                        ? "cursor-not-allowed text-fog"
+                        : "text-mid hover:bg-surface3 hover:text-ink"
                   }`}
                 >
                   {img.is_featured ? "✓ Featured" : "Show as featured"}
