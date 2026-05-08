@@ -108,7 +108,7 @@ export const tripBasicSchema = z.object({
   total_slots: nullableNumber(z.number().min(0)),
   batch_number: z.string().nullable().optional(),
   group_slug: z.string().nullable().optional(),
-  tagline: z.string().nullable().optional(),
+  tagline: z.string().max(60, "Tagline must be 60 characters or fewer").nullable().optional(),
   departure_city: z.string().nullable().optional(),
   departure_airport: z.string().nullable().optional(),
   booking_kind: z.string().default("trip"),

@@ -2,6 +2,13 @@ import type { TripFull } from "@/lib/db/trips";
 import type { ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import type { InclusionInput, ExclusionInput } from "@/lib/db/trip-inclusions";
 
+/**
+ * Max characters allowed in the tagline. Rendered on the website's trip
+ * card under the trip name; longer values risk wrapping or truncation
+ * across mobile breakpoints. 60 chars fits ~2 short clauses.
+ */
+export const TAGLINE_MAX = 60;
+
 // ---------------------------------------------------------------------------
 // Form state shape
 // ---------------------------------------------------------------------------
