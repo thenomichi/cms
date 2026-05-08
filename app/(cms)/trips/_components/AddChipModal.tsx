@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type { DbInclusionChip, DbExclusion } from "@/lib/types";
 import { addInclusionChipAction } from "@/app/(cms)/inclusion-chips/actions";
 import { addExclusionAction } from "@/app/(cms)/exclusions/actions";
+import { EmojiPicker } from "@/components/ui/EmojiPicker";
 
 const CUSTOM_CATEGORY_VALUE = "__custom__";
 
@@ -102,15 +103,11 @@ export function AddChipModal(props: AddChipModalProps) {
               <span className="text-xs font-medium uppercase tracking-wider text-mid">
                 Icon (emoji)
               </span>
-              <input
-                type="text"
-                value={icon}
-                onChange={(e) => setIcon(e.target.value)}
-                placeholder="🎯"
-                className="mt-1 h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-rust focus:ring-1 focus:ring-rust/20"
-              />
+              <div className="mt-1">
+                <EmojiPicker value={icon} onChange={setIcon} />
+              </div>
               <span className="mt-1 block text-[11px] text-fog">
-                Paste an emoji from your OS picker.
+                Click to open the picker, or paste any emoji directly.
               </span>
             </label>
           )}
