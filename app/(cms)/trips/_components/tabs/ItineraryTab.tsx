@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { SortableList } from "@/components/ui/SortableList";
 import type { TripFormState } from "../types";
 import type { ItineraryDayInput } from "@/lib/db/trip-itinerary";
+import { ChipInput } from "../ChipInput";
 
 const INPUT =
   "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
@@ -36,8 +37,6 @@ export function ItineraryTab({ form, updateField }: ItineraryTabProps) {
         title: "",
         subtitle: null,
         description: null,
-        meals: null,
-        accommodation: null,
         tags: null,
       },
     ]);
@@ -120,26 +119,16 @@ export function ItineraryTab({ form, updateField }: ItineraryTabProps) {
                   />
                 </FormField>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <FormField label="Meals">
-                    <input
-                      type="text"
-                      className={INPUT}
-                      value={day.meals ?? ""}
-                      onChange={(e) => updateDay(idx, { meals: e.target.value || null })}
-                      placeholder="e.g. Breakfast, Lunch, Dinner"
-                    />
-                  </FormField>
-                  <FormField label="Accommodation">
-                    <input
-                      type="text"
-                      className={INPUT}
-                      value={day.accommodation ?? ""}
-                      onChange={(e) => updateDay(idx, { accommodation: e.target.value || null })}
-                      placeholder="e.g. Heritage Resort"
-                    />
-                  </FormField>
-                </div>
+                <FormField label="Tags" hint="Type and press Enter to add. Drag to reorder. Visible as chips on the website.">
+                  <ChipInput
+                    value={(day.tags ?? "")
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean)}
+                    onChange={(next) => updateDay(idx, { tags: next.length ? next.join(", ") : null })}
+                    placeholder="e.g. Trekking, Photography stop, Local cuisine"
+                  />
+                </FormField>
               </div>
             );
           }}

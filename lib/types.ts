@@ -71,8 +71,6 @@ export interface DbTripItinerary {
   title: string;
   subtitle: string | null;
   description: string | null;
-  meals: string | null;
-  accommodation: string | null;
   tags: string | null;
   display_order: number;
   is_active: boolean;

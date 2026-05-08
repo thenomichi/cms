@@ -127,8 +127,6 @@ export const tripItinerarySchema = z.object({
   title: z.string().min(2, "Day title is required"),
   subtitle: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
-  meals: z.string().nullable().optional(),
-  accommodation: z.string().nullable().optional(),
   tags: z.string().nullable().optional(),
 });
 
