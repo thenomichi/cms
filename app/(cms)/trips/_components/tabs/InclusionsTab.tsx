@@ -6,25 +6,26 @@ import { FormField } from "@/components/ui/FormField";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { Button } from "@/components/ui/Button";
 import { SortableList } from "@/components/ui/SortableList";
-import { INCLUSION_REPOSITORY, EXCLUSION_REPOSITORY } from "@/lib/constants";
+import { INCLUSION_REPOSITORY } from "@/lib/constants";
 import type { TripFormState } from "../types";
 import type { InclusionInput, ExclusionInput } from "@/lib/db/trip-inclusions";
+import type { DbExclusion } from "@/lib/types";
+import { ExclusionCombobox } from "../ExclusionCombobox";
 
 const INPUT =
   "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
-const SELECT =
-  "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
 
 interface InclusionsTabProps {
   form: TripFormState;
   updateField: <K extends keyof TripFormState>(key: K, val: TripFormState[K]) => void;
+  exclusions: DbExclusion[];
 }
 
 // Wrap items with stable IDs for dnd-kit
 type InclusionWithId = InclusionInput & { _id: string };
 type ExclusionWithId = ExclusionInput & { _id: string };
 
-export function InclusionsTab({ form, updateField }: InclusionsTabProps) {
+export function InclusionsTab({ form, updateField, exclusions: exclusionsList }: InclusionsTabProps) {
   const { inclusions, exclusions } = form;
 
   // Add stable IDs
@@ -73,11 +74,6 @@ export function InclusionsTab({ form, updateField }: InclusionsTabProps) {
 
   function addExclusion() {
     updateField("exclusions", [...exclusions, { name: "" }]);
-  }
-
-  function addExclusionFromRepository(name: string) {
-    if (exclusions.some((exc) => exc.name === name)) return;
-    updateField("exclusions", [...exclusions, { name }]);
   }
 
   function removeExclusion(index: number) {
@@ -189,28 +185,6 @@ export function InclusionsTab({ form, updateField }: InclusionsTabProps) {
           </Button>
         </div>
 
-        {/* Quick-add from repository */}
-        <div className="flex flex-wrap gap-1.5">
-          {EXCLUSION_REPOSITORY.map((name) => {
-            const alreadyAdded = exclusions.some((exc) => exc.name === name);
-            return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => addExclusionFromRepository(name)}
-                disabled={alreadyAdded}
-                className={
-                  alreadyAdded
-                    ? "rounded-lg px-2.5 py-1 text-xs bg-surface3 text-fog cursor-not-allowed"
-                    : "rounded-lg px-2.5 py-1 text-xs bg-surface3 text-ink border border-line hover:bg-sem-red-bg hover:text-sem-red hover:border-sem-red/20 transition-colors"
-                }
-              >
-                {name}
-              </button>
-            );
-          })}
-        </div>
-
         {/* Sortable exclusions list */}
         {exclusionsWithIds.length > 0 && (
           <SortableList
@@ -223,16 +197,11 @@ export function InclusionsTab({ form, updateField }: InclusionsTabProps) {
                 <div className="flex flex-1 items-center gap-2">
                   <div className="flex-1">
                     <FormField label="Name" required>
-                      <select
-                        className={SELECT}
+                      <ExclusionCombobox
                         value={item.name}
-                        onChange={(e) => updateExclusion(idx, { name: e.target.value })}
-                      >
-                        <option value="">Select or type...</option>
-                        {EXCLUSION_REPOSITORY.map((name) => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
+                        onChange={(name) => updateExclusion(idx, { name })}
+                        exclusions={exclusionsList}
+                      />
                     </FormField>
                   </div>
                   <button

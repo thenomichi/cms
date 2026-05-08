@@ -30,21 +30,6 @@ export const INCLUSION_REPOSITORY = [
   { icon: "\u{1F697}", name: "Transfers" },
 ] as const;
 
-export const EXCLUSION_REPOSITORY = [
-  "Personal expenses",
-  "Travel insurance",
-  "Visa fees",
-  "International flights",
-  "Tips & gratuities",
-  "Alcoholic beverages",
-  "Camera/drone fees",
-  "Adventure gear rental",
-  "Extra meals",
-  "Laundry",
-  "Medical expenses",
-  "Room upgrades",
-] as const;
-
 // ---------------------------------------------------------------------------
 // Dropdown option sets
 // ---------------------------------------------------------------------------
