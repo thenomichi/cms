@@ -24,6 +24,15 @@ import {
 // Filter options
 // ---------------------------------------------------------------------------
 
+function relTime(iso: string | null): string {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.round(diff / 60_000)} min ago`;
+  if (diff < 86_400_000) return `${Math.round(diff / 3_600_000)}h ago`;
+  return `${Math.round(diff / 86_400_000)}d ago`;
+}
+
 const FILTER_OPTIONS = [
   { value: "all", label: "All" },
   { value: "Community", label: "Soulful Escapes" },
@@ -86,6 +95,7 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
   }, [initialTrips]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [showDrafts, setShowDrafts] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TripWithDestination | null>(null);
   const [cloning, setCloning] = useState<string | null>(null);
   const [batchTarget, setBatchTarget] = useState<TripWithDestination | null>(null);
@@ -94,6 +104,7 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
   // Client-side filtering
   const filtered = useMemo(() => {
     let list = trips;
+    if (showDrafts) list = list.filter((t) => t.status === "Draft");
     if (filter !== "all") {
       list = list.filter((t) => t.trip_type === filter);
     }
@@ -108,7 +119,7 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
       );
     }
     return list;
-  }, [trips, filter, search]);
+  }, [trips, filter, search, showDrafts]);
 
   // Group batch siblings together in the list
   // Within a group, the original (slug === group_slug) comes first, then by start_date.
@@ -319,7 +330,17 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
     {
       key: "status",
       header: "Status",
-      render: (row) => statusBadge((row as TripWithDestination).status),
+      render: (row) => {
+        const t = row as TripWithDestination;
+        return (
+          <span className="flex items-center gap-2">
+            {statusBadge(t.status)}
+            {t.status === "Draft" && t.last_autosaved_at && (
+              <span className="text-[10px] text-mid">edited {relTime(t.last_autosaved_at)}</span>
+            )}
+          </span>
+        );
+      },
     },
     {
       key: "is_listed",
@@ -439,6 +460,17 @@ export function TripsClient({ initialTrips, destinations }: TripsClientProps) {
             value={filter}
             onChange={setFilter}
           />
+          <button
+            type="button"
+            onClick={() => setShowDrafts((s) => !s)}
+            className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium border transition-colors ${
+              showDrafts
+                ? "bg-rust/10 border-rust text-rust"
+                : "bg-surface border-line text-mid hover:bg-surface3"
+            }`}
+          >
+            Drafts ({trips.filter((t) => t.status === "Draft").length})
+          </button>
         </div>
         <Button onClick={() => router.push("/trips/new")}>
           <Plus className="h-4 w-4" />
