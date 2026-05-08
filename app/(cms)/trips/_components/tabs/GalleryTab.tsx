@@ -4,9 +4,7 @@ import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { FormField } from "@/components/ui/FormField";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { GALLERY_CATEGORIES } from "@/lib/constants";
 import type { DbTripGallery } from "@/lib/types";
 import {
   uploadTripGalleryAction,
@@ -22,19 +20,35 @@ interface Props {
   onGalleryChange: (gallery: DbTripGallery[]) => void;
 }
 
+// Default category sent with every upload. The website never reads
+// gallery.category — it only consumes is_cover + is_featured + the
+// raw image list — so categorizing per upload was pure cognitive
+// load. Schema column stays, defaults to "gallery", existing rows
+// keep working.
+const DEFAULT_CATEGORY = "gallery";
+
 export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }: Props) {
   const [images, setImages] = useState(initialGallery);
   const [uploading, setUploading] = useState(false);
-  const [category, setCategory] = useState("gallery");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Single source of truth for state updates: keep local images and
+  // the parent's galleryOverride in lockstep so the right-pane preview
+  // reflects every optimistic change without a page reload.
+  function applyImages(next: DbTripGallery[] | ((prev: DbTripGallery[]) => DbTripGallery[])) {
+    setImages((prev) => {
+      const resolved = typeof next === "function" ? next(prev) : next;
+      onGalleryChange(resolved);
+      return resolved;
+    });
+  }
 
   // Refresh gallery from server
   async function refreshGallery() {
     if (!tripId) return;
     const fresh = await fetchTripGalleryImages(tripId);
-    setImages(fresh);
-    onGalleryChange(fresh);
+    applyImages(fresh);
   }
 
   const handleUpload = async (files: FileList | null) => {
@@ -48,7 +62,7 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
       const fd = new FormData();
       fd.append("file", file);
       fd.append("trip_id", tripId);
-      fd.append("category", category);
+      fd.append("category", DEFAULT_CATEGORY);
       const res = await uploadTripGalleryAction(fd);
       if (res.success) count++;
       else toast.error(res.error ?? "Upload failed");
@@ -63,26 +77,28 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    setImages((prev) => prev.filter((g) => g.gallery_id !== deleteId));
+    applyImages((prev) => prev.filter((g) => g.gallery_id !== deleteId));
     const res = await deleteGalleryImageAction(deleteId);
     if (res.success) {
       toast.success("Image deleted");
     } else {
-      await refreshGallery(); // revert
+      await refreshGallery(); // revert from server
       toast.error(res.error ?? "Delete failed");
     }
     setDeleteId(null);
   };
 
   const handleToggleFeatured = async (id: string, current: boolean) => {
-    setImages((prev) => prev.map((g) => g.gallery_id === id ? { ...g, is_featured: !current } : g));
+    applyImages((prev) =>
+      prev.map((g) => (g.gallery_id === id ? { ...g, is_featured: !current } : g)),
+    );
     const res = await toggleGalleryFeaturedAction(id, !current);
     if (!res.success) await refreshGallery();
   };
 
   const handleSetCover = async (id: string) => {
     if (!tripId) return;
-    setImages((prev) => prev.map((g) => ({ ...g, is_cover: g.gallery_id === id })));
+    applyImages((prev) => prev.map((g) => ({ ...g, is_cover: g.gallery_id === id })));
     const res = await toggleGalleryCoverAction(tripId, id);
     if (res.success) {
       toast.success("Cover image set");
@@ -94,26 +110,15 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
   return (
     <div className="space-y-4">
       {/* Upload section */}
-      <div className="flex flex-wrap items-end gap-3">
-        <FormField label="Category">
-          <select
-            className="rounded-lg border border-line bg-surface px-3 py-2 text-sm outline-none focus:border-rust"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            {GALLERY_CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-        </FormField>
-        <div>
-          <Button onClick={() => fileRef.current?.click()} disabled={uploading || !tripId}>
-            {uploading ? "Uploading..." : "Upload Images"}
-          </Button>
-          {!tripId && (
-            <p className="mt-1 text-[11px] text-mid">Save the trip first to upload images</p>
-          )}
-        </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={() => fileRef.current?.click()} disabled={uploading || !tripId}>
+          {uploading ? "Uploading..." : "Upload Images"}
+        </Button>
+        <p className="text-xs text-mid">
+          {tripId
+            ? "After upload, hover an image to set it as cover or feature it."
+            : "Save the trip first to upload images."}
+        </p>
         <input
           ref={fileRef}
           type="file"
@@ -143,7 +148,6 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
                 <div className="flex flex-wrap gap-1">
                   {img.is_cover && <Badge variant="rust">Cover</Badge>}
                   {img.is_featured && <Badge variant="amber">Featured</Badge>}
-                  <Badge variant="gray">{img.category}</Badge>
                 </div>
               </div>
               <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
