@@ -6,6 +6,7 @@ vi.mock("@/lib/supabase/server", () => ({ getServiceClient: () => current.client
 import {
   getTrips, getTripById, generateUniqueSlug, createTrip, updateTrip,
   deleteTrip, toggleTripField, cloneAsBatch,
+  countTripBookings, TripHasBookingsError,
 } from "@/lib/db/trips";
 
 beforeEach(() => { current = makeSupabaseFake(); });
@@ -109,6 +110,28 @@ describe("trips db", () => {
       "trips:delete": { data: null, error: { message: "fk" } },
     });
     await expect(deleteTrip("T1")).rejects.toThrow();
+  });
+  it("deleteTrip refuses with TripHasBookingsError when bookings reference the trip", async () => {
+    current = makeSupabaseFake({
+      "bookings:select": { data: null, error: null, count: 3 },
+    });
+    await expect(deleteTrip("T1")).rejects.toBeInstanceOf(TripHasBookingsError);
+    // Children must NOT have been deleted — guard fires before cascade.
+    expect(current.log.some((l) => l.op === "delete" && l.from === "trip_content")).toBe(false);
+  });
+  it("countTripBookings returns the count and 0 on null", async () => {
+    current = makeSupabaseFake({ "bookings:select": { data: null, error: null, count: 7 } });
+    expect(await countTripBookings("T1")).toBe(7);
+    current = makeSupabaseFake({ "bookings:select": { data: null, error: null } });
+    expect(await countTripBookings("T1")).toBe(0);
+  });
+  it("TripHasBookingsError carries the booking count and a friendly message", () => {
+    const err = new TripHasBookingsError(2);
+    expect(err.bookingCount).toBe(2);
+    expect(err.message).toMatch(/2 bookings/);
+    expect(err.message).toMatch(/Cancel/);
+    const single = new TripHasBookingsError(1);
+    expect(single.message).toMatch(/1 booking\b/);
   });
   it.each(["is_listed", "show_on_homepage"] as const)(
     "toggleTripField updates %s when trip is publicly listable",

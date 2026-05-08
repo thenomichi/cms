@@ -3,7 +3,7 @@
 import { tripBasicSchema } from "@/lib/schemas/trip";
 import { nextTripId, nextSequentialId } from "@/lib/ids";
 import { getServiceClient } from "@/lib/supabase/server";
-import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError, upsertAutosaveTrip, CMS_SHARED_OWNER_ID } from "@/lib/db/trips";
+import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError, TripHasBookingsError, upsertAutosaveTrip, CMS_SHARED_OWNER_ID } from "@/lib/db/trips";
 import { upsertTripContent, upsertHighlights } from "@/lib/db/trip-content";
 import { saveTripItinerary, type ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import {
@@ -297,6 +297,9 @@ export async function deleteTripAction(
     await revalidateTrip(slug);
     return { success: true };
   } catch (err) {
+    if (err instanceof TripHasBookingsError) {
+      return { success: false, error: err.message };
+    }
     console.error("[deleteTripAction]", err);
     return {
       success: false,
