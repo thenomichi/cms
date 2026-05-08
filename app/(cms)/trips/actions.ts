@@ -110,7 +110,12 @@ export async function createTripAction(
     const payload = parseTripFormData(formData);
     const parsed = tripBasicSchema.safeParse(payload.basic);
     if (!parsed.success) {
-      return { success: false, error: parsed.error.issues[0].message };
+      // Log every issue with its path so silent validation failures are
+      // diagnosable from server logs without an end-user repro.
+      console.error("[tripBasicSchema] validation failed:", parsed.error.issues);
+      const issue = parsed.error.issues[0];
+      const field = issue.path.length > 0 ? issue.path.join(".") : "field";
+      return { success: false, error: `${field}: ${issue.message}` };
     }
     const statusErr = validateListableStatus(payload.settings);
     if (statusErr) return { success: false, error: statusErr };
@@ -208,7 +213,12 @@ export async function updateTripAction(
     const payload = parseTripFormData(formData);
     const parsed = tripBasicSchema.safeParse(payload.basic);
     if (!parsed.success) {
-      return { success: false, error: parsed.error.issues[0].message };
+      // Log every issue with its path so silent validation failures are
+      // diagnosable from server logs without an end-user repro.
+      console.error("[tripBasicSchema] validation failed:", parsed.error.issues);
+      const issue = parsed.error.issues[0];
+      const field = issue.path.length > 0 ? issue.path.join(".") : "field";
+      return { success: false, error: `${field}: ${issue.message}` };
     }
     const statusErr = validateListableStatus(payload.settings);
     if (statusErr) return { success: false, error: statusErr };
