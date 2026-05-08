@@ -36,12 +36,18 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
   // Single source of truth for state updates: keep local images and
   // the parent's galleryOverride in lockstep so the right-pane preview
   // reflects every optimistic change without a page reload.
-  function applyImages(next: DbTripGallery[] | ((prev: DbTripGallery[]) => DbTripGallery[])) {
-    setImages((prev) => {
-      const resolved = typeof next === "function" ? next(prev) : next;
-      onGalleryChange(resolved);
-      return resolved;
-    });
+  //
+  // Parent setter must NOT fire from inside setImages' updater — that
+  // would call setGalleryOverride during this component's render and
+  // trip React's "setState in render" check. Resolve the next value
+  // first, then dispatch both setters back-to-back from the caller's
+  // render scope.
+  function applyImages(
+    next: DbTripGallery[] | ((prev: DbTripGallery[]) => DbTripGallery[]),
+  ) {
+    const resolved = typeof next === "function" ? next(images) : next;
+    setImages(resolved);
+    onGalleryChange(resolved);
   }
 
   // Refresh gallery from server
