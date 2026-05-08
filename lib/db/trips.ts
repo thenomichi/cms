@@ -504,3 +504,13 @@ export async function findResumableDraft(ownerId: string): Promise<DbTrip | null
   if (error) throw error;
   return (data as DbTrip | null) ?? null;
 }
+
+/**
+ * The CMS uses a single shared admin cookie (`cms_session=authenticated`)
+ * — there's no per-user identity. This sentinel uuid is the `autosave_owner`
+ * for every autosave draft so the column stays uuid-typed without us having
+ * to introduce real Supabase Auth just for autosave scoping.
+ *
+ * If/when the CMS gains per-user auth, replace usages with the real user id.
+ */
+export const CMS_SHARED_OWNER_ID = "00000000-0000-0000-0000-000000000001";

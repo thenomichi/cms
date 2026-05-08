@@ -3,7 +3,7 @@
 import { tripBasicSchema } from "@/lib/schemas/trip";
 import { nextTripId, nextSequentialId } from "@/lib/ids";
 import { getServiceClient } from "@/lib/supabase/server";
-import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError, upsertAutosaveTrip } from "@/lib/db/trips";
+import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError, upsertAutosaveTrip, CMS_SHARED_OWNER_ID } from "@/lib/db/trips";
 import { upsertTripContent, upsertHighlights } from "@/lib/db/trip-content";
 import { saveTripItinerary, type ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import {
@@ -465,12 +465,14 @@ export async function autosaveTripAction(
       return { success: false, error: `${field}: ${issue.message}` };
     }
 
-    const { getSession } = await import("@/lib/supabase/server-auth");
-    const session = await getSession();
-    if (!session?.user) {
+    // Auth is enforced upstream by the CMS layout (cms_session cookie).
+    // The CMS has no per-user identity today; all admins share one
+    // autosave_owner sentinel. See lib/db/trips.ts for the rationale.
+    const { isAuthenticated } = await import("@/app/(auth)/login/actions");
+    if (!(await isAuthenticated())) {
       return { success: false, error: "Not signed in" };
     }
-    const ownerId = session.user.id;
+    const ownerId = CMS_SHARED_OWNER_ID;
 
     let resolvedTripId = tripId;
     let row;

@@ -1,15 +1,14 @@
-import { redirect } from "next/navigation";
 import { listDepartureCities } from "@/lib/db/departure-cities";
-import { findResumableDraft } from "@/lib/db/trips";
+import { findResumableDraft, CMS_SHARED_OWNER_ID } from "@/lib/db/trips";
 import { getServiceClient } from "@/lib/supabase/server";
-import { getSession } from "@/lib/supabase/server-auth";
 import type { DbDestination } from "@/lib/types";
 import { NewTripWrapper } from "./NewTripWrapper";
 
-export default async function NewTripPage() {
-  const session = await getSession();
-  if (!session?.user) redirect("/login");
+// Auth is enforced upstream by app/(cms)/layout.tsx (cms_session cookie).
+// The CMS doesn't have per-user identity today — autosave drafts are
+// scoped to a shared owner constant so all admins see the same drafts.
 
+export default async function NewTripPage() {
   const sb = getServiceClient();
   const [destRes, departureCities, resumable] = await Promise.all([
     sb
@@ -18,12 +17,12 @@ export default async function NewTripPage() {
       .eq("is_active", true)
       .order("destination_name"),
     listDepartureCities(),
-    findResumableDraft(session.user.id),
+    findResumableDraft(CMS_SHARED_OWNER_ID),
   ]);
 
   return (
     <NewTripWrapper
-      userId={session.user.id}
+      userId={CMS_SHARED_OWNER_ID}
       destinations={(destRes.data ?? []) as DbDestination[]}
       departureCities={departureCities}
       websiteUrl={process.env.WEBSITE_URL ?? "http://localhost:3000"}
