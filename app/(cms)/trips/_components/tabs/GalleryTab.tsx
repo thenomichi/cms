@@ -36,12 +36,18 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
   // Single source of truth for state updates: keep local images and
   // the parent's galleryOverride in lockstep so the right-pane preview
   // reflects every optimistic change without a page reload.
-  function applyImages(next: DbTripGallery[] | ((prev: DbTripGallery[]) => DbTripGallery[])) {
-    setImages((prev) => {
-      const resolved = typeof next === "function" ? next(prev) : next;
-      onGalleryChange(resolved);
-      return resolved;
-    });
+  //
+  // Parent setter must NOT fire from inside setImages' updater — that
+  // would call setGalleryOverride during this component's render and
+  // trip React's "setState in render" check. Resolve the next value
+  // first, then dispatch both setters back-to-back from the caller's
+  // render scope.
+  function applyImages(
+    next: DbTripGallery[] | ((prev: DbTripGallery[]) => DbTripGallery[]),
+  ) {
+    const resolved = typeof next === "function" ? next(images) : next;
+    setImages(resolved);
+    onGalleryChange(resolved);
   }
 
   // Refresh gallery from server
@@ -129,48 +135,82 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
         />
       </div>
 
+      {/* Plain-language help so admins know what Cover/Featured do. */}
+      {images.length > 0 && (
+        <div className="rounded-lg border border-line bg-surface3 p-3 text-xs text-mid">
+          <p className="mb-1">
+            <span className="font-semibold text-ink">Cover</span> is the main image — shown on trip
+            cards and at the top of the trip detail page. Pick one.
+          </p>
+          <p>
+            <span className="font-semibold text-ink">Featured</span> images appear larger in the
+            gallery. Use this for your best 2–3 shots. Other uploads sit in the regular gallery.
+          </p>
+        </div>
+      )}
+
       {/* Gallery grid */}
       {images.length === 0 ? (
         <div className="py-10 text-center text-sm text-mid">
           No images yet. Upload images using the button above.
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((img) => (
-            <div key={img.gallery_id} className="group relative overflow-hidden rounded-lg border border-line bg-surface">
-              <img
-                src={img.image_url}
-                alt={img.alt_text ?? ""}
-                className="h-24 w-full object-cover"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-              />
-              <div className="p-2">
-                <div className="flex flex-wrap gap-1">
+            <div
+              key={img.gallery_id}
+              className="overflow-hidden rounded-lg border border-line bg-surface"
+            >
+              <div className="relative">
+                <img
+                  src={img.image_url}
+                  alt={img.alt_text ?? ""}
+                  className="h-40 w-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                {/* Status chips, top-left over the image. */}
+                <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                   {img.is_cover && <Badge variant="rust">Cover</Badge>}
                   {img.is_featured && <Badge variant="amber">Featured</Badge>}
                 </div>
               </div>
-              <div className="absolute right-1 top-1 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+
+              {/* Always-visible action row — no hover required, with explicit
+                  text labels and active state. Layman-readable. */}
+              <div className="grid grid-cols-3 border-t border-line text-xs">
                 <button
-                  className="rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white"
+                  type="button"
                   onClick={() => handleSetCover(img.gallery_id)}
-                  title="Set as cover"
+                  disabled={img.is_cover ?? false}
+                  className={`flex h-9 items-center justify-center gap-1 px-2 transition-colors ${
+                    img.is_cover
+                      ? "bg-rust/10 font-semibold text-rust cursor-default"
+                      : "text-mid hover:bg-surface3 hover:text-ink"
+                  }`}
                 >
-                  🖼
+                  {img.is_cover ? "✓ Cover" : "Use as cover"}
                 </button>
                 <button
-                  className="rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white"
-                  onClick={() => handleToggleFeatured(img.gallery_id, img.is_featured ?? false)}
-                  title="Toggle featured"
+                  type="button"
+                  onClick={() =>
+                    handleToggleFeatured(img.gallery_id, img.is_featured ?? false)
+                  }
+                  className={`flex h-9 items-center justify-center gap-1 border-x border-line px-2 transition-colors ${
+                    img.is_featured
+                      ? "bg-sem-amber/10 font-semibold text-sem-amber"
+                      : "text-mid hover:bg-surface3 hover:text-ink"
+                  }`}
                 >
-                  ⭐
+                  {img.is_featured ? "✓ Featured" : "Show as featured"}
                 </button>
                 <button
-                  className="rounded bg-red-600/80 px-1.5 py-0.5 text-[10px] text-white"
+                  type="button"
                   onClick={() => setDeleteId(img.gallery_id)}
-                  title="Delete"
+                  className="flex h-9 items-center justify-center gap-1 px-2 text-mid transition-colors hover:bg-sem-red-bg hover:text-sem-red"
                 >
-                  🗑
+                  Remove
                 </button>
               </div>
             </div>
