@@ -64,6 +64,7 @@ function buildPayload(
     itinerary: form.itinerary,
     inclusions: form.inclusions,
     exclusions: form.exclusions,
+    faqs: form.faqs,
     status: form.status,
     is_listed: form.is_listed,
     show_on_homepage: form.show_on_homepage,
