@@ -11,6 +11,7 @@ import {
   type InclusionInput,
   type ExclusionInput,
 } from "@/lib/db/trip-inclusions";
+import { saveTripFaqs, type FaqInput } from "@/lib/db/trip-faqs";
 import { revalidateTrip } from "@/lib/revalidate";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/lib/audit";
@@ -70,6 +71,7 @@ interface TripFormPayload {
   itinerary: ItineraryDayInput[];
   inclusions: InclusionInput[];
   exclusions: ExclusionInput[];
+  faqs: FaqInput[];
   settings: {
     status: string;
     is_listed: boolean;
@@ -185,6 +187,9 @@ export async function createTripAction(
       payload.exclusions,
     ));
 
+    // Save FAQs
+    await timed("createTrip:faqs", () => saveTripFaqs(tripId, payload.faqs ?? []));
+
     logActivityAsync({ table_name: "trips", record_id: tripId, action: "INSERT", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);
     return { success: true };
@@ -263,6 +268,9 @@ export async function updateTripAction(
       payload.inclusions,
       payload.exclusions,
     ));
+
+    // Save FAQs
+    await timed("updateTrip:faqs", () => saveTripFaqs(tripId, payload.faqs ?? []));
 
     logActivityAsync({ table_name: "trips", record_id: tripId, action: "UPDATE", new_values: { trip_name: parsed.data.trip_name, status: payload.settings.status, slug } });
     await revalidateTrip(slug);

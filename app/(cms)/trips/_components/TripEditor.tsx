@@ -15,6 +15,7 @@ import { BasicTab } from "./tabs/BasicTab";
 import { DetailsTab } from "./tabs/DetailsTab";
 import { ItineraryTab } from "./tabs/ItineraryTab";
 import { InclusionsTab } from "./tabs/InclusionsTab";
+import { FaqsTab } from "./tabs/FaqsTab";
 import { SettingsTab } from "./tabs/SettingsTab";
 import { GalleryTab } from "./tabs/GalleryTab";
 import { PreviewControls } from "./preview/PreviewControls";
@@ -117,6 +118,7 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, we
           itinerary: form.itinerary,
           inclusions: form.inclusions,
           exclusions: form.exclusions,
+          faqs: form.faqs,
           settings: {
             status: form.status,
             is_listed: form.is_listed,
@@ -237,6 +239,7 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, we
       overview: form.overview,
       tagline: form.tagline, highlights: form.highlights,
       itinerary: form.itinerary, inclusions: form.inclusions, exclusions: form.exclusions,
+      faqs: form.faqs,
       settings: {
         status: form.status, is_listed: form.is_listed,
         show_on_homepage: form.show_on_homepage,
@@ -416,6 +419,9 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, we
             )}
             {activeStep === "inclusions" && (
               <InclusionsTab form={form} updateField={updateField} exclusions={exclusions} />
+            )}
+            {activeStep === "faqs" && (
+              <FaqsTab form={form} updateField={updateField} />
             )}
             {activeStep === "gallery" && isEditing && (
               <GalleryTab

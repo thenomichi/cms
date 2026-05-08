@@ -1,6 +1,7 @@
 import type { TripFull } from "@/lib/db/trips";
 import type { ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import type { InclusionInput, ExclusionInput } from "@/lib/db/trip-inclusions";
+import type { FaqInput } from "@/lib/db/trip-faqs";
 
 /**
  * Max characters allowed in the tagline. Rendered on the website's trip
@@ -43,6 +44,7 @@ export interface TripFormState {
   itinerary: ItineraryDayInput[];
   inclusions: InclusionInput[];
   exclusions: ExclusionInput[];
+  faqs: FaqInput[];
   status: string;
   is_listed: boolean;
   show_on_homepage: boolean;
@@ -61,7 +63,7 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
       batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
       booking_kind: "trip", currency_code: "INR",
       overview: "", tagline: "", highlights: [],
-      itinerary: [], inclusions: [], exclusions: [],
+      itinerary: [], inclusions: [], exclusions: [], faqs: [],
       status: "Draft", is_listed: false, show_on_homepage: false,
       dossier_url: "",
     };
@@ -100,6 +102,11 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
     exclusions: trip.inclusions
       .filter((i) => i.inclusion_type === "exclusion")
       .map((i) => ({ name: i.name })),
+    faqs: trip.faqs.map((f) => ({
+      question: f.question,
+      answer: f.answer,
+      category: f.category,
+    })),
     status: trip.status ?? "Draft", is_listed: trip.is_listed ?? false,
     show_on_homepage: trip.show_on_homepage ?? false,
     dossier_url: trip.dossier_url ?? "",
@@ -122,7 +129,8 @@ export const STEPS_CREATE: StepDef[] = [
   { id: "details", label: "Description", desc: "Overview, tagline & highlights", num: "2" },
   { id: "itinerary", label: "Itinerary", desc: "Day-by-day plan", num: "3" },
   { id: "inclusions", label: "What's Included", desc: "Inclusions & exclusions", num: "4" },
-  { id: "settings", label: "Review & Publish", desc: "Status & visibility", num: "5" },
+  { id: "faqs", label: "FAQs", desc: "Common questions & answers", num: "5" },
+  { id: "settings", label: "Review & Publish", desc: "Status & visibility", num: "6" },
 ];
 
 export const STEPS_EDIT: StepDef[] = [
@@ -130,8 +138,9 @@ export const STEPS_EDIT: StepDef[] = [
   { id: "details", label: "Description", desc: "Overview, tagline & highlights", num: "2" },
   { id: "itinerary", label: "Itinerary", desc: "Day-by-day plan", num: "3" },
   { id: "inclusions", label: "What's Included", desc: "Inclusions & exclusions", num: "4" },
-  { id: "gallery", label: "Gallery", desc: "Trip images & cover photo", num: "5" },
-  { id: "settings", label: "Publish Settings", desc: "Status & visibility", num: "6" },
+  { id: "faqs", label: "FAQs", desc: "Common questions & answers", num: "5" },
+  { id: "gallery", label: "Gallery", desc: "Trip images & cover photo", num: "6" },
+  { id: "settings", label: "Publish Settings", desc: "Status & visibility", num: "7" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -150,6 +159,17 @@ export function validateStep(step: string, form: TripFormState): string | null {
     case "itinerary":
       return null;
     case "inclusions":
+      return null;
+    case "faqs":
+      for (let i = 0; i < form.faqs.length; i++) {
+        const f = form.faqs[i];
+        if (!f.question || f.question.trim().length < 3) {
+          return `FAQ #${i + 1}: question is required (min 3 chars)`;
+        }
+        if (!f.answer || f.answer.trim().length < 3) {
+          return `FAQ #${i + 1}: answer is required (min 3 chars)`;
+        }
+      }
       return null;
     case "settings":
       return null;
