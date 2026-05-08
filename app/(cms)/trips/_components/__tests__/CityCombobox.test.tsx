@@ -35,8 +35,10 @@ describe("CityCombobox", () => {
     await userEvent.click(screen.getByRole("combobox"));
     await userEvent.type(screen.getByPlaceholderText(/search/i), "che");
     const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(1);
+    // Real match is present (Add-new option also renders alongside).
     expect(options[0]).toHaveTextContent("Chennai");
+    // And the Add-new prompt is offered for the typed query.
+    expect(screen.getByText(/Add "che"/i)).toBeInTheDocument();
   });
 
   it("filters by country name (case-insensitive)", async () => {
@@ -44,8 +46,22 @@ describe("CityCombobox", () => {
     await userEvent.click(screen.getByRole("combobox"));
     await userEvent.type(screen.getByPlaceholderText(/search/i), "thailand");
     const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(1);
     expect(options[0]).toHaveTextContent("Bangkok");
+  });
+
+  it("offers 'Add new' even when partial matches exist", async () => {
+    render(<CityCombobox value="" onChange={() => {}} cities={cities} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    // "Bang" matches Bangkok — but the user can still add a new city.
+    await userEvent.type(screen.getByPlaceholderText(/search/i), "Bang");
+    expect(screen.getByText(/Bangkok/)).toBeInTheDocument();
+    expect(screen.getByText(/Add "Bang"/i)).toBeInTheDocument();
+  });
+
+  it("does not show Popular tags in the dropdown", async () => {
+    render(<CityCombobox value="" onChange={() => {}} cities={cities} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    expect(screen.queryByText(/Popular/i)).not.toBeInTheDocument();
   });
 
   it("selecting an option calls onChange with the city_name", async () => {
