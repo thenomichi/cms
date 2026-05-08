@@ -14,25 +14,18 @@ interface DetailsTabProps {
 export function DetailsTab({ form, updateField }: DetailsTabProps) {
   return (
     <div className="space-y-5">
-      {/* ── Trip Description ── */}
-      <FormSection title="Trip Description">
-        <div className="space-y-4">
-          <FormField label="Overview" hint="Short overview shown on the trip card">
-            <RichEditor
-              value={form.overview}
-              onChange={(html) => updateField("overview", html)}
-              placeholder="A brief overview of the trip..."
-            />
-          </FormField>
-
-          <FormField label="Description" hint="Full trip description for the detail page">
-            <RichEditor
-              value={form.description}
-              onChange={(html) => updateField("description", html)}
-              placeholder="Detailed description of the trip experience..."
-            />
-          </FormField>
-        </div>
+      {/* ── About this Journey ── */}
+      <FormSection title="About this Journey">
+        <FormField
+          label="About this Journey"
+          hint="The main paragraph shown on the trip detail page under 'About this journey'. Aim for 2–4 sentences that paint the picture."
+        >
+          <RichEditor
+            value={form.overview}
+            onChange={(html) => updateField("overview", html)}
+            placeholder="e.g. Five days through Kerala's most soulful landscapes — from spice-scented hills to palm-fringed backwaters..."
+          />
+        </FormField>
       </FormSection>
 
       {/* ── Key Highlights ── */}

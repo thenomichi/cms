@@ -38,7 +38,6 @@ export interface TripFormState {
   booking_kind: string;
   currency_code: string;
   overview: string;
-  description: string;
   tagline: string;
   highlights: string[];
   itinerary: ItineraryDayInput[];
@@ -61,7 +60,7 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
       discount_pct: null, discount_amount: null, quoted_price: null, advance_pct: 50, total_slots: null,
       batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
       booking_kind: "trip", currency_code: "INR",
-      overview: "", description: "", tagline: "", highlights: [],
+      overview: "", tagline: "", highlights: [],
       itinerary: [], inclusions: [], exclusions: [],
       status: "Draft", is_listed: false, show_on_homepage: false,
       dossier_url: "",
@@ -89,7 +88,7 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
     group_slug: trip.group_slug ?? null,
     departure_city: trip.departure_city ?? "", departure_airport: trip.departure_airport ?? "",
     booking_kind: trip.booking_kind ?? "trip", currency_code: trip.currency_code ?? "INR",
-    overview: contentOf("overview"), description: contentOf("description"),
+    overview: contentOf("overview"),
     tagline: contentOf("tagline"), highlights,
     itinerary: trip.itinerary.map((d) => ({
       day_number: d.day_number, title: d.title, subtitle: d.subtitle,
