@@ -3,7 +3,11 @@
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
-// Curated emoji categories for a travel CMS
+// Curated emoji categories for the Nomichi CMS. Picked from the 47-chip
+// inclusion seed + the website's brand palette (community trips, expert
+// hosts, motorcycle trips, Ladakh / Spiti / Meghalaya / Bali / Vietnam /
+// Morocco). Emojis can repeat across categories — admins find what they
+// need by context, not by uniqueness.
 const EMOJI_CATEGORIES = [
   {
     label: "Destinations",
@@ -11,6 +15,8 @@ const EMOJI_CATEGORIES = [
       "🏔️", "⛰️", "🏝️", "🏖️", "🏜️", "🌊", "🏞️", "🌋", "🗻", "🏕️",
       "🌿", "🌴", "🌺", "🍃", "🌾", "🏛️", "🏯", "⛩️", "🕌", "🏰",
       "🗼", "🗽", "⛪", "🕍", "🛕",
+      // additions: scenic + heritage + market staples
+      "🌅", "🌄", "🌉", "🛣️", "🛤️", "⛲", "🏟️", "🏪", "🏞️",
     ],
   },
   {
@@ -18,6 +24,10 @@ const EMOJI_CATEGORIES = [
     emojis: [
       "✈️", "🚗", "🚐", "🚌", "🚂", "🚆", "🛳️", "⛵", "🚁", "🛶",
       "🚴", "🏍️", "🛺", "🚕", "🚀", "🛩️", "🚣", "🚢",
+      // additions: SUV (backup support), scooter, high-speed rail (Japan),
+      // mountain railway (Spiti/Kalka), monorail (Bangkok), pickup truck,
+      // tempo traveller stand-in (minibus-ish)
+      "🚙", "🛵", "🚄", "🚞", "🚝", "🛻",
     ],
   },
   {
@@ -25,6 +35,10 @@ const EMOJI_CATEGORIES = [
     emojis: [
       "🎯", "🧗", "🏄", "🤿", "🎿", "🪂", "🏊", "🚣", "🏇", "🎣",
       "⛷️", "🛷", "🏋️", "🧘", "🎭", "🎨", "📸", "🎶", "🎪", "🏸",
+      // additions: trekking, kayak, live music, festivals/rituals,
+      // fireworks (festival nights), shopping/bazaars, cooking class
+      // (Vietnam/Thailand), forest bath (Meghalaya), bird watching (Anini)
+      "🥾", "🛶", "🎤", "🪔", "🎆", "🛍️", "🍳", "🌳", "🦅",
     ],
   },
   {
@@ -32,12 +46,19 @@ const EMOJI_CATEGORIES = [
     emojis: [
       "🍽️", "🥐", "🥗", "🍿", "☕", "🍵", "🥘", "🍜", "🍱", "🧁",
       "🍕", "🌮", "🍷", "🍹", "🧃",
+      // additions: Indian curry / local cuisine, evening drinks,
+      // BBQ/grills (Ladakh / Mongolian style), street food (SE Asia),
+      // dumplings (East Asia), champagne (invite-only)
+      "🍛", "🍻", "🥩", "🍢", "🥟", "🥂",
     ],
   },
   {
     label: "Accommodation",
     emojis: [
       "🏨", "🏩", "🏠", "⛺", "🛖", "🏡", "🏗️", "🏘️", "🛏️", "🏕️",
+      // additions: boutique sleep, eco-lodge / treehouse, heritage stays
+      // (ryokan / haveli)
+      "🛌", "🌳", "🏯",
     ],
   },
   {
@@ -45,6 +66,22 @@ const EMOJI_CATEGORIES = [
     emojis: [
       "🧭", "🗺️", "📜", "🎒", "🧳", "💼", "🔮", "📱", "💳", "🏥",
       "🧴", "🚻", "⛽", "🔑", "📋", "🎫", "🎟️", "💡", "🔒", "📦",
+      // additions matching the master inclusion pool:
+      // Trip Captain (🧑‍✈️), Marshall (🚩), Mechanic Support (🛠️),
+      // 24/7 Helpline (📞), Travel/Health Insurance (🛡️), Medical Kit
+      // (🩹), Oxygen Cylinder (🫁 — Ladakh altitude), Emergencies (🧯),
+      // Sat-comms for remote treks (📡), Visa fees (🪪)
+      "🧑‍✈️", "🚩", "🛠️", "📞", "🛡️", "🩹", "🫁", "🧯", "📡", "🪪",
+    ],
+  },
+  {
+    label: "Adventure & Gear",
+    emojis: [
+      // Brand-new section — your master pool's Gear & Equipment chips
+      // (Riding Gear, Team Gear, Ropes, Camp Equipment, Camera/Drone,
+      // Adventure Gear Rental, Photography Equipment) needed a home.
+      "🪖", "🎽", "🪢", "🔦", "🎒", "🥾", "🧗", "⛺", "🪜", "🧰",
+      "📷", "🪂", "🎿", "🛷", "🛶",
     ],
   },
   {
@@ -52,6 +89,9 @@ const EMOJI_CATEGORIES = [
     emojis: [
       "🌅", "🌄", "🌠", "🌈", "❄️", "☀️", "🌙", "⭐", "🌸", "🦋",
       "🐘", "🦁", "🐪", "🐬", "🦜", "🌻", "🍂", "🌊",
+      // additions: alpine forest (Spiti/Ladakh), monsoon (Meghalaya),
+      // overcast (Northeast), wildlife (deer/yak), windy mountain pass
+      "🌲", "🌧️", "⛅", "🦌", "🐃", "🌬️",
     ],
   },
   {
@@ -59,6 +99,8 @@ const EMOJI_CATEGORIES = [
     emojis: [
       "✅", "❌", "⚡", "🔥", "💎", "🏆", "🎯", "❤️", "✨", "🌟",
       "💪", "🙌", "👍", "🎉", "🎊", "🏅", "🥇", "🪪", "🧭", "🗝️",
+      // additions: welcome kit (🎁 — your seed), schedule cues, pins
+      "🎁", "⏰", "📍", "🏷️",
     ],
   },
 ];
