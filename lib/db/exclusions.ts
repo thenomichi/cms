@@ -8,7 +8,7 @@ export async function listExclusions(): Promise<DbExclusion[]> {
     .from("exclusions")
     .select("*")
     .eq("is_active", true)
-    .order("is_popular", { ascending: false })
+    .order("category", { ascending: true })
     .order("display_order", { ascending: true })
     .order("name", { ascending: true });
   if (error) throw error;
@@ -17,6 +17,7 @@ export async function listExclusions(): Promise<DbExclusion[]> {
 
 export async function addExclusion(input: {
   name: string;
+  category?: string;
   is_popular?: boolean;
 }): Promise<DbExclusion> {
   const db = getServiceClient();
@@ -29,6 +30,7 @@ export async function addExclusion(input: {
     .insert({
       exclusion_id: idCandidate,
       name: input.name,
+      category: input.category ?? "Other",
       is_popular: input.is_popular ?? false,
     })
     .select("*")

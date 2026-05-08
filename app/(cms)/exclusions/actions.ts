@@ -7,7 +7,7 @@ import { logActivity } from "@/lib/audit";
 
 export async function addExclusionAction(input: {
   name: string;
-  is_popular?: boolean;
+  category: string;
 }): Promise<{ success: boolean; exclusion?: DbExclusion; error?: string }> {
   try {
     const parsed = exclusionCreateSchema.safeParse(input);
@@ -19,7 +19,7 @@ export async function addExclusionAction(input: {
       table_name: "exclusions",
       record_id: exclusion.exclusion_id,
       action: "INSERT",
-      new_values: { name: exclusion.name, is_popular: exclusion.is_popular },
+      new_values: { name: exclusion.name, category: exclusion.category },
     }).catch((err) => console.error("[logActivity] swallowed:", err));
     return { success: true, exclusion };
   } catch (err) {
