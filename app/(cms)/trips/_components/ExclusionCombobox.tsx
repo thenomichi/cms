@@ -24,6 +24,13 @@ export function ExclusionCombobox({
   const [showAddModal, setShowAddModal] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Local copy of the master list so inline-adds reflect immediately
+  // without a page reload. Re-syncs if the parent passes a fresh prop.
+  const [localExclusions, setLocalExclusions] = useState<DbExclusion[]>(exclusions);
+  useEffect(() => {
+    setLocalExclusions(exclusions);
+  }, [exclusions]);
+
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
@@ -38,13 +45,13 @@ export function ExclusionCombobox({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const sorted = [...exclusions].sort((a, b) => {
+    const sorted = [...localExclusions].sort((a, b) => {
       if (a.is_popular !== b.is_popular) return a.is_popular ? -1 : 1;
       return a.name.localeCompare(b.name);
     });
     if (!q) return sorted;
     return sorted.filter((e) => e.name.toLowerCase().includes(q));
-  }, [exclusions, query]);
+  }, [localExclusions, query]);
 
   const exactMatch = useMemo(
     () =>
@@ -116,6 +123,14 @@ export function ExclusionCombobox({
           initialName={trimmed}
           onClose={() => setShowAddModal(false)}
           onAdded={(exclusion) => {
+            // Mirror the new entry into local state so the dropdown
+            // reflects it without a page reload. The next mount of this
+            // component (or parent reload) will re-sync from the prop.
+            setLocalExclusions((prev) =>
+              prev.some((e) => e.exclusion_id === exclusion.exclusion_id)
+                ? prev
+                : [...prev, exclusion],
+            );
             onChange(exclusion.name);
             setShowAddModal(false);
             setOpen(false);
@@ -136,15 +151,14 @@ interface AddExclusionModalProps {
 
 function AddExclusionModal({ initialName, onClose, onAdded }: AddExclusionModalProps) {
   const [name, setName] = useState(initialName);
-  const [isPopular, setIsPopular] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
     setSubmitting(true);
-    const res = await addExclusionAction({
-      name: name.trim(),
-      is_popular: isPopular,
-    });
+    // is_popular is a curation/admin concern — don't surface it in the
+    // inline-add flow. New entries default to non-popular; the dedicated
+    // admin screen (or DB) can flip it later if needed.
+    const res = await addExclusionAction({ name: name.trim() });
     setSubmitting(false);
     if (res.success && res.exclusion) {
       onAdded(res.exclusion);
@@ -166,14 +180,6 @@ function AddExclusionModal({ initialName, onClose, onAdded }: AddExclusionModalP
               onChange={(e) => setName(e.target.value)}
               className="mt-1 h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-rust focus:ring-1 focus:ring-rust/20"
             />
-          </label>
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={isPopular}
-              onChange={(e) => setIsPopular(e.target.checked)}
-            />
-            Mark as popular
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
