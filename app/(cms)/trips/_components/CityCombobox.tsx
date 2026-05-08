@@ -25,6 +25,13 @@ export function CityCombobox({
   const [showAddModal, setShowAddModal] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
+  // Local copy of the master list so inline-adds reflect immediately
+  // without a page reload. Re-syncs if the parent passes a fresh prop.
+  const [localCities, setLocalCities] = useState<DbDepartureCity[]>(cities);
+  useEffect(() => {
+    setLocalCities(cities);
+  }, [cities]);
+
   useEffect(() => {
     if (!open) return;
     const close = (e: MouseEvent) => {
@@ -39,7 +46,7 @@ export function CityCombobox({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const sorted = [...cities].sort((a, b) => {
+    const sorted = [...localCities].sort((a, b) => {
       if (a.is_popular !== b.is_popular) return a.is_popular ? -1 : 1;
       return 0;
     });
@@ -49,7 +56,7 @@ export function CityCombobox({
         c.city_name.toLowerCase().includes(q) ||
         c.country_name.toLowerCase().includes(q),
     );
-  }, [cities, query]);
+  }, [localCities, query]);
 
   const exactMatch = useMemo(
     () =>
@@ -122,6 +129,14 @@ export function CityCombobox({
           initialName={trimmed}
           onClose={() => setShowAddModal(false)}
           onAdded={(city) => {
+            // Mirror the new entry into local state so the dropdown
+            // reflects it without a page reload. The next mount of this
+            // component (or parent reload) will re-sync from the prop.
+            setLocalCities((prev) =>
+              prev.some((c) => c.departure_city_id === city.departure_city_id)
+                ? prev
+                : [...prev, city],
+            );
             onChange(city.city_name);
             setShowAddModal(false);
             setOpen(false);
@@ -143,7 +158,6 @@ interface AddCityModalProps {
 function AddCityModal({ initialName, onClose, onAdded }: AddCityModalProps) {
   const [cityName, setCityName] = useState(initialName);
   const [countryCode, setCountryCode] = useState("IN");
-  const [isPopular, setIsPopular] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit() {
@@ -154,11 +168,13 @@ function AddCityModal({ initialName, onClose, onAdded }: AddCityModalProps) {
       setSubmitting(false);
       return;
     }
+    // is_popular is a curation/admin concern — don't surface it in the
+    // inline-add flow. New entries default to non-popular; the dedicated
+    // admin screen (or DB) can flip it later if needed.
     const res = await addDepartureCityAction({
       city_name: cityName.trim(),
       country_code: country.code,
       country_name: country.name,
-      is_popular: isPopular,
     });
     setSubmitting(false);
     if (res.success && res.city) {
@@ -195,14 +211,6 @@ function AddCityModal({ initialName, onClose, onAdded }: AddCityModalProps) {
                 </option>
               ))}
             </select>
-          </label>
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={isPopular}
-              onChange={(e) => setIsPopular(e.target.checked)}
-            />
-            Mark as popular
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
