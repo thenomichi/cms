@@ -201,6 +201,15 @@ export async function updateTrip(
 export async function deleteTrip(id: string): Promise<void> {
   const db = getServiceClient();
 
+  // Pre-flight: refuse to delete if any bookings reference this trip. The
+  // FK would block the delete anyway with an opaque Postgres message; this
+  // turns it into a typed error the action layer can surface as a clear
+  // message ("set status to Cancelled instead").
+  const bookingCount = await countTripBookings(id);
+  if (bookingCount > 0) {
+    throw new TripHasBookingsError(bookingCount);
+  }
+
   // Delete children first (cascade doesn't always apply via service key)
   await Promise.all([
     db.from("trip_content").delete().eq("trip_id", id),
@@ -234,6 +243,30 @@ export class TripNotListableError extends Error {
     );
     this.name = "TripNotListableError";
   }
+}
+
+export class TripHasBookingsError extends Error {
+  constructor(public readonly bookingCount: number) {
+    super(
+      `Can't delete this trip — it has ${bookingCount} booking${bookingCount === 1 ? "" : "s"} against it. Cancel the booking${bookingCount === 1 ? "" : "s"} first, or set the trip status to Cancelled instead.`,
+    );
+    this.name = "TripHasBookingsError";
+  }
+}
+
+/**
+ * Count bookings referencing a trip via the bookings_trip_id_fkey FK.
+ * Used as a pre-flight check by deleteTrip so the user gets a friendly
+ * error instead of a Postgres FK violation message.
+ */
+export async function countTripBookings(tripId: string): Promise<number> {
+  const db = getServiceClient();
+  const { count, error } = await db
+    .from("bookings")
+    .select("booking_id", { count: "exact", head: true })
+    .eq("trip_id", tripId);
+  if (error) throw new Error(`countTripBookings failed: ${error.message}`);
+  return count ?? 0;
 }
 
 export async function toggleTripField(
