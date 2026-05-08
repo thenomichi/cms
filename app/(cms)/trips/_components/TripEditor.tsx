@@ -111,7 +111,6 @@ export function TripEditor({ trip, destinations, departureCities, websiteUrl, us
           // path but kept here as a stable envelope in case the action
           // grows later.
           overview: form.overview,
-          description: form.description,
           tagline: form.tagline,
           highlights: form.highlights,
           itinerary: form.itinerary,
@@ -234,7 +233,7 @@ export function TripEditor({ trip, destinations, departureCities, websiteUrl, us
         departure_airport: form.departure_airport || null,
         booking_kind: form.booking_kind, currency_code: form.currency_code,
       },
-      overview: form.overview, description: form.description,
+      overview: form.overview,
       tagline: form.tagline, highlights: form.highlights,
       itinerary: form.itinerary, inclusions: form.inclusions, exclusions: form.exclusions,
       settings: {

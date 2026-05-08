@@ -59,7 +59,6 @@ function buildPayload(
     booked_slots: trip?.booked_slots ?? 0,
     departure_city: form.departure_city,
     overview: form.overview,
-    description: form.description,
     tagline: form.tagline,
     highlights: form.highlights.filter(Boolean),
     itinerary: form.itinerary,

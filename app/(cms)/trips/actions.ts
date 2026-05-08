@@ -65,7 +65,6 @@ async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
 interface TripFormPayload {
   basic: Record<string, unknown>;
   overview: string;
-  description: string;
   tagline: string;
   highlights: string[];
   itinerary: ItineraryDayInput[];
@@ -168,9 +167,6 @@ export async function createTripAction(
       payload.overview
         ? upsertTripContent(tripId, "overview", payload.overview)
         : Promise.resolve(),
-      payload.description
-        ? upsertTripContent(tripId, "description", payload.description)
-        : Promise.resolve(),
       payload.tagline
         ? upsertTripContent(tripId, "tagline", payload.tagline)
         : Promise.resolve(),
@@ -251,9 +247,6 @@ export async function updateTripAction(
     await timed("updateTrip:content", () => Promise.all([
       payload.overview
         ? upsertTripContent(tripId, "overview", payload.overview)
-        : Promise.resolve(),
-      payload.description
-        ? upsertTripContent(tripId, "description", payload.description)
         : Promise.resolve(),
       payload.tagline
         ? upsertTripContent(tripId, "tagline", payload.tagline)

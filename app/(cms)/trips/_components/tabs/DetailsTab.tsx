@@ -6,9 +6,6 @@ import { ListBuilder } from "@/components/ui/ListBuilder";
 import { RichEditor } from "@/components/ui/RichEditor";
 import type { TripFormState } from "../types";
 
-const INPUT =
-  "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
-
 interface DetailsTabProps {
   form: TripFormState;
   updateField: <K extends keyof TripFormState>(key: K, val: TripFormState[K]) => void;
@@ -17,38 +14,18 @@ interface DetailsTabProps {
 export function DetailsTab({ form, updateField }: DetailsTabProps) {
   return (
     <div className="space-y-5">
-      {/* ── Quick Summary ── */}
-      <FormSection title="Quick Summary">
-        <FormField label="Tagline" hint="One-liner shown below the trip name">
-          <input
-            type="text"
-            className={INPUT}
-            value={form.tagline}
-            onChange={(e) => updateField("tagline", e.target.value)}
-            placeholder="e.g. Where heritage meets adventure"
+      {/* ── About this Journey ── */}
+      <FormSection title="About this Journey">
+        <FormField
+          label="About this Journey"
+          hint="The main paragraph shown on the trip detail page under 'About this journey'. Aim for 2–4 sentences that paint the picture."
+        >
+          <RichEditor
+            value={form.overview}
+            onChange={(html) => updateField("overview", html)}
+            placeholder="e.g. Five days through Kerala's most soulful landscapes — from spice-scented hills to palm-fringed backwaters..."
           />
         </FormField>
-      </FormSection>
-
-      {/* ── Trip Description ── */}
-      <FormSection title="Trip Description">
-        <div className="space-y-4">
-          <FormField label="Overview" hint="Short overview shown on the trip card">
-            <RichEditor
-              value={form.overview}
-              onChange={(html) => updateField("overview", html)}
-              placeholder="A brief overview of the trip..."
-            />
-          </FormField>
-
-          <FormField label="Description" hint="Full trip description for the detail page">
-            <RichEditor
-              value={form.description}
-              onChange={(html) => updateField("description", html)}
-              placeholder="Detailed description of the trip experience..."
-            />
-          </FormField>
-        </div>
       </FormSection>
 
       {/* ── Key Highlights ── */}

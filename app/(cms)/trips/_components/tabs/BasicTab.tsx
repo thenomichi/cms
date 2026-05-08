@@ -3,7 +3,7 @@
 import { FormField } from "@/components/ui/FormField";
 import { FormSection } from "@/components/ui/FormSection";
 import { NumericInput } from "@/components/ui/NumericInput";
-import type { TripFormState } from "../types";
+import { TAGLINE_MAX, type TripFormState } from "../types";
 import type { DbDepartureCity, DbDestination } from "@/lib/types";
 import { CityCombobox } from "../CityCombobox";
 import { TRIP_TYPE_OPTIONS } from "@/lib/constants";
@@ -82,6 +82,36 @@ export function BasicTab({ form, updateField, destinations, departureCities }: B
             </FormField>
           </div>
         </div>
+      </FormSection>
+
+      {/* ── Quick Summary ── */}
+      <FormSection title="Quick Summary">
+        <FormField
+          label="Tagline"
+          hint="One short line shown under the trip name on cards. Keep it punchy. Avoid emojis and ALL CAPS."
+        >
+          <div className="relative">
+            <input
+              type="text"
+              className={INPUT}
+              value={form.tagline}
+              onChange={(e) => updateField("tagline", e.target.value.slice(0, TAGLINE_MAX))}
+              placeholder="e.g. Where heritage meets adventure"
+              maxLength={TAGLINE_MAX}
+            />
+            <span
+              className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[11px] tabular-nums ${
+                (form.tagline?.length ?? 0) >= Math.floor(TAGLINE_MAX * 0.95)
+                  ? "text-rust"
+                  : (form.tagline?.length ?? 0) >= Math.floor(TAGLINE_MAX * 0.8)
+                    ? "text-sem-amber"
+                    : "text-fog"
+              }`}
+            >
+              {form.tagline?.length ?? 0} / {TAGLINE_MAX}
+            </span>
+          </div>
+        </FormField>
       </FormSection>
 
       {/* ── Schedule ── */}

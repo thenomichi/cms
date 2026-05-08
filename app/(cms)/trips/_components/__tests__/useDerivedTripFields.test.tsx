@@ -12,7 +12,7 @@ function makeState(overrides: Partial<TripFormState> = {}): TripFormState {
     discount_pct: null, discount_amount: null, quoted_price: null, advance_pct: 50, total_slots: null,
     batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
     booking_kind: "trip", currency_code: "INR",
-    overview: "", description: "", tagline: "", highlights: [],
+    overview: "", tagline: "", highlights: [],
     itinerary: [], inclusions: [], exclusions: [],
     status: "Draft", is_listed: false, show_on_homepage: false,
     dossier_url: "",
