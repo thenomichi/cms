@@ -92,7 +92,7 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
     tagline: contentOf("tagline"), highlights,
     itinerary: trip.itinerary.map((d) => ({
       day_number: d.day_number, title: d.title, subtitle: d.subtitle,
-      description: d.description, meals: d.meals, accommodation: d.accommodation, tags: d.tags,
+      description: d.description, tags: d.tags,
     })),
     inclusions: trip.inclusions
       .filter((i) => i.inclusion_type === "inclusion")

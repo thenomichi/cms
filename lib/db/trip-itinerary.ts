@@ -28,8 +28,6 @@ export interface ItineraryDayInput {
   title: string;
   subtitle?: string | null;
   description?: string | null;
-  meals?: string | null;
-  accommodation?: string | null;
   tags?: string | null;
 }
 
@@ -55,8 +53,6 @@ export async function saveTripItinerary(
       title: day.title,
       subtitle: day.subtitle ?? null,
       description: day.description ?? null,
-      meals: day.meals ?? null,
-      accommodation: day.accommodation ?? null,
       tags: day.tags ?? null,
       display_order: idx,
       is_active: true,
