@@ -3,7 +3,7 @@
 import { tripBasicSchema } from "@/lib/schemas/trip";
 import { nextTripId, nextSequentialId } from "@/lib/ids";
 import { getServiceClient } from "@/lib/supabase/server";
-import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError } from "@/lib/db/trips";
+import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError, upsertAutosaveTrip } from "@/lib/db/trips";
 import { upsertTripContent, upsertHighlights } from "@/lib/db/trip-content";
 import { saveTripItinerary, type ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import {
@@ -434,5 +434,78 @@ export async function cloneAsBatchAction(
       success: false,
       error: err instanceof Error ? err.message : "Failed to create batch",
     };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Autosave (PR 5)
+//
+// Differences from createTripAction / updateTripAction:
+//   - No slug regeneration (drafts don't need one until promoted).
+//   - No revalidateTrip (drafts aren't public).
+//   - No logActivity per call (would spam the audit log; emit on save).
+//   - Uses tripBasicSchema directly (PR-hotfix made it tolerant of missing
+//     numeric keys, so a partial draft payload validates).
+//   - Materializes a row only when destination_id is set (nextTripId
+//     requirement). Until then, returns DESTINATION_REQUIRED so the client
+//     keeps autosaving to localStorage only.
+// ---------------------------------------------------------------------------
+
+export async function autosaveTripAction(
+  tripId: string | null,
+  formData: FormData,
+): Promise<{ success: boolean; tripId?: string; savedAt?: string; error?: string }> {
+  try {
+    const payload = parseTripFormData(formData);
+    const parsed = tripBasicSchema.safeParse(payload.basic);
+    if (!parsed.success) {
+      console.error("[autosaveTripAction] validation failed:", parsed.error.issues);
+      const issue = parsed.error.issues[0];
+      const field = issue.path.length > 0 ? issue.path.join(".") : "field";
+      return { success: false, error: `${field}: ${issue.message}` };
+    }
+
+    const { getSession } = await import("@/lib/supabase/server-auth");
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: "Not signed in" };
+    }
+    const ownerId = session.user.id;
+
+    let resolvedTripId = tripId;
+    let row;
+
+    if (!resolvedTripId) {
+      // First materialization needs a destination because nextTripId
+      // derives part of the trip_id from the destination's code. Until
+      // then, the client autosaves to localStorage only.
+      if (!parsed.data.destination_id) {
+        return { success: false, error: "DESTINATION_REQUIRED" };
+      }
+      const db = getServiceClient();
+      const { data: dest } = await db
+        .from("destinations")
+        .select("is_domestic, destination_code")
+        .eq("destination_id", parsed.data.destination_id)
+        .single();
+      const isDomestic = dest?.is_domestic ?? true;
+      const destCode = (dest?.destination_code ?? "GEN").replace(/-/g, "").slice(0, 3).toUpperCase();
+      const tripType = parsed.data.trip_type ?? "Community";
+      resolvedTripId = await nextTripId(isDomestic, tripType, destCode);
+      row = await upsertAutosaveTrip(null, ownerId, {
+        ...parsed.data,
+        trip_id: resolvedTripId,
+        status: "Draft",
+        is_listed: false,
+        show_on_homepage: false,
+      });
+    } else {
+      row = await upsertAutosaveTrip(resolvedTripId, ownerId, parsed.data);
+    }
+
+    return { success: true, tripId: row.trip_id, savedAt: row.last_autosaved_at ?? undefined };
+  } catch (err) {
+    console.error("[autosaveTripAction]", err);
+    return { success: false, error: err instanceof Error ? err.message : "Autosave failed" };
   }
 }

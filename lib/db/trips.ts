@@ -433,3 +433,74 @@ async function cloneChildRecords(
     await sb.from("trip_faqs").insert(cloned);
   }
 }
+
+// ---------------------------------------------------------------------------
+// Autosave (PR 5)
+// ---------------------------------------------------------------------------
+
+/**
+ * Materialize or update a draft trip in autosave mode.
+ *
+ * - If `tripId` is set, partial-updates that row.
+ * - If `tripId` is null, inserts a new Draft row. Caller MUST provide
+ *   `trip_id` in the payload (computed via `nextTripId` upstream — that
+ *   lookup needs `destination_id`, which is why this helper stays pure DB
+ *   and pushes ID generation to the action layer).
+ *
+ * Stamps `last_autosaved_at = now()` and `autosave_owner = ownerId` on
+ * every call. Skips slug regen entirely (drafts don't need a slug; the
+ * regular updateTrip path will set one when the user promotes the draft
+ * to a real status via Save Changes).
+ */
+export async function upsertAutosaveTrip(
+  tripId: string | null,
+  ownerId: string,
+  payload: Partial<DbTrip>,
+): Promise<DbTrip> {
+  const db = getServiceClient();
+  const stamped = {
+    ...payload,
+    last_autosaved_at: new Date().toISOString(),
+    autosave_owner: ownerId,
+  };
+  if (tripId) {
+    const { data, error } = await db
+      .from("trips")
+      .update(stamped)
+      .eq("trip_id", tripId)
+      .select("*")
+      .single();
+    if (error) throw error;
+    return data as DbTrip;
+  }
+  if (!stamped.trip_id) {
+    throw new Error("upsertAutosaveTrip requires trip_id when materializing");
+  }
+  const { data, error } = await db
+    .from("trips")
+    .insert({ ...stamped, status: stamped.status ?? "Draft" })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data as DbTrip;
+}
+
+/**
+ * Find the most recent autosave-tracked Draft for the given owner. Returns
+ * null when there isn't one. Used by the `/trips/new` "Pick up where you
+ * left off?" modal.
+ */
+export async function findResumableDraft(ownerId: string): Promise<DbTrip | null> {
+  const db = getServiceClient();
+  const { data, error } = await db
+    .from("trips")
+    .select("*")
+    .eq("status", "Draft")
+    .eq("autosave_owner", ownerId)
+    .not("last_autosaved_at", "is", null)
+    .order("last_autosaved_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return (data as DbTrip | null) ?? null;
+}

@@ -47,6 +47,8 @@ export interface DbTrip {
   cancellation_reason: string | null;
   created_at: string;
   updated_at: string;
+  last_autosaved_at: string | null;
+  autosave_owner: string | null;
 }
 
 /** trip_content */
