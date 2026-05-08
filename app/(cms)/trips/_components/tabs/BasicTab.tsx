@@ -84,6 +84,19 @@ export function BasicTab({ form, updateField, destinations, departureCities }: B
         </div>
       </FormSection>
 
+      {/* ── Quick Summary ── */}
+      <FormSection title="Quick Summary">
+        <FormField label="Tagline" hint="One-liner shown below the trip name">
+          <input
+            type="text"
+            className={INPUT}
+            value={form.tagline}
+            onChange={(e) => updateField("tagline", e.target.value)}
+            placeholder="e.g. Where heritage meets adventure"
+          />
+        </FormField>
+      </FormSection>
+
       {/* ── Schedule ── */}
       <FormSection title="Schedule">
         <div className="space-y-4">

@@ -6,9 +6,6 @@ import { ListBuilder } from "@/components/ui/ListBuilder";
 import { RichEditor } from "@/components/ui/RichEditor";
 import type { TripFormState } from "../types";
 
-const INPUT =
-  "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
-
 interface DetailsTabProps {
   form: TripFormState;
   updateField: <K extends keyof TripFormState>(key: K, val: TripFormState[K]) => void;
@@ -17,19 +14,6 @@ interface DetailsTabProps {
 export function DetailsTab({ form, updateField }: DetailsTabProps) {
   return (
     <div className="space-y-5">
-      {/* ── Quick Summary ── */}
-      <FormSection title="Quick Summary">
-        <FormField label="Tagline" hint="One-liner shown below the trip name">
-          <input
-            type="text"
-            className={INPUT}
-            value={form.tagline}
-            onChange={(e) => updateField("tagline", e.target.value)}
-            placeholder="e.g. Where heritage meets adventure"
-          />
-        </FormField>
-      </FormSection>
-
       {/* ── Trip Description ── */}
       <FormSection title="Trip Description">
         <div className="space-y-4">
