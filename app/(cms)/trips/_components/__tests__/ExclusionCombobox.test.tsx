@@ -35,8 +35,10 @@ describe("ExclusionCombobox", () => {
     await userEvent.click(screen.getByRole("combobox"));
     await userEvent.type(screen.getByPlaceholderText(/search/i), "laun");
     const options = screen.getAllByRole("option");
-    expect(options).toHaveLength(1);
+    // Real match is present (Add-new option also renders alongside).
     expect(options[0]).toHaveTextContent("Laundry");
+    // And the Add-new prompt is offered for the typed query.
+    expect(screen.getByText(/Add "laun"/i)).toBeInTheDocument();
   });
 
   it("selecting an option calls onChange with the name", async () => {
@@ -52,6 +54,21 @@ describe("ExclusionCombobox", () => {
     await userEvent.click(screen.getByRole("combobox"));
     await userEvent.type(screen.getByPlaceholderText(/search/i), "Drone fees");
     expect(screen.getByText(/Add "Drone fees"/i)).toBeInTheDocument();
+  });
+
+  it("offers 'Add new' even when partial matches exist", async () => {
+    render(<ExclusionCombobox value="" onChange={() => {}} exclusions={exclusions} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    // "Visa" matches "Visa fees" — but the user can still add e.g. "Visa expedited".
+    await userEvent.type(screen.getByPlaceholderText(/search/i), "Visa");
+    expect(screen.getByText(/Visa fees/)).toBeInTheDocument();
+    expect(screen.getByText(/Add "Visa"/i)).toBeInTheDocument();
+  });
+
+  it("does not show Popular tags in the dropdown", async () => {
+    render(<ExclusionCombobox value="" onChange={() => {}} exclusions={exclusions} />);
+    await userEvent.click(screen.getByRole("combobox"));
+    expect(screen.queryByText(/Popular/i)).not.toBeInTheDocument();
   });
 
   it("preserves a legacy free-text value not in the list", () => {

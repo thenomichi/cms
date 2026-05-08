@@ -95,12 +95,9 @@ export function ExclusionCombobox({
                 className="cursor-pointer px-3 py-2 text-sm text-ink hover:bg-surface3"
               >
                 <span className="font-medium">{e.name}</span>
-                {e.is_popular && (
-                  <span className="ml-2 text-[10px] uppercase text-rust">Popular</span>
-                )}
               </li>
             ))}
-            {trimmed && filtered.length === 0 && !exactMatch && (
+            {trimmed && !exactMatch && (
               <li
                 role="option"
                 onClick={() => setShowAddModal(true)}

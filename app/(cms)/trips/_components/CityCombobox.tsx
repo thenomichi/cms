@@ -101,12 +101,9 @@ export function CityCombobox({
               >
                 <span className="font-medium">{c.city_name}</span>
                 <span className="ml-2 text-xs text-mid">{c.country_name}</span>
-                {c.is_popular && (
-                  <span className="ml-2 text-[10px] uppercase text-rust">Popular</span>
-                )}
               </li>
             ))}
-            {trimmed && filtered.length === 0 && !exactMatch && (
+            {trimmed && !exactMatch && (
               <li
                 role="option"
                 onClick={() => setShowAddModal(true)}
