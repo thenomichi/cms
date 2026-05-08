@@ -88,7 +88,11 @@ export function useAutosave({
       } else {
         clearMirror();
       }
-      pendingRef.current = null;
+      // Only clear pending if no newer payload landed during the await —
+      // otherwise the next debounce tick will save the latest snapshot.
+      if (pendingRef.current === payload) {
+        pendingRef.current = null;
+      }
       setLastSavedAt(res.savedAt ?? new Date().toISOString());
       setStatus("saved");
       return;
