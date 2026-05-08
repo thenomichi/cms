@@ -72,25 +72,41 @@ export const TRIP_STATUSES = [
 // Trip — basic fields for the create / edit form
 // ---------------------------------------------------------------------------
 
+// Helper: pre-normalize "", undefined, and NaN to null before validating an
+// optional numeric field. `z.coerce.number().nullable()` rejects undefined
+// and missing keys with the unhelpful "Invalid input: expected number,
+// received NaN" message. Pre-normalizing keeps the schema forgiving (a
+// missing key behaves the same as an explicit null) while still enforcing
+// min/max on real values.
+const nullableNumber = (s: z.ZodNumber) =>
+  z.preprocess(
+    (v) => {
+      if (v === undefined || v === null || v === "") return null;
+      if (typeof v === "number" && Number.isNaN(v)) return null;
+      return v;
+    },
+    s.nullable(),
+  );
+
 export const tripBasicSchema = z.object({
   trip_name: z.string().min(2, "Trip name is required"),
   // slug is auto-generated server-side — not in the form schema
   trip_type: z.enum(TRIP_TYPES),
   trip_sub_type: z.string().nullable().optional(),
   trip_category: z.string().nullable().optional(),
-  destination_id: z.string().nullable(),
+  destination_id: z.string().nullable().optional(),
   duration_days: z.coerce.number().min(1).max(90),
   duration_nights: z.coerce.number().min(0).max(89),
-  start_date: z.string().nullable(),
-  end_date: z.string().nullable(),
-  mrp_price: z.coerce.number().min(0).nullable(),
-  selling_price: z.coerce.number().min(0).nullable(),
-  discount_pct: z.coerce.number().min(0).max(100).nullable(),
-  discount_amount: z.coerce.number().min(0).nullable(),
-  quoted_price: z.coerce.number().min(0).nullable(),
+  start_date: z.string().nullable().optional(),
+  end_date: z.string().nullable().optional(),
+  mrp_price: nullableNumber(z.number().min(0)),
+  selling_price: nullableNumber(z.number().min(0)),
+  discount_pct: nullableNumber(z.number().min(0).max(100)),
+  discount_amount: nullableNumber(z.number().min(0)),
+  quoted_price: nullableNumber(z.number().min(0)),
   advance_pct: z.coerce.number().min(0).max(100).default(50),
-  total_slots: z.coerce.number().min(0).nullable(),
-  batch_number: z.string().nullable(),
+  total_slots: nullableNumber(z.number().min(0)),
+  batch_number: z.string().nullable().optional(),
   group_slug: z.string().nullable().optional(),
   tagline: z.string().nullable().optional(),
   departure_city: z.string().nullable().optional(),
