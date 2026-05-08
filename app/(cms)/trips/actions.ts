@@ -3,7 +3,7 @@
 import { tripBasicSchema } from "@/lib/schemas/trip";
 import { nextTripId, nextSequentialId } from "@/lib/ids";
 import { getServiceClient } from "@/lib/supabase/server";
-import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError } from "@/lib/db/trips";
+import { createTrip, updateTrip, deleteTrip, toggleTripField, generateUniqueSlug, cloneAsBatch, getTripById, isPubliclyListable, TripNotListableError, upsertAutosaveTrip } from "@/lib/db/trips";
 import { upsertTripContent, upsertHighlights } from "@/lib/db/trip-content";
 import { saveTripItinerary, type ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import {
@@ -450,8 +450,6 @@ export async function cloneAsBatchAction(
 //     requirement). Until then, returns DESTINATION_REQUIRED so the client
 //     keeps autosaving to localStorage only.
 // ---------------------------------------------------------------------------
-
-import { upsertAutosaveTrip } from "@/lib/db/trips";
 
 export async function autosaveTripAction(
   tripId: string | null,
