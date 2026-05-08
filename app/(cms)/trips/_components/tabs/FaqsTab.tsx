@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { FormField } from "@/components/ui/FormField";
 import { Button } from "@/components/ui/Button";
@@ -22,6 +22,10 @@ type FaqWithId = FaqInput & { _id: string };
 
 export function FaqsTab({ form, updateField }: FaqsTabProps) {
   const { faqs } = form;
+  const containerRef = useRef<HTMLDivElement>(null);
+  // Index of the FAQ that was just added — drives the scroll-and-focus
+  // effect. Tracks via state so the effect re-fires for repeated adds.
+  const [pendingFocusIdx, setPendingFocusIdx] = useState<number | null>(null);
 
   const faqsWithIds: FaqWithId[] = faqs.map((f, idx) => ({ ...f, _id: `faq-${idx}` }));
 
@@ -32,8 +36,25 @@ export function FaqsTab({ form, updateField }: FaqsTabProps) {
   }
 
   function addFaq() {
+    const newIdx = faqs.length;
     updateField("faqs", [...faqs, { question: "", answer: "", category: null }]);
+    setPendingFocusIdx(newIdx);
   }
+
+  // After the new FAQ row mounts, scroll it into view and focus its
+  // Question input so the user immediately sees and can type into it.
+  useEffect(() => {
+    if (pendingFocusIdx === null) return;
+    if (!containerRef.current) return;
+    const row = containerRef.current.querySelector<HTMLElement>(
+      `[data-faq-index="${pendingFocusIdx}"]`,
+    );
+    if (!row) return;
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    const input = row.querySelector<HTMLInputElement>("input[type='text']");
+    if (input) input.focus({ preventScroll: true });
+    setPendingFocusIdx(null);
+  }, [pendingFocusIdx, faqs.length]);
 
   function removeFaq(index: number) {
     updateField("faqs", faqs.filter((_, i) => i !== index));
@@ -50,7 +71,7 @@ export function FaqsTab({ form, updateField }: FaqsTabProps) {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={containerRef}>
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-ink">FAQs</h3>
@@ -80,7 +101,10 @@ export function FaqsTab({ form, updateField }: FaqsTabProps) {
           renderItem={(item) => {
             const idx = faqs.findIndex((_, i) => `faq-${i}` === item._id);
             return (
-              <div className="flex flex-1 flex-col gap-3">
+              <div
+                className="flex flex-1 flex-col gap-3"
+                data-faq-index={idx}
+              >
                 <FormField label="Question" required>
                   <input
                     type="text"
