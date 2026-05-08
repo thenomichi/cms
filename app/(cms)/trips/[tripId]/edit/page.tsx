@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { listDepartureCities } from "@/lib/db/departure-cities";
+import { listExclusions } from "@/lib/db/exclusions";
 import { getTripById, CMS_SHARED_OWNER_ID } from "@/lib/db/trips";
 import { getServiceClient } from "@/lib/supabase/server";
 import type { DbDestination } from "@/lib/types";
@@ -14,7 +15,7 @@ export default async function EditTripPage({
   params: Promise<{ tripId: string }>;
 }) {
   const { tripId } = await params;
-  const [trip, destRes, departureCities] = await Promise.all([
+  const [trip, destRes, departureCities, exclusions] = await Promise.all([
     getTripById(tripId),
     getServiceClient()
       .from("destinations")
@@ -22,6 +23,7 @@ export default async function EditTripPage({
       .eq("is_active", true)
       .order("destination_name"),
     listDepartureCities(),
+    listExclusions(),
   ]);
   if (!trip) notFound();
 
@@ -30,6 +32,7 @@ export default async function EditTripPage({
       trip={trip}
       destinations={(destRes.data ?? []) as DbDestination[]}
       departureCities={departureCities}
+      exclusions={exclusions}
       websiteUrl={process.env.WEBSITE_URL ?? "http://localhost:3000"}
       userId={CMS_SHARED_OWNER_ID}
     />

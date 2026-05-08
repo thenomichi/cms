@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
 import type { TripFull } from "@/lib/db/trips";
-import type { DbDepartureCity, DbDestination, DbTripGallery } from "@/lib/types";
+import type { DbDepartureCity, DbDestination, DbExclusion, DbTripGallery } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { createTripAction, updateTripAction, autosaveTripAction } from "../actions";
@@ -36,11 +36,12 @@ interface TripEditorProps {
   trip: TripFull | null;
   destinations: DbDestination[];
   departureCities: DbDepartureCity[];
+  exclusions: DbExclusion[];
   websiteUrl: string;
   userId: string;
 }
 
-export function TripEditor({ trip, destinations, departureCities, websiteUrl, userId }: TripEditorProps) {
+export function TripEditor({ trip, destinations, departureCities, exclusions, websiteUrl, userId }: TripEditorProps) {
   const router = useRouter();
   const isEditing = !!trip;
   const steps = isEditing ? STEPS_EDIT : STEPS_CREATE;
@@ -414,7 +415,7 @@ export function TripEditor({ trip, destinations, departureCities, websiteUrl, us
               <ItineraryTab form={form} updateField={updateField} />
             )}
             {activeStep === "inclusions" && (
-              <InclusionsTab form={form} updateField={updateField} />
+              <InclusionsTab form={form} updateField={updateField} exclusions={exclusions} />
             )}
             {activeStep === "gallery" && isEditing && (
               <GalleryTab

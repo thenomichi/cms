@@ -1,4 +1,5 @@
 import { listDepartureCities } from "@/lib/db/departure-cities";
+import { listExclusions } from "@/lib/db/exclusions";
 import { findResumableDraft, CMS_SHARED_OWNER_ID } from "@/lib/db/trips";
 import { getServiceClient } from "@/lib/supabase/server";
 import type { DbDestination } from "@/lib/types";
@@ -10,13 +11,14 @@ import { NewTripWrapper } from "./NewTripWrapper";
 
 export default async function NewTripPage() {
   const sb = getServiceClient();
-  const [destRes, departureCities, resumable] = await Promise.all([
+  const [destRes, departureCities, exclusions, resumable] = await Promise.all([
     sb
       .from("destinations")
       .select("*")
       .eq("is_active", true)
       .order("destination_name"),
     listDepartureCities(),
+    listExclusions(),
     findResumableDraft(CMS_SHARED_OWNER_ID),
   ]);
 
@@ -25,6 +27,7 @@ export default async function NewTripPage() {
       userId={CMS_SHARED_OWNER_ID}
       destinations={(destRes.data ?? []) as DbDestination[]}
       departureCities={departureCities}
+      exclusions={exclusions}
       websiteUrl={process.env.WEBSITE_URL ?? "http://localhost:3000"}
       resumable={resumable}
     />
