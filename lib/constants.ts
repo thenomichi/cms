@@ -1,36 +1,4 @@
 // ---------------------------------------------------------------------------
-// Inclusion / exclusion preset repositories
-// ---------------------------------------------------------------------------
-
-export const INCLUSION_REPOSITORY = [
-  { icon: "\u{1F3E8}", name: "Accommodation" },
-  { icon: "\u{1F3AF}", name: "Activities" },
-  { icon: "\u{1F690}", name: "Airport Transfer" },
-  { icon: "\u{1F950}", name: "Breakfast" },
-  { icon: "\u26FA", name: "Camps" },
-  { icon: "\u{1F6B4}", name: "Cycling" },
-  { icon: "\u2708\uFE0F", name: "Flight" },
-  { icon: "\u{1F37D}\uFE0F", name: "Food & Meals" },
-  { icon: "\u26FD", name: "Fuel" },
-  { icon: "\u{1F9ED}", name: "Guide" },
-  { icon: "\u{1F3E5}", name: "Health Insurance" },
-  { icon: "\u{1F3E9}", name: "Hotel" },
-  { icon: "\u{1F957}", name: "Lunch" },
-  { icon: "\u{1F4DC}", name: "Permits" },
-  { icon: "\u{1F4F8}", name: "Photography Equipment" },
-  { icon: "\u{1F6A3}", name: "Rafting" },
-  { icon: "\u{1F3AE}", name: "Recreation" },
-  { icon: "\u{1F9F4}", name: "Repellent & Sunscreen" },
-  { icon: "\u{1F3A2}", name: "Rides" },
-  { icon: "\u{1F9D7}", name: "Ropes" },
-  { icon: "\u{1F37F}", name: "Snacks" },
-  { icon: "\u{1F305}", name: "Sunset" },
-  { icon: "\u{1F392}", name: "Team Gear" },
-  { icon: "\u{1F6BB}", name: "Toilet" },
-  { icon: "\u{1F697}", name: "Transfers" },
-] as const;
-
-// ---------------------------------------------------------------------------
 // Dropdown option sets
 // ---------------------------------------------------------------------------
 
