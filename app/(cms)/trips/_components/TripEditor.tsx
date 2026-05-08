@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback, useRef } from "react";
+import { useState, useTransition, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
@@ -8,7 +8,9 @@ import type { TripFull } from "@/lib/db/trips";
 import type { DbDepartureCity, DbDestination, DbTripGallery } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { createTripAction, updateTripAction } from "../actions";
+import { createTripAction, updateTripAction, autosaveTripAction } from "../actions";
+import { useAutosave } from "./useAutosave";
+import { AutosaveStatus } from "./AutosaveStatus";
 import { BasicTab } from "./tabs/BasicTab";
 import { DetailsTab } from "./tabs/DetailsTab";
 import { ItineraryTab } from "./tabs/ItineraryTab";
@@ -35,9 +37,10 @@ interface TripEditorProps {
   destinations: DbDestination[];
   departureCities: DbDepartureCity[];
   websiteUrl: string;
+  userId: string;
 }
 
-export function TripEditor({ trip, destinations, departureCities, websiteUrl }: TripEditorProps) {
+export function TripEditor({ trip, destinations, departureCities, websiteUrl, userId }: TripEditorProps) {
   const router = useRouter();
   const isEditing = !!trip;
   const steps = isEditing ? STEPS_EDIT : STEPS_CREATE;
@@ -60,7 +63,114 @@ export function TripEditor({ trip, destinations, departureCities, websiteUrl }: 
 
   const { isDirty, markDirty, reset: resetDirty } = useTripDirty();
 
-  useUnsavedChanges(isDirty);
+  // ----- Autosave (PR 5) -----
+
+  // Mirror handleSave's payload shape but without the `settings` block —
+  // autosave only ever writes Draft, never publishes. The `basic` shape
+  // is what tripBasicSchema validates server-side.
+  const buildBasicPayload = useCallback(
+    (f: TripFormState) => ({
+      trip_name: f.trip_name,
+      trip_type: f.trip_type,
+      trip_sub_type: f.trip_sub_type || null,
+      trip_category: f.trip_category || null,
+      destination_id: f.destination_id || null,
+      duration_days: f.duration_days,
+      duration_nights: f.duration_nights,
+      start_date: f.start_date || null,
+      end_date: f.end_date || null,
+      mrp_price: f.mrp_price,
+      selling_price: f.selling_price,
+      discount_pct: f.discount_pct,
+      discount_amount: f.discount_amount,
+      quoted_price: f.quoted_price,
+      advance_pct: f.advance_pct,
+      total_slots: f.total_slots,
+      batch_number: f.batch_number || null,
+      group_slug: f.group_slug,
+      tagline: f.tagline || null,
+      departure_city: f.departure_city || null,
+      departure_airport: f.departure_airport || null,
+      booking_kind: f.booking_kind,
+      currency_code: f.currency_code,
+    }),
+    [],
+  );
+
+  // Server action wrapper matching the useAutosave save signature.
+  const autosaveSaveFn = useCallback(
+    async (id: string | null, payload: Record<string, unknown>) => {
+      const fd = new FormData();
+      // autosaveTripAction's parseTripFormData expects the same envelope
+      // as create/update — wrap the basic block in `{ basic, ... }`.
+      fd.set(
+        "payload",
+        JSON.stringify({
+          basic: payload,
+          // The action only reads `basic`; these are unused on the autosave
+          // path but kept here as a stable envelope in case the action
+          // grows later.
+          overview: form.overview,
+          description: form.description,
+          tagline: form.tagline,
+          highlights: form.highlights,
+          itinerary: form.itinerary,
+          inclusions: form.inclusions,
+          exclusions: form.exclusions,
+          settings: {
+            status: form.status,
+            is_listed: form.is_listed,
+            show_on_homepage: form.show_on_homepage,
+            dossier_url: form.dossier_url || null,
+          },
+        }),
+      );
+      return autosaveTripAction(id, fd);
+    },
+    // Note: form is referenced inside; the closure recaptures whenever
+    // form changes, which is exactly what we want — each save gets the
+    // current values for the non-basic blocks.
+    [form],
+  );
+
+  const {
+    status: autosaveStatus,
+    lastSavedAt: autosaveLastSavedAt,
+    tripId: autosaveTripId,
+    queue: queueAutosave,
+    flush: flushAutosave,
+  } = useAutosave({
+    tripId: trip?.trip_id ?? null,
+    userId,
+    save: autosaveSaveFn,
+  });
+
+  // Queue a save whenever form changes after the first render. The hook
+  // debounces internally, so this can fire on every keystroke without
+  // pummeling the server.
+  const isFirstAutosaveRender = useRef(true);
+  useEffect(() => {
+    if (isFirstAutosaveRender.current) {
+      isFirstAutosaveRender.current = false;
+      return;
+    }
+    queueAutosave(buildBasicPayload(form));
+  }, [form, queueAutosave, buildBasicPayload]);
+
+  useUnsavedChanges(
+    isDirty ||
+      autosaveStatus === "retrying" ||
+      autosaveStatus === "localOnly" ||
+      autosaveStatus === "saving",
+  );
+
+  // When the server materializes a new row from /trips/new, swap the URL
+  // so a refresh lands on the edit page and reloads the persisted draft.
+  useEffect(() => {
+    if (!trip && autosaveTripId) {
+      router.replace(`/trips/${autosaveTripId}/edit`, { scroll: false });
+    }
+  }, [trip, autosaveTripId, router]);
 
   const { iframeReady, setMode, setDarkMode: sendDarkMode } = usePreviewBridge({
     iframeRef,
@@ -138,6 +248,9 @@ export function TripEditor({ trip, destinations, departureCities, websiteUrl }: 
     fd.set("payload", JSON.stringify(payload));
 
     startTransition(async () => {
+      // Flush any pending autosave first so explicit Save sees the latest
+      // server state and doesn't race a debounced write.
+      await flushAutosave();
       const res = isEditing
         ? await updateTripAction(trip.trip_id, fd)
         : await createTripAction(fd);
@@ -193,15 +306,19 @@ export function TripEditor({ trip, destinations, departureCities, websiteUrl }: 
           </h1>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {isDirty && (
-            <span className="text-[11px] text-rust font-medium whitespace-nowrap">Unsaved changes</span>
-          )}
+          <AutosaveStatus status={autosaveStatus} lastSavedAt={autosaveLastSavedAt} />
           <Button onClick={handleSave} loading={isPending}>
             <Check className="h-4 w-4" />
             {isEditing ? "Save Changes" : "Save"}
           </Button>
         </div>
       </div>
+
+      {autosaveStatus === "retrying" && (
+        <div className="border-b border-sem-amber/40 bg-sem-amber-bg px-4 py-2 text-xs text-sem-amber">
+          We&apos;re having trouble saving to the server. Your changes are safe in this browser — don&apos;t close this tab.
+        </div>
+      )}
 
       {/* Main content */}
       <div ref={splitRef} className="flex min-h-0 flex-1 overflow-hidden">
