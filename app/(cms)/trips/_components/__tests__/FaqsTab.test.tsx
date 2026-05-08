@@ -1,8 +1,15 @@
-import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useState } from "react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FaqsTab } from "../tabs/FaqsTab";
 import type { TripFormState } from "../types";
+
+// jsdom doesn't implement scrollIntoView; stub it so the auto-scroll
+// branch of the component runs without throwing in tests.
+beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+});
 
 function makeForm(faqs: TripFormState["faqs"] = []): TripFormState {
   return {
@@ -61,6 +68,43 @@ describe("FaqsTab", () => {
     expect(updateField).toHaveBeenLastCalledWith("faqs", [
       { question: "Q1?", answer: "A1", category: null },
     ]);
+  });
+
+  it("scrolls and focuses the new FAQ when Add FAQ is clicked", async () => {
+    function ControlledHarness({ initial }: { initial: TripFormState["faqs"] }) {
+      const [form, setForm] = useState(makeForm(initial));
+      const updateField = <K extends keyof TripFormState>(
+        key: K,
+        value: TripFormState[K],
+      ) => setForm((prev) => ({ ...prev, [key]: value }));
+      return <FaqsTab form={form} updateField={updateField} />;
+    }
+
+    render(
+      <ControlledHarness
+        initial={[
+          { question: "Old Q1", answer: "Old A1", category: null },
+          { question: "Old Q2", answer: "Old A2", category: null },
+        ]}
+      />,
+    );
+    const scrollSpy = vi.mocked(Element.prototype.scrollIntoView);
+    scrollSpy.mockClear();
+
+    await userEvent.click(screen.getByRole("button", { name: /Add FAQ/i }));
+
+    // The new row mounts at index 2. Wait for it to render.
+    const newRow = await waitFor(() => {
+      const el = document.querySelector('[data-faq-index="2"]');
+      if (!el) throw new Error("not yet");
+      return el;
+    });
+    expect(newRow).toBeInTheDocument();
+    expect(scrollSpy).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
+    // The newly-mounted question input should have focus.
+    const focused = document.activeElement as HTMLInputElement | null;
+    expect(focused?.tagName).toBe("INPUT");
+    expect(focused?.closest('[data-faq-index="2"]')).toBe(newRow);
   });
 
   it("Remove drops the row", async () => {
