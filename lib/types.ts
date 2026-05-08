@@ -386,7 +386,19 @@ export interface DbDepartureCity {
 export interface DbExclusion {
   exclusion_id: string;
   name: string;
+  category: string;
   is_popular: boolean;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbInclusionChip {
+  chip_id: string;
+  name: string;
+  icon: string;
+  category: string;
   is_active: boolean;
   display_order: number;
   created_at: string;
