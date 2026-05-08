@@ -2,32 +2,57 @@
 // Inclusion / exclusion preset repositories
 // ---------------------------------------------------------------------------
 
+// Inclusion suggestions surfaced as quick-add chips above the per-trip
+// inclusions list. Picked to match Nomichi's brand language (Expert
+// Nomichi host = "Trip Captain", 24/7 on-ground support, hand-picked
+// stays, small group sizes \u2014 see the website's auto-FAQ copy and
+// BeyondOrdinaryTeaser for the canonical phrasing). Kept alphabetical
+// by name so admins can scan quickly. "24/7 Support" sorts last
+// numerically; that's fine, it's adjacent to the obvious adjacent
+// "support" mental bucket alongside Trip Captain / Travel Insurance.
 export const INCLUSION_REPOSITORY = [
+  { icon: "\u260E\uFE0F", name: "24/7 Support" },
   { icon: "\u{1F3E8}", name: "Accommodation" },
   { icon: "\u{1F3AF}", name: "Activities" },
   { icon: "\u{1F690}", name: "Airport Transfer" },
+  { icon: "\u{1F37D}\uFE0F", name: "All Meals" },
+  { icon: "\u{1F525}", name: "Bonfire Nights" },
   { icon: "\u{1F950}", name: "Breakfast" },
+  { icon: "\u{1F68C}", name: "Bus / Tempo Traveller" },
   { icon: "\u26FA", name: "Camps" },
+  { icon: "\u{1F3AD}", name: "Cultural Experiences" },
   { icon: "\u{1F6B4}", name: "Cycling" },
+  { icon: "\u{1F3AB}", name: "Entry Tickets" },
   { icon: "\u2708\uFE0F", name: "Flight" },
   { icon: "\u{1F37D}\uFE0F", name: "Food & Meals" },
   { icon: "\u26FD", name: "Fuel" },
   { icon: "\u{1F9ED}", name: "Guide" },
+  { icon: "\u{1F3E1}", name: "Hand-picked Stays" },
   { icon: "\u{1F3E5}", name: "Health Insurance" },
   { icon: "\u{1F3E9}", name: "Hotel" },
+  { icon: "\u{1F35B}", name: "Local Cuisine" },
   { icon: "\u{1F957}", name: "Lunch" },
   { icon: "\u{1F4DC}", name: "Permits" },
-  { icon: "\u{1F4F8}", name: "Photography Equipment" },
+  { icon: "\u{1F4F8}", name: "Photographer" },
+  { icon: "\u{1F4F7}", name: "Photography Equipment" },
   { icon: "\u{1F6A3}", name: "Rafting" },
   { icon: "\u{1F3AE}", name: "Recreation" },
   { icon: "\u{1F9F4}", name: "Repellent & Sunscreen" },
   { icon: "\u{1F3A2}", name: "Rides" },
   { icon: "\u{1F9D7}", name: "Ropes" },
+  { icon: "\u{1F3DD}\uFE0F", name: "Sightseeing" },
+  { icon: "\u{1F465}", name: "Small Group" },
   { icon: "\u{1F37F}", name: "Snacks" },
+  { icon: "\u{1F30C}", name: "Star Gazing" },
   { icon: "\u{1F305}", name: "Sunset" },
   { icon: "\u{1F392}", name: "Team Gear" },
   { icon: "\u{1F6BB}", name: "Toilet" },
+  { icon: "\u{1F69C}", name: "Train Tickets" },
   { icon: "\u{1F697}", name: "Transfers" },
+  { icon: "\u{1F6E1}\uFE0F", name: "Travel Insurance" },
+  { icon: "\u{1F9D1}‍✈️", name: "Trip Captain" },
+  { icon: "\u{1F381}", name: "Welcome Kit" },
+  { icon: "\u{1F9D8}", name: "Yoga / Wellness" },
 ] as const;
 
 // ---------------------------------------------------------------------------
