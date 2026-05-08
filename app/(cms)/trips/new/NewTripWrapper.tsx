@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { TripEditor } from "../_components/TripEditor";
 import { ResumeDraftModal } from "../_components/ResumeDraftModal";
-import type { DbTrip, DbDepartureCity, DbDestination, DbExclusion } from "@/lib/types";
+import type { DbTrip, DbDepartureCity, DbDestination, DbExclusion, DbInclusionChip } from "@/lib/types";
 
 interface Props {
   userId: string;
   destinations: DbDestination[];
   departureCities: DbDepartureCity[];
   exclusions: DbExclusion[];
+  inclusionChips: DbInclusionChip[];
   websiteUrl: string;
   resumable: DbTrip | null;
 }
@@ -19,6 +20,7 @@ export function NewTripWrapper({
   destinations,
   departureCities,
   exclusions,
+  inclusionChips,
   websiteUrl,
   resumable,
 }: Props) {
@@ -33,6 +35,7 @@ export function NewTripWrapper({
         destinations={destinations}
         departureCities={departureCities}
         exclusions={exclusions}
+        inclusionChips={inclusionChips}
         websiteUrl={websiteUrl}
         userId={userId}
       />
