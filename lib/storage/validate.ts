@@ -45,7 +45,7 @@ export function validateFiles(files: FileLike[], kind: UploadKind): ValidateFile
       rejected.push({ file, reason: "File is empty" });
       continue;
     }
-    if (!isAccepted(file, rule.accept)) {
+    if (!isAccepted(file, rule.accept as readonly string[])) {
       rejected.push({
         file,
         reason: `Wrong file type — use ${rule.extensions.join(", ")}`,
@@ -88,9 +88,9 @@ export function validateUploadInput(
     const max = rule.maxBytes / 1024 / 1024;
     return { ok: false, error: `File too large — max ${max} MB` };
   }
-  const acceptedByMime = rule.accept.includes(input.contentType);
+  const acceptedByMime = (rule.accept as readonly string[]).includes(input.contentType);
   const acceptedByExt = HEIC_EXT.test(input.fileName) &&
-    (rule.accept.includes("image/heic") || rule.accept.includes("image/heif"));
+    ((rule.accept as readonly string[]).includes("image/heic") || (rule.accept as readonly string[]).includes("image/heif"));
   if (!acceptedByMime && !acceptedByExt) {
     return { ok: false, error: "File type not allowed" };
   }
