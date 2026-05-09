@@ -93,6 +93,7 @@ async function ensureCmsMediaBucketSupportsHeroMediaUploads(): Promise<void> {
 
   if (needsMimeUpdate || needsSizeUpdate) {
     const { error: updateError } = await db.storage.updateBucket(CMS_MEDIA_BUCKET, {
+      public: true,
       allowedMimeTypes: [...new Set([...currentTypes, ...HERO_MEDIA_MIME_TYPES])],
       fileSizeLimit: HERO_MEDIA_FILE_SIZE_LIMIT_BYTES,
     });
