@@ -10,7 +10,10 @@ import {
   toggleAnnouncementActive as dbToggle,
 } from "@/lib/db/announcements";
 import { revalidateHome } from "@/lib/revalidate";
-import { uploadImage } from "@/lib/storage/upload";
+import { getStorageProvider } from "@/lib/storage";
+import { buildPath } from "@/lib/storage/paths";
+import { validateUploadInput } from "@/lib/storage/validate";
+import type { UploadTicket } from "@/lib/storage/provider";
 import { getServiceClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/audit";
 
@@ -53,33 +56,51 @@ export async function fetchBannerImages(): Promise<{ url: string; alt?: string }
   return images;
 }
 
-/** Upload a banner image to Supabase Storage and add to site_gallery */
-export async function uploadBannerImage(
-  formData: FormData,
-): Promise<{ success: boolean; url?: string; error?: string }> {
+// ---------------------------------------------------------------------------
+// Banner — Direct-upload prepare + register
+// ---------------------------------------------------------------------------
+
+export async function prepareBannerUploadAction(input: {
+  fileName: string;
+  contentType: string;
+  size: number;
+}): Promise<{ success: true; ticket: UploadTicket } | { success: false; error: string }> {
+  const v = validateUploadInput("banner", input);
+  if (!v.ok) return { success: false, error: v.error };
   try {
-    const file = formData.get("file") as File | null;
-    if (!file) return { success: false, error: "No file provided" };
+    const path = buildPath("banner", { fileName: input.fileName });
+    const provider = getStorageProvider();
+    const ticket = await provider.createUploadTicket({ path, contentType: input.contentType });
+    return { success: true, ticket };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
 
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `banners/${Date.now()}.${ext}`;
-    const publicUrl = await uploadImage(file, path);
-
-    // Also save to site_gallery for reuse
+export async function registerBannerAction(input: {
+  path: string;
+  publicUrl: string;
+}): Promise<{ success: true; url: string } | { success: false; error: string }> {
+  try {
     const db = getServiceClient();
-    const { nextSequentialId: genId } = await import("@/lib/ids");
-    const id = await genId("site_gallery", "gallery_id", "SGL");
-    await db.from("site_gallery").insert({
+    const id = await nextSequentialId("site_gallery", "gallery_id", "SGL");
+    const { error } = await db.from("site_gallery").insert({
       gallery_id: id,
-      image_url: publicUrl,
+      image_url: input.publicUrl,
+      image_path: input.path,
       category: "hero",
       is_active: true,
       is_featured: false,
       display_order: 0,
     });
-
-    await logActivity({ table_name: "site_gallery", record_id: id, action: "INSERT", new_values: { category: "hero", image_url: publicUrl } });
-    return { success: true, url: publicUrl };
+    if (error) throw error;
+    await logActivity({
+      table_name: "site_gallery",
+      record_id: id,
+      action: "INSERT",
+      new_values: { category: "hero", image_url: input.publicUrl, image_path: input.path },
+    });
+    return { success: true, url: input.publicUrl };
   } catch (err) {
     return { success: false, error: (err as Error).message };
   }

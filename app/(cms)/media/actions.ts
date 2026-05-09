@@ -17,116 +17,65 @@ import {
   updateRawMoment,
   deleteRawMoment,
 } from "@/lib/db/media";
-import { uploadImage } from "@/lib/storage/upload";
+import { getStorageProvider } from "@/lib/storage";
+import { buildPath } from "@/lib/storage/paths";
+import { validateUploadInput } from "@/lib/storage/validate";
+import type { UploadTicket } from "@/lib/storage/provider";
 import { revalidateHome } from "@/lib/revalidate";
-import { generateId } from "@/lib/utils";
 import type { DbTripGallery, DbSiteGallery, DbRawMoment } from "@/lib/types";
 import { logActivity } from "@/lib/audit";
 
 // ---------------------------------------------------------------------------
-// Upload Actions (handle FormData with files → Storage → DB)
+// Trip Gallery — Direct-upload prepare + register
 // ---------------------------------------------------------------------------
 
-export async function uploadTripGalleryAction(
-  formData: FormData,
-): Promise<{ success: boolean; error?: string }> {
+export async function prepareTripGalleryUploadAction(input: {
+  tripId: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+}): Promise<{ success: true; ticket: UploadTicket } | { success: false; error: string }> {
+  const v = validateUploadInput("tripGallery", input);
+  if (!v.ok) return { success: false, error: v.error };
   try {
-    const file = formData.get("file") as File | null;
-    if (!file) return { success: false, error: "No file provided" };
+    const path = buildPath("tripGallery", { tripId: input.tripId, fileName: input.fileName });
+    const provider = getStorageProvider();
+    const ticket = await provider.createUploadTicket({ path, contentType: input.contentType });
+    return { success: true, ticket };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
 
-    const tripId = formData.get("trip_id") as string | null;
-    const category = (formData.get("category") as string) || "gallery";
-    const altText = formData.get("alt_text") as string | null;
-    const caption = formData.get("caption") as string | null;
-
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const storagePath = `trip-gallery/${tripId ?? "unassigned"}/${Date.now()}.${ext}`;
-    const publicUrl = await uploadImage(file, storagePath);
-
+export async function registerTripGalleryAction(input: {
+  tripId: string;
+  path: string;
+  publicUrl: string;
+  category: string;
+  altText?: string;
+  caption?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
     await createGalleryImage({
-      trip_id: tripId ?? null,
-      image_url: publicUrl,
+      trip_id: input.tripId,
+      image_url: input.publicUrl,
+      image_path: input.path,
       thumbnail_url: null,
-      alt_text: altText ?? null,
-      caption: caption ?? null,
-      category: category as DbTripGallery["category"],
+      alt_text: input.altText ?? null,
+      caption: input.caption ?? null,
+      category: input.category as DbTripGallery["category"],
       is_cover: false,
       is_featured: false,
       is_active: true,
       photographer: null,
       display_order: 0,
     });
-
-    await logActivity({ table_name: "trip_gallery", record_id: tripId ?? "unassigned", action: "INSERT", new_values: { category, image_url: publicUrl } });
-    revalidatePath("/media");
-    await revalidateHome();
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: (err as Error).message };
-  }
-}
-
-export async function uploadSiteGalleryAction(
-  formData: FormData,
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const file = formData.get("file") as File | null;
-    if (!file) return { success: false, error: "No file provided" };
-
-    const caption = formData.get("caption") as string | null;
-    const altText = formData.get("alt_text") as string | null;
-
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const storagePath = `site-gallery/${Date.now()}.${ext}`;
-    const publicUrl = await uploadImage(file, storagePath);
-
-    await createSiteGalleryImage({
-      trip_id: null,
-      image_url: publicUrl,
-      thumbnail_url: null,
-      alt_text: altText ?? null,
-      caption: caption ?? null,
-      category: "gallery",
-      location: null,
-      photographer: null,
-      is_featured: false,
-      is_active: true,
-      display_order: 0,
+    await logActivity({
+      table_name: "trip_gallery",
+      record_id: input.tripId,
+      action: "INSERT",
+      new_values: { category: input.category, image_url: input.publicUrl, image_path: input.path },
     });
-
-    await logActivity({ table_name: "site_gallery", record_id: publicUrl, action: "INSERT", new_values: { category: "gallery", image_url: publicUrl } });
-    revalidatePath("/media");
-    await revalidateHome();
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: (err as Error).message };
-  }
-}
-
-export async function uploadRawMomentAction(
-  formData: FormData,
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const file = formData.get("file") as File | null;
-    if (!file) return { success: false, error: "No file provided" };
-
-    const location = formData.get("location") as string | null;
-    const caption = formData.get("caption") as string | null;
-
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const storagePath = `raw-moments/${Date.now()}.${ext}`;
-    const publicUrl = await uploadImage(file, storagePath);
-
-    await createRawMoment({
-      image_url: publicUrl,
-      location: location ?? null,
-      caption: caption ?? null,
-      tags: [],
-      is_featured: false,
-      display_order: 0,
-    });
-
-    await logActivity({ table_name: "raw_moments", record_id: publicUrl, action: "INSERT", new_values: { location, image_url: publicUrl } });
     revalidatePath("/media");
     await revalidateHome();
     return { success: true };
@@ -136,7 +85,116 @@ export async function uploadRawMomentAction(
 }
 
 // ---------------------------------------------------------------------------
-// Trip Gallery
+// Site Gallery — Direct-upload prepare + register
+// ---------------------------------------------------------------------------
+
+export async function prepareSiteGalleryUploadAction(input: {
+  fileName: string;
+  contentType: string;
+  size: number;
+}): Promise<{ success: true; ticket: UploadTicket } | { success: false; error: string }> {
+  const v = validateUploadInput("siteGallery", input);
+  if (!v.ok) return { success: false, error: v.error };
+  try {
+    const path = buildPath("siteGallery", { fileName: input.fileName });
+    const provider = getStorageProvider();
+    const ticket = await provider.createUploadTicket({ path, contentType: input.contentType });
+    return { success: true, ticket };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+export async function registerSiteGalleryAction(input: {
+  path: string;
+  publicUrl: string;
+  category: string;
+  altText?: string;
+  caption?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    await createSiteGalleryImage({
+      trip_id: null,
+      image_url: input.publicUrl,
+      image_path: input.path,
+      thumbnail_url: null,
+      alt_text: input.altText ?? null,
+      caption: input.caption ?? null,
+      category: input.category,
+      location: null,
+      photographer: null,
+      is_featured: false,
+      is_active: true,
+      display_order: 0,
+    });
+    await logActivity({
+      table_name: "site_gallery",
+      record_id: input.publicUrl,
+      action: "INSERT",
+      new_values: { category: input.category, image_url: input.publicUrl, image_path: input.path },
+    });
+    revalidatePath("/media");
+    await revalidateHome();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Raw Moments — Direct-upload prepare + register
+// ---------------------------------------------------------------------------
+
+export async function prepareRawMomentUploadAction(input: {
+  fileName: string;
+  contentType: string;
+  size: number;
+}): Promise<{ success: true; ticket: UploadTicket } | { success: false; error: string }> {
+  const v = validateUploadInput("rawMoment", input);
+  if (!v.ok) return { success: false, error: v.error };
+  try {
+    const path = buildPath("rawMoment", { fileName: input.fileName });
+    const provider = getStorageProvider();
+    const ticket = await provider.createUploadTicket({ path, contentType: input.contentType });
+    return { success: true, ticket };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+export async function registerRawMomentAction(input: {
+  path: string;
+  publicUrl: string;
+  location?: string;
+  caption?: string;
+  tags?: string[];
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    await createRawMoment({
+      image_url: input.publicUrl,
+      image_path: input.path,
+      location: input.location ?? null,
+      caption: input.caption ?? null,
+      tags: input.tags ?? [],
+      is_featured: false,
+      display_order: 0,
+    });
+    await logActivity({
+      table_name: "raw_moments",
+      record_id: input.publicUrl,
+      action: "INSERT",
+      new_values: { location: input.location, image_url: input.publicUrl, image_path: input.path },
+    });
+    revalidatePath("/media");
+    await revalidateHome();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: (err as Error).message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Trip Gallery — CRUD
 // ---------------------------------------------------------------------------
 
 export async function fetchTripGalleryImages(
@@ -214,7 +272,7 @@ export async function toggleGalleryCoverAction(
 }
 
 // ---------------------------------------------------------------------------
-// Site Gallery
+// Site Gallery — CRUD
 // ---------------------------------------------------------------------------
 
 export async function fetchSiteGalleryImages(): Promise<DbSiteGallery[]> {
@@ -262,7 +320,7 @@ export async function deleteSiteGalleryImageAction(
 }
 
 // ---------------------------------------------------------------------------
-// Raw Moments
+// Raw Moments — CRUD
 // ---------------------------------------------------------------------------
 
 export async function fetchRawMoments(): Promise<DbRawMoment[]> {

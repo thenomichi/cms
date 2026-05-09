@@ -4,7 +4,6 @@ const getTripsMock = vi.fn();
 const revalidateWebsiteMock = vi.fn();
 const logActivityMock = vi.fn();
 const nextSequentialIdMock = vi.fn();
-const uploadImageMock = vi.fn();
 const getServiceClientMock = vi.fn();
 const getBucketMock = vi.fn();
 const updateBucketMock = vi.fn();
@@ -47,9 +46,6 @@ vi.mock("@/lib/audit", () => ({
 }));
 vi.mock("@/lib/ids", () => ({
   nextSequentialId: (...args: unknown[]) => nextSequentialIdMock(...args),
-}));
-vi.mock("@/lib/storage/upload", () => ({
-  uploadImage: (...args: unknown[]) => uploadImageMock(...args),
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getServiceClient: () => getServiceClientMock(),
@@ -126,106 +122,7 @@ describe("updateSettingsAction", () => {
     expect(revalidateWebsiteMock).not.toHaveBeenCalled();
   });
 
-  it("uploads a hero image and stores it for reuse in site gallery", async () => {
-    uploadImageMock.mockResolvedValue("https://cdn.test/hero-image.jpg");
-    nextSequentialIdMock.mockResolvedValue("SGL001");
-    const insertMock = vi.fn(async () => ({ error: null }));
-    getServiceClientMock.mockReturnValue({
-      from: vi.fn(() => ({
-        insert: insertMock,
-      })),
-      storage: {
-        getBucket: getBucketMock,
-        updateBucket: updateBucketMock,
-      },
-    });
-
-    const { uploadHeroImageAction } = await import("@/app/(cms)/settings/actions");
-    const formData = new FormData();
-    formData.append("file", new File(["image"], "hero.jpg", { type: "image/jpeg" }));
-
-    await expect(uploadHeroImageAction(formData)).resolves.toEqual({
-      success: true,
-      url: "https://cdn.test/hero-image.jpg",
-    });
-    expect(uploadImageMock).toHaveBeenCalledWith(expect.any(File), expect.stringMatching(/^settings\/hero\/images\//));
-    expect(insertMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        gallery_id: "SGL001",
-        image_url: "https://cdn.test/hero-image.jpg",
-        category: "hero",
-      }),
-    );
-  });
-
-  it("rejects invalid hero video uploads", async () => {
-    const { uploadHeroVideoAction } = await import("@/app/(cms)/settings/actions");
-    const formData = new FormData();
-    formData.append("file", new File(["nope"], "hero.jpg", { type: "image/jpeg" }));
-
-    await expect(uploadHeroVideoAction(formData)).resolves.toEqual({
-      success: false,
-      error: "Please upload a video file",
-    });
-    expect(uploadImageMock).not.toHaveBeenCalled();
-  });
-
-  it("updates the cms-media bucket to allow video uploads before uploading hero videos", async () => {
-    uploadImageMock.mockResolvedValue("https://cdn.test/hero-video.mp4");
-    const { uploadHeroVideoAction } = await import("@/app/(cms)/settings/actions");
-    const formData = new FormData();
-    formData.append("file", new File(["video"], "hero.mp4", { type: "video/mp4" }));
-
-    await expect(uploadHeroVideoAction(formData)).resolves.toEqual({
-      success: true,
-      url: "https://cdn.test/hero-video.mp4",
-    });
-    expect(getBucketMock).toHaveBeenCalledWith("cms-media");
-    expect(updateBucketMock).toHaveBeenCalledWith(
-      "cms-media",
-      expect.objectContaining({
-        public: true,
-        fileSizeLimit: 50 * 1024 * 1024,
-        allowedMimeTypes: expect.arrayContaining([
-          "image/jpeg",
-          "image/png",
-          "image/webp",
-          "video/mp4",
-          "video/webm",
-          "video/quicktime",
-        ]),
-      }),
-    );
-    expect(uploadImageMock).toHaveBeenCalledWith(
-      expect.any(File),
-      expect.stringMatching(/^settings\/hero\/videos\//),
-    );
-  });
-
-  it("skips the bucket update when hero video mime types are already allowed", async () => {
-    getBucketMock.mockResolvedValue({
-      data: {
-        public: true,
-        file_size_limit: 50 * 1024 * 1024,
-        allowed_mime_types: [
-          "image/jpeg",
-          "image/png",
-          "image/webp",
-          "video/mp4",
-          "video/webm",
-          "video/quicktime",
-          "application/pdf",
-        ],
-      },
-      error: null,
-    });
-    uploadImageMock.mockResolvedValue("https://cdn.test/hero-video.mp4");
-
-    const { uploadHeroVideoAction } = await import("@/app/(cms)/settings/actions");
-    const formData = new FormData();
-    formData.append("file", new File(["video"], "hero.mp4", { type: "video/mp4" }));
-
-    await uploadHeroVideoAction(formData);
-    expect(updateBucketMock).not.toHaveBeenCalled();
-  });
+  // uploadHeroImageAction and uploadHeroVideoAction were replaced by the
+  // prepare+register direct-upload pattern. Tests for the new actions live in
+  // tests/app/settings-upload.test.ts.
 });

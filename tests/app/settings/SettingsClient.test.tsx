@@ -4,16 +4,20 @@ import { SettingsClient } from "@/app/(cms)/settings/_components/SettingsClient"
 
 const updateSettingsActionMock = vi.fn();
 const fetchHeroMediaImagesActionMock = vi.fn();
-const uploadHeroImageActionMock = vi.fn();
-const uploadHeroVideoActionMock = vi.fn();
+const prepareHeroImageUploadActionMock = vi.fn();
+const registerHeroImageActionMock = vi.fn();
+const prepareHeroVideoUploadActionMock = vi.fn();
+const registerHeroVideoActionMock = vi.fn();
 const toastSuccessMock = vi.fn();
 const toastErrorMock = vi.fn();
 
 vi.mock("@/app/(cms)/settings/actions", () => ({
   updateSettingsAction: (...args: unknown[]) => updateSettingsActionMock(...args),
   fetchHeroMediaImagesAction: (...args: unknown[]) => fetchHeroMediaImagesActionMock(...args),
-  uploadHeroImageAction: (...args: unknown[]) => uploadHeroImageActionMock(...args),
-  uploadHeroVideoAction: (...args: unknown[]) => uploadHeroVideoActionMock(...args),
+  prepareHeroImageUploadAction: (...args: unknown[]) => prepareHeroImageUploadActionMock(...args),
+  registerHeroImageAction: (...args: unknown[]) => registerHeroImageActionMock(...args),
+  prepareHeroVideoUploadAction: (...args: unknown[]) => prepareHeroVideoUploadActionMock(...args),
+  registerHeroVideoAction: (...args: unknown[]) => registerHeroVideoActionMock(...args),
 }));
 vi.mock("sonner", () => ({
   toast: {
@@ -55,11 +59,10 @@ describe("SettingsClient", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchHeroMediaImagesActionMock.mockResolvedValue([]);
-    uploadHeroImageActionMock.mockResolvedValue({ success: true, url: "https://cdn.test/hero.jpg" });
-    uploadHeroVideoActionMock.mockResolvedValue({
-      success: true,
-      url: "https://cdn.test/hero.mp4",
-    });
+    prepareHeroImageUploadActionMock.mockResolvedValue({ success: true, ticket: { path: "hero/img.jpg", publicUrl: "https://cdn.test/hero.jpg", uploadUrl: "https://upload.test", method: "PUT", headers: {} } });
+    registerHeroImageActionMock.mockResolvedValue({ success: true, url: "https://cdn.test/hero.jpg" });
+    prepareHeroVideoUploadActionMock.mockResolvedValue({ success: true, ticket: { path: "hero/vid.mp4", publicUrl: "https://cdn.test/hero.mp4", uploadUrl: "https://upload.test", method: "PUT", headers: {} } });
+    registerHeroVideoActionMock.mockResolvedValue({ success: true, url: "https://cdn.test/hero.mp4" });
   });
 
   it("renders the site-surface controls, updates toggles, and saves nested feature state", async () => {

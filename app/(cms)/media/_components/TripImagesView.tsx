@@ -13,10 +13,16 @@ import {
   deleteGalleryImageAction,
   toggleGalleryFeaturedAction,
   toggleGalleryCoverAction,
-  uploadTripGalleryAction,
+  prepareTripGalleryUploadAction,
+  registerTripGalleryAction,
   linkImageToTripAction,
   changeCategoryAction,
 } from "../actions";
+import { validateFiles } from "@/lib/storage/validate";
+import { uploadWithTicket, runWithConcurrency } from "@/lib/storage/client-upload";
+import { maybeConvertHeic } from "@/lib/storage/heic-convert";
+import { UPLOAD_RULES } from "@/lib/storage/upload-rules";
+import { UploadGuidelines } from "@/components/ui/UploadGuidelines";
 
 type TripImage = DbTripGallery & { trip_name: string | null };
 
@@ -49,6 +55,7 @@ export function TripImagesView({ initialTripImages, tripOptions }: Props) {
 
   const [selectedTripId, setSelectedTripId] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Inline action menus — only one can be open at a time
@@ -96,22 +103,54 @@ export function TripImagesView({ initialTripImages, tripOptions }: Props) {
       toast.error("Select a trip first");
       return;
     }
-    setUploading(true);
-    let successCount = 0;
-    for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("trip_id", selectedTripId);
-      fd.append("category", "gallery");
-      const res = await uploadTripGalleryAction(fd);
-      if (res.success) successCount++;
-      else toast.error(`Failed: ${res.error}`);
+    const list = Array.from(files) as File[];
+    const { valid, rejected } = validateFiles(list, "tripGallery");
+    for (const r of rejected) {
+      toast.error(`${r.file.name}: ${r.reason}`);
     }
+    if (valid.length === 0) return;
+
+    setUploading(true);
+    setUploadProgress({ done: 0, total: valid.length });
+    let successCount = 0;
+
+    await runWithConcurrency(
+      valid as File[],
+      UPLOAD_RULES.tripGallery.maxConcurrency,
+      async (file: File) => {
+        const prep = await prepareTripGalleryUploadAction({
+          tripId: selectedTripId,
+          fileName: file.name,
+          contentType: file.type || "image/jpeg",
+          size: file.size,
+        });
+        if (!prep.success) {
+          toast.error(`${file.name}: ${prep.error}`);
+          return;
+        }
+        const converted = await maybeConvertHeic(file);
+        await uploadWithTicket(converted, prep.ticket);
+        const reg = await registerTripGalleryAction({
+          tripId: selectedTripId,
+          path: prep.ticket.path,
+          publicUrl: prep.ticket.publicUrl,
+          category: "gallery",
+        });
+        if (reg.success) {
+          successCount++;
+        } else {
+          toast.error(`${file.name}: ${reg.error ?? "Register failed"}`);
+        }
+      },
+      (done) => setUploadProgress({ done, total: valid.length }),
+    );
+
     if (successCount > 0) {
       toast.success(`${successCount} image(s) uploaded`);
       router.refresh();
     }
     setUploading(false);
+    setUploadProgress(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -349,16 +388,18 @@ export function TripImagesView({ initialTripImages, tripOptions }: Props) {
           onClick={() => fileRef.current?.click()}
           disabled={uploading || !selectedTripId}
         >
-          {uploading ? "Uploading..." : "Upload Images"}
+          {uploadProgress ? `Uploading ${uploadProgress.done} of ${uploadProgress.total}…` : "Upload Images"}
         </Button>
         <input
           ref={fileRef}
           type="file"
           multiple
-          accept="image/*"
+          accept={UPLOAD_RULES.tripGallery.accept.join(",")}
+          aria-label="Upload"
           className="hidden"
           onChange={(e) => handleUpload(e.target.files)}
         />
+        <UploadGuidelines kind="tripGallery" />
       </div>
 
       {/* No trip selected */}
