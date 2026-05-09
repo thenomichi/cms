@@ -4,14 +4,26 @@ import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Check, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { validateFiles } from "@/lib/storage/validate";
+import { uploadWithTicket } from "@/lib/storage/client-upload";
+import { maybeConvertHeic } from "@/lib/storage/heic-convert";
+import { UPLOAD_RULES, type UploadKind } from "@/lib/storage/upload-rules";
+import type { UploadTicket } from "@/lib/storage/provider";
+import { UploadGuidelines } from "./UploadGuidelines";
 
 interface ImagePickerProps {
   value: string;
   onChange: (url: string) => void;
   /** Server action to fetch existing images for this category */
   fetchImages: () => Promise<{ url: string; alt?: string }[]>;
-  /** Server action to upload a new image, returns the public URL */
-  uploadImage: (formData: FormData) => Promise<{ success: boolean; url?: string; error?: string }>;
+  /** Server action to prepare an upload ticket */
+  prepareUpload: (input: { fileName: string; contentType: string; size: number }) =>
+    Promise<{ success: true; ticket: UploadTicket } | { success: false; error: string }>;
+  /** Server action to register the uploaded asset and return its public URL */
+  registerUpload: (input: { path: string; publicUrl: string }) =>
+    Promise<{ success: boolean; url?: string; error?: string }>;
+  /** Upload kind — used for validateFiles + UploadGuidelines + accept attribute */
+  kind: UploadKind;
   label?: string;
   hint?: string;
   aspectHint?: string;
@@ -20,7 +32,7 @@ interface ImagePickerProps {
 /**
  * Image picker with:
  * 1. Grid of existing images to choose from
- * 2. Upload new image button
+ * 2. Upload new image button (prepare → upload → register)
  * 3. Preview of selected image
  * 4. Clear selection
  */
@@ -28,16 +40,21 @@ export function ImagePicker({
   value,
   onChange,
   fetchImages,
-  uploadImage,
+  prepareUpload,
+  registerUpload,
+  kind,
   label = "Image",
   hint,
-  aspectHint = "Recommended: 1200×400px (3:1 banner ratio)",
+  aspectHint,
 }: ImagePickerProps) {
   const [images, setImages] = useState<{ url: string; alt?: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const accept = UPLOAD_RULES[kind].accept.join(",");
+  const defaultAspectHint = aspectHint ?? UPLOAD_RULES[kind].guidelines.aspectGuidance;
 
   // Fetch existing images on mount
   useEffect(() => {
@@ -49,20 +66,44 @@ export function ImagePicker({
 
   const handleUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setUploading(true);
-    const fd = new FormData();
-    fd.append("file", files[0]);
-    const res = await uploadImage(fd);
-    if (res.success && res.url) {
-      onChange(res.url);
-      setImages((prev) => [{ url: res.url! }, ...prev]);
-      toast.success("Image uploaded");
-      setShowPicker(false);
-    } else {
-      toast.error(res.error ?? "Upload failed");
+    const fileArray = Array.from(files) as File[];
+    const { valid, rejected } = validateFiles(fileArray, kind);
+    for (const r of rejected) {
+      toast.error(`${r.file.name}: ${r.reason}`);
     }
-    setUploading(false);
-    if (fileRef.current) fileRef.current.value = "";
+    if (valid.length === 0) return;
+
+    const file = valid[0] as File;
+    setUploading(true);
+
+    try {
+      const prep = await prepareUpload({
+        fileName: file.name,
+        contentType: file.type || "image/jpeg",
+        size: file.size,
+      });
+      if (!prep.success) {
+        toast.error(prep.error);
+        return;
+      }
+      const converted = await maybeConvertHeic(file);
+      await uploadWithTicket(converted, prep.ticket);
+      const reg = await registerUpload({ path: prep.ticket.path, publicUrl: prep.ticket.publicUrl });
+      if (reg.success) {
+        const url = reg.url ?? prep.ticket.publicUrl;
+        onChange(url);
+        setImages((prev) => [{ url }, ...prev]);
+        toast.success("Image uploaded");
+        setShowPicker(false);
+      } else {
+        toast.error(reg.error ?? "Upload failed");
+      }
+    } catch (err) {
+      toast.error((err as Error).message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
   };
 
   return (
@@ -117,7 +158,7 @@ export function ImagePicker({
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-ink">Select {label}</p>
-              <p className="text-[11px] text-fog">{aspectHint}</p>
+              <p className="text-[11px] text-fog">{defaultAspectHint}</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -140,11 +181,14 @@ export function ImagePicker({
             <input
               ref={fileRef}
               type="file"
-              accept="image/*"
+              accept={accept}
+              aria-label={`Upload ${label}`}
               className="hidden"
               onChange={(e) => handleUpload(e.target.files)}
             />
           </div>
+
+          <UploadGuidelines kind={kind} className="mb-3" />
 
           {/* Image grid */}
           {loading ? (

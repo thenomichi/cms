@@ -11,12 +11,17 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { DbSiteGallery, DbRawMoment } from "@/lib/types";
 import {
-  uploadSiteGalleryAction,
-  uploadRawMomentAction,
+  prepareSiteGalleryUploadAction,
+  registerSiteGalleryAction,
+  prepareRawMomentUploadAction,
+  registerRawMomentAction,
   deleteSiteGalleryImageAction,
   deleteRawMomentAction,
   updateSiteGalleryImageAction,
 } from "../actions";
+import { validateFiles } from "@/lib/storage/validate";
+import { uploadWithTicket } from "@/lib/storage/client-upload";
+import { maybeConvertHeic } from "@/lib/storage/heic-convert";
 
 const INPUT =
   "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
@@ -65,30 +70,77 @@ export function SiteGalleryMomentsView({ initialSiteImages, initialRawMoments }:
   // Confirm upload with caption
   const handleConfirmUpload = async () => {
     if (!stagedFile) return;
+
+    const kind = stagedType === "site" ? "siteGallery" : "rawMoment";
+    const { valid, rejected } = validateFiles([stagedFile], kind);
+    for (const r of rejected) {
+      toast.error(`${r.file.name}: ${r.reason}`);
+    }
+    if (valid.length === 0) return;
+
+    const file = valid[0] as File;
     setUploading(true);
 
-    const fd = new FormData();
-    fd.append("file", stagedFile);
-    if (stagedCaption) fd.append("caption", stagedCaption);
-    if (stagedType === "moment" && stagedLocation) fd.append("location", stagedLocation);
-    if (stagedType === "site" && stagedCaption) fd.append("alt_text", stagedCaption);
-
-    const res = stagedType === "site"
-      ? await uploadSiteGalleryAction(fd)
-      : await uploadRawMomentAction(fd);
-
-    if (res.success) {
-      toast.success("Image uploaded");
-      router.refresh();
-    } else {
-      toast.error(res.error ?? "Upload failed");
+    try {
+      if (stagedType === "site") {
+        const prep = await prepareSiteGalleryUploadAction({
+          fileName: file.name,
+          contentType: file.type || "image/jpeg",
+          size: file.size,
+        });
+        if (!prep.success) {
+          toast.error(prep.error);
+          return;
+        }
+        const converted = await maybeConvertHeic(file);
+        await uploadWithTicket(converted, prep.ticket);
+        const reg = await registerSiteGalleryAction({
+          path: prep.ticket.path,
+          publicUrl: prep.ticket.publicUrl,
+          category: "gallery",
+          altText: stagedCaption || undefined,
+          caption: stagedCaption || undefined,
+        });
+        if (reg.success) {
+          toast.success("Image uploaded");
+          router.refresh();
+        } else {
+          toast.error(reg.error ?? "Upload failed");
+        }
+      } else {
+        const prep = await prepareRawMomentUploadAction({
+          fileName: file.name,
+          contentType: file.type || "image/jpeg",
+          size: file.size,
+        });
+        if (!prep.success) {
+          toast.error(prep.error);
+          return;
+        }
+        const converted = await maybeConvertHeic(file);
+        await uploadWithTicket(converted, prep.ticket);
+        const reg = await registerRawMomentAction({
+          path: prep.ticket.path,
+          publicUrl: prep.ticket.publicUrl,
+          location: stagedLocation || undefined,
+          caption: stagedCaption || undefined,
+        });
+        if (reg.success) {
+          toast.success("Image uploaded");
+          router.refresh();
+        } else {
+          toast.error(reg.error ?? "Upload failed");
+        }
+      }
+    } catch (err) {
+      toast.error((err as Error).message ?? "Upload failed");
+    } finally {
+      setUploading(false);
+      setStagedFile(null);
+      setStagedPreview("");
+      if (siteFileRef.current) siteFileRef.current.value = "";
+      if (momentFileRef.current) momentFileRef.current.value = "";
     }
-
-    setUploading(false);
-    setStagedFile(null);
-    setStagedPreview("");
-    if (siteFileRef.current) siteFileRef.current.value = "";
-    if (momentFileRef.current) momentFileRef.current.value = "";
   };
 
   const cancelUpload = () => {

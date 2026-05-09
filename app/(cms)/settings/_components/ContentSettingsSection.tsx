@@ -8,9 +8,14 @@ import { RichTextInput, fromHtml, toHtml } from "@/components/ui/RichTextInput";
 import { UploadZone } from "@/components/ui/UploadZone";
 import {
   fetchHeroMediaImagesAction,
-  uploadHeroImageAction,
-  uploadHeroVideoAction,
+  prepareHeroImageUploadAction,
+  registerHeroImageAction,
+  prepareHeroVideoUploadAction,
+  registerHeroVideoAction,
 } from "../actions";
+import { validateFiles } from "@/lib/storage/validate";
+import { uploadWithTicket } from "@/lib/storage/client-upload";
+import { UPLOAD_RULES } from "@/lib/storage/upload-rules";
 import { getString } from "./settings-form-utils";
 
 interface ContentSettingsSectionProps {
@@ -64,15 +69,30 @@ function HeroMediaField({
 
   const uploadVideo = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    const fileArray = Array.from(files) as File[];
+    const { valid, rejected } = validateFiles(fileArray, "heroVideo");
+    for (const r of rejected) {
+      toast.error(`${r.file.name}: ${r.reason}`);
+    }
+    if (valid.length === 0) return;
+
+    const file = valid[0] as File;
     setVideoUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", files[0]);
-      const result = await uploadHeroVideoAction(formData);
-      if (!result.success || !result.url) {
-        throw new Error(result.error || "Video upload failed");
+      const prep = await prepareHeroVideoUploadAction({
+        fileName: file.name,
+        contentType: file.type || "video/mp4",
+        size: file.size,
+      });
+      if (!prep.success) {
+        throw new Error(prep.error);
       }
-      onUpdate("hero.media.videoUrl", result.url);
+      await uploadWithTicket(file, prep.ticket);
+      const reg = await registerHeroVideoAction({ path: prep.ticket.path, publicUrl: prep.ticket.publicUrl });
+      if (!reg.success || !reg.url) {
+        throw new Error(reg.error || "Video register failed");
+      }
+      onUpdate("hero.media.videoUrl", reg.url);
       toast.success("Hero video uploaded");
     } catch (error) {
       toast.error((error as Error).message || "Video upload failed");
@@ -145,7 +165,9 @@ function HeroMediaField({
             value={imageUrl}
             onChange={(value) => onUpdate("hero.media.imageUrl", value)}
             fetchImages={fetchHeroMediaImagesAction}
-            uploadImage={uploadHeroImageAction}
+            prepareUpload={prepareHeroImageUploadAction}
+            registerUpload={registerHeroImageAction}
+            kind="heroImage"
             label="hero image"
             aspectHint="Recommended: wide cinematic image, at least 1600px wide."
           />
@@ -219,7 +241,9 @@ function HeroMediaField({
               value={posterUrl}
               onChange={(value) => onUpdate("hero.media.posterUrl", value)}
               fetchImages={fetchHeroMediaImagesAction}
-              uploadImage={uploadHeroImageAction}
+              prepareUpload={prepareHeroImageUploadAction}
+              registerUpload={registerHeroImageAction}
+              kind="heroImage"
               label="poster image"
               aspectHint="Recommended: use a still from the same video for a seamless first frame."
             />

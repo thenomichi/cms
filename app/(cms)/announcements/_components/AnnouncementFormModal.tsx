@@ -8,7 +8,7 @@ import { RichTextInput, toHtml, fromHtml } from "@/components/ui/RichTextInput";
 import { CtaLinkPicker } from "@/components/ui/CtaLinkPicker";
 import { ImagePicker } from "@/components/ui/ImagePicker";
 import { Button } from "@/components/ui/Button";
-import { fetchBannerImages, uploadBannerImage } from "../actions";
+import { fetchBannerImages, prepareBannerUploadAction, registerBannerAction } from "../actions";
 import { Toggle } from "@/components/ui/Toggle";
 import type { DbAnnouncement } from "@/lib/types";
 
@@ -213,7 +213,9 @@ export function AnnouncementFormModal({
                 value={backgroundImageUrl}
                 onChange={setBackgroundImageUrl}
                 fetchImages={fetchBannerImages}
-                uploadImage={uploadBannerImage}
+                prepareUpload={prepareBannerUploadAction}
+                registerUpload={registerBannerAction}
+                kind="banner"
                 label="Banner Image"
                 hint="Used as the announcement banner background"
                 aspectHint="Recommended: 1200×400px (3:1 banner ratio)"
