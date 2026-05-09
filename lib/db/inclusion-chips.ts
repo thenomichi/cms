@@ -2,6 +2,25 @@ import { getServiceClient } from "@/lib/supabase/server";
 import type { DbInclusionChip } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
+async function generateUniqueInclusionChipId(
+  name: string,
+): Promise<string> {
+  const db = getServiceClient();
+  const base = slugify(name) || "custom-inclusion";
+
+  for (let i = 0; i < 50; i++) {
+    const candidate = i === 0 ? base : `${base}-${i + 1}`;
+    const { count, error } = await db
+      .from("inclusion_chips")
+      .select("chip_id", { count: "exact", head: true })
+      .eq("chip_id", candidate);
+    if (error) throw error;
+    if ((count ?? 0) === 0) return candidate;
+  }
+
+  return `${base}-${Date.now()}`;
+}
+
 export async function listInclusionChips(): Promise<DbInclusionChip[]> {
   const db = getServiceClient();
   const { data, error } = await db
@@ -21,7 +40,7 @@ export async function addInclusionChip(input: {
   category: string;
 }): Promise<DbInclusionChip> {
   const db = getServiceClient();
-  const idCandidate = slugify(input.name);
+  const idCandidate = await generateUniqueInclusionChipId(input.name);
   const { data, error } = await db
     .from("inclusion_chips")
     .insert({
@@ -32,6 +51,11 @@ export async function addInclusionChip(input: {
     })
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.message.toLowerCase().includes("inclusion_chips_name")) {
+      throw new Error(`Inclusion "${input.name}" already exists`);
+    }
+    throw error;
+  }
   return data as DbInclusionChip;
 }

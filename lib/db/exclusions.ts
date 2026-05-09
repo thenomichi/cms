@@ -2,6 +2,25 @@ import { getServiceClient } from "@/lib/supabase/server";
 import type { DbExclusion } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
+async function generateUniqueExclusionId(
+  name: string,
+): Promise<string> {
+  const db = getServiceClient();
+  const base = slugify(name) || "custom-exclusion";
+
+  for (let i = 0; i < 50; i++) {
+    const candidate = i === 0 ? base : `${base}-${i + 1}`;
+    const { count, error } = await db
+      .from("exclusions")
+      .select("exclusion_id", { count: "exact", head: true })
+      .eq("exclusion_id", candidate);
+    if (error) throw error;
+    if ((count ?? 0) === 0) return candidate;
+  }
+
+  return `${base}-${Date.now()}`;
+}
+
 export async function listExclusions(): Promise<DbExclusion[]> {
   const db = getServiceClient();
   const { data, error } = await db
@@ -21,10 +40,7 @@ export async function addExclusion(input: {
   is_popular?: boolean;
 }): Promise<DbExclusion> {
   const db = getServiceClient();
-  // Generate a stable id from the slug. UNIQUE constraint on `name`
-  // protects against duplicate entries via case-sensitive collision; ids
-  // collide separately via the slug shape.
-  const idCandidate = slugify(input.name);
+  const idCandidate = await generateUniqueExclusionId(input.name);
   const { data, error } = await db
     .from("exclusions")
     .insert({
@@ -35,6 +51,11 @@ export async function addExclusion(input: {
     })
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.message.toLowerCase().includes("exclusions_name")) {
+      throw new Error(`Exclusion "${input.name}" already exists`);
+    }
+    throw error;
+  }
   return data as DbExclusion;
 }
