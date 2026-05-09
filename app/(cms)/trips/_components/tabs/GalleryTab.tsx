@@ -5,14 +5,20 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { UploadGuidelines } from "@/components/ui/UploadGuidelines";
 import type { DbTripGallery } from "@/lib/types";
 import {
-  uploadTripGalleryAction,
+  prepareTripGalleryUploadAction,
+  registerTripGalleryAction,
   fetchTripGalleryImages,
   deleteGalleryImageAction,
   toggleGalleryFeaturedAction,
   toggleGalleryCoverAction,
 } from "../../../media/actions";
+import { validateFiles } from "@/lib/storage/validate";
+import { uploadWithTicket, runWithConcurrency } from "@/lib/storage/client-upload";
+import { maybeConvertHeic } from "@/lib/storage/heic-convert";
+import { UPLOAD_RULES } from "@/lib/storage/upload-rules";
 
 interface Props {
   tripId: string | null;
@@ -37,6 +43,7 @@ const MAX_FEATURED = 2;
 export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }: Props) {
   const [images, setImages] = useState(initialGallery);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -69,22 +76,55 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
       if (!tripId) toast.error("Save the trip first before uploading images");
       return;
     }
-    setUploading(true);
-    let count = 0;
-    for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("trip_id", tripId);
-      fd.append("category", DEFAULT_CATEGORY);
-      const res = await uploadTripGalleryAction(fd);
-      if (res.success) count++;
-      else toast.error(res.error ?? "Upload failed");
+
+    const list = Array.from(files) as File[];
+    const { valid, rejected } = validateFiles(list, "tripGallery");
+    for (const r of rejected) {
+      toast.error(`${r.file.name}: ${r.reason}`);
     }
-    if (count > 0) {
-      toast.success(`${count} image(s) uploaded`);
+    if (valid.length === 0) return;
+
+    setUploading(true);
+    setProgress({ done: 0, total: valid.length });
+
+    let successCount = 0;
+    await runWithConcurrency(
+      valid as File[],
+      UPLOAD_RULES.tripGallery.maxConcurrency,
+      async (file: File) => {
+        const prep = await prepareTripGalleryUploadAction({
+          tripId: tripId!,
+          fileName: file.name,
+          contentType: file.type || "image/jpeg",
+          size: file.size,
+        });
+        if (!prep.success) {
+          toast.error(`${file.name}: ${prep.error}`);
+          return;
+        }
+        const converted = await maybeConvertHeic(file);
+        await uploadWithTicket(converted, prep.ticket);
+        const reg = await registerTripGalleryAction({
+          tripId: tripId!,
+          path: prep.ticket.path,
+          publicUrl: prep.ticket.publicUrl,
+          category: DEFAULT_CATEGORY,
+        });
+        if (reg.success) {
+          successCount++;
+        } else {
+          toast.error(`${file.name}: ${reg.error ?? "Register failed"}`);
+        }
+      },
+      (done) => setProgress({ done, total: valid.length }),
+    );
+
+    if (successCount > 0) {
+      toast.success(`${successCount} image(s) uploaded`);
       await refreshGallery();
     }
     setUploading(false);
+    setProgress(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -137,23 +177,31 @@ export function GalleryTab({ tripId, gallery: initialGallery, onGalleryChange }:
   return (
     <div className="space-y-4">
       {/* Upload section */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={() => fileRef.current?.click()} disabled={uploading || !tripId}>
-          {uploading ? "Uploading..." : "Upload Images"}
-        </Button>
-        <p className="text-xs text-mid">
-          {tripId
-            ? "After upload, hover an image to set it as cover or feature it."
-            : "Save the trip first to upload images."}
-        </p>
+      <div className="flex flex-wrap items-start gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button onClick={() => fileRef.current?.click()} disabled={uploading || !tripId}>
+            {progress ? `Uploading ${progress.done} of ${progress.total}…` : "Upload Images"}
+          </Button>
+          <p className="text-xs text-mid">
+            {tripId
+              ? "After upload, hover an image to set it as cover or feature it."
+              : "Save the trip first to upload images."}
+          </p>
+        </div>
+        <label htmlFor="gallery-upload" className="sr-only">
+          Upload
+        </label>
         <input
+          id="gallery-upload"
           ref={fileRef}
           type="file"
           multiple
-          accept="image/*"
+          accept={UPLOAD_RULES.tripGallery.accept.join(",")}
+          aria-label="Upload"
           className="hidden"
           onChange={(e) => handleUpload(e.target.files)}
         />
+        <UploadGuidelines kind="tripGallery" className="w-full sm:w-auto" />
       </div>
 
       {/* Plain-language help so admins know what Cover/Featured do. */}
