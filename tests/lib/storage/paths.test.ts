@@ -57,4 +57,11 @@ describe("buildPath", () => {
     expect(p).not.toContain("..");
     expect(p.startsWith("trip-gallery/T1/")).toBe(true);
   });
+
+  it("trip cover path lives under trip-cover/, separate from trip-gallery", () => {
+    const c = buildPath("tripCover", { tripId: "T1", fileName: "cover.jpg" });
+    const g = buildPath("tripGallery", { tripId: "T1", fileName: "shot.jpg" });
+    expect(c).toMatch(/^trip-cover\/T1\/\d+-cover\.jpg$/);
+    expect(g).toMatch(/^trip-gallery\/T1\/\d+-shot\.jpg$/);
+  });
 });

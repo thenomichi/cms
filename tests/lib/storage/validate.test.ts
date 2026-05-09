@@ -125,4 +125,18 @@ describe("validateUploadInput (L3 server-side)", () => {
     });
     expect(r.ok).toBe(false);
   });
+
+  it("rejects URL-encoded traversal", () => {
+    const r = validateUploadInput("tripGallery", {
+      fileName: "..%2F..%2Fetc/passwd", contentType: "image/jpeg", size: 1000,
+    });
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects null-byte injection", () => {
+    const r = validateUploadInput("tripGallery", {
+      fileName: "good.jpg\x00.exe", contentType: "image/jpeg", size: 1000,
+    });
+    expect(r.ok).toBe(false);
+  });
 });

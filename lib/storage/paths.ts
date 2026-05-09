@@ -20,8 +20,9 @@ export function buildPath(kind: UploadKind, input: PathInput): string {
   const safe = sanitizeFileName(input.fileName);
   const stamped = `${Date.now()}-${safe}`;
   switch (kind) {
-    case "tripGallery":
     case "tripCover":
+      return `trip-cover/${input.tripId ?? "unassigned"}/${stamped}`;
+    case "tripGallery":
       return `trip-gallery/${input.tripId ?? "unassigned"}/${stamped}`;
     case "siteGallery":
       return `site-gallery/${stamped}`;

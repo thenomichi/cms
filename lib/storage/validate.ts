@@ -1,4 +1,5 @@
 // lib/storage/validate.ts
+import path from "node:path";
 import { UPLOAD_RULES, type UploadKind } from "./upload-rules";
 
 export interface FileLike {
@@ -72,7 +73,12 @@ export function validateUploadInput(
 ): ValidateInputResult {
   const rule = UPLOAD_RULES[kind];
 
-  if (!input.fileName || input.fileName.includes("..") || /[\/\\]/.test(input.fileName)) {
+  if (
+    !input.fileName ||
+    input.fileName.includes("\x00") ||
+    input.fileName.includes("\\") ||
+    path.basename(input.fileName) !== input.fileName
+  ) {
     return { ok: false, error: "Invalid filename" };
   }
   if (input.size <= 0) {
