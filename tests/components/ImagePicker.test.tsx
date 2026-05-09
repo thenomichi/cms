@@ -40,6 +40,7 @@ const ticket: UploadTicket = {
   uploadUrl: "https://upload.example.com",
   method: "PUT",
   headers: {},
+  expiresAt: Date.now() + 600_000,
 };
 
 function makeFile(name = "banner.jpg", size = 1024, type = "image/jpeg"): File {

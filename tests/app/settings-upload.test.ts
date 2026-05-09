@@ -63,7 +63,6 @@ vi.mock("@/lib/supabase/server", () => ({
     },
   }),
 }));
-vi.mock("@/lib/storage/upload", () => ({ uploadImage: vi.fn() }));
 vi.mock("@/lib/db/settings", () => ({ updateSiteSettings: vi.fn() }));
 vi.mock("@/lib/db/trips", () => ({ getTrips: vi.fn(async () => []) }));
 

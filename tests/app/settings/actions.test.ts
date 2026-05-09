@@ -4,7 +4,6 @@ const getTripsMock = vi.fn();
 const revalidateWebsiteMock = vi.fn();
 const logActivityMock = vi.fn();
 const nextSequentialIdMock = vi.fn();
-const uploadImageMock = vi.fn();
 const getServiceClientMock = vi.fn();
 const getBucketMock = vi.fn();
 const updateBucketMock = vi.fn();
@@ -47,9 +46,6 @@ vi.mock("@/lib/audit", () => ({
 }));
 vi.mock("@/lib/ids", () => ({
   nextSequentialId: (...args: unknown[]) => nextSequentialIdMock(...args),
-}));
-vi.mock("@/lib/storage/upload", () => ({
-  uploadImage: (...args: unknown[]) => uploadImageMock(...args),
 }));
 vi.mock("@/lib/supabase/server", () => ({
   getServiceClient: () => getServiceClientMock(),

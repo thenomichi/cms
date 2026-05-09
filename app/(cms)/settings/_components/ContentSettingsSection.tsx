@@ -89,7 +89,7 @@ function HeroMediaField({
       }
       await uploadWithTicket(file, prep.ticket);
       const reg = await registerHeroVideoAction({ path: prep.ticket.path, publicUrl: prep.ticket.publicUrl });
-      if (!reg.success || !reg.url) {
+      if (!reg.success) {
         throw new Error(reg.error || "Video register failed");
       }
       onUpdate("hero.media.videoUrl", reg.url);

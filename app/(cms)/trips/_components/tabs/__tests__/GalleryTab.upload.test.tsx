@@ -97,7 +97,7 @@ describe("GalleryTab upload", () => {
     vi.clearAllMocks();
     prepareMock.mockResolvedValue({
       success: true,
-      ticket: { path: "trip-gallery/trip-123/photo.jpg", publicUrl: "https://cdn.example.com/photo.jpg", uploadUrl: "https://upload.example.com", method: "PUT", headers: {} },
+      ticket: { path: "trip-gallery/trip-123/photo.jpg", publicUrl: "https://cdn.example.com/photo.jpg", uploadUrl: "https://upload.example.com", method: "PUT", headers: {}, expiresAt: Date.now() + 600_000 },
     });
     registerMock.mockResolvedValue({ success: true });
     fetchGalleryMock.mockResolvedValue([]);

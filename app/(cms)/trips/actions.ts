@@ -340,9 +340,14 @@ export async function uploadTripItineraryAction(
     // No-op on bucket configurations that already include it; idempotent.
     await ensureBucketAllowlistOnce();
 
-    const { uploadImage } = await import("@/lib/storage/upload");
+    const db = getServiceClient();
     const path = `${ITINERARY_BUCKET_PATH}/${tripId}-${Date.now()}.pdf`;
-    const url = await uploadImage(file, path);
+    const { error: uploadError } = await db.storage.from("cms-media").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+    });
+    if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
+    const { data: { publicUrl: url } } = db.storage.from("cms-media").getPublicUrl(path);
     logActivityAsync({
       table_name: "trips",
       record_id: tripId,

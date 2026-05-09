@@ -61,7 +61,6 @@ vi.mock("@/lib/db/media", () => ({
 }));
 vi.mock("@/lib/utils", () => ({ generateId: vi.fn(() => "test-id") }));
 vi.mock("@/lib/supabase/server", () => ({ getServiceClient: vi.fn() }));
-vi.mock("@/lib/storage/upload", () => ({ uploadImage: vi.fn() }));
 
 // ---------------------------------------------------------------------------
 // Helpers
