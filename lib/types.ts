@@ -83,6 +83,7 @@ export interface DbTripGallery {
   gallery_id: string;
   trip_id: string | null;
   image_url: string;
+  image_path: string | null;
   thumbnail_url: string | null;
   alt_text: string | null;
   caption: string | null;
@@ -164,6 +165,7 @@ export interface DbAnnouncement {
 export interface DbSiteGallery {
   gallery_id: string;
   image_url: string;
+  image_path: string | null;
   thumbnail_url: string | null;
   alt_text: string | null;
   caption: string | null;
@@ -183,6 +185,7 @@ export interface DbRawMoment {
   moment_id: string;
   location: string | null;
   image_url: string;
+  image_path: string | null;
   caption: string | null;
   tags: string[] | null;
   is_featured: boolean | null;
