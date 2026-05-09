@@ -416,10 +416,10 @@ export async function cloneAsBatchAction(
       destCode,
     );
 
+    // Don't exclude the source — its slug is real and the new row can't reuse it.
     const newSlug = await generateUniqueSlug(
       source.trip_name ?? "batch",
-      null, // no start date yet — admin will set it
-      sourceTripId, // exclude source from uniqueness check
+      null,
     );
 
     await cloneAsBatch(sourceTripId, newTripId, newSlug);
