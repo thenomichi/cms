@@ -8,6 +8,11 @@ import { SortableList } from "@/components/ui/SortableList";
 import type { TripFormState } from "../types";
 import type { ItineraryDayInput } from "@/lib/db/trip-itinerary";
 import { ChipInput } from "../ChipInput";
+import {
+  parseItineraryTags,
+  stringifyItineraryTags,
+  type ParsedItineraryTags,
+} from "./itinerary-tags";
 
 const INPUT =
   "h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink placeholder:text-fog outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20";
@@ -57,6 +62,16 @@ export function ItineraryTab({ form, updateField }: ItineraryTabProps) {
     [updateField],
   );
 
+  function updateDayTagMeta(index: number, patch: Partial<ParsedItineraryTags>) {
+    const current = parseItineraryTags(days[index]?.tags);
+    updateDay(index, {
+      tags: stringifyItineraryTags({
+        ...current,
+        ...patch,
+      }),
+    });
+  }
+
   return (
     <div className="space-y-4">
       {days.length === 0 && (
@@ -72,6 +87,7 @@ export function ItineraryTab({ form, updateField }: ItineraryTabProps) {
           onReorder={handleReorder}
           renderItem={(day) => {
             const idx = days.findIndex((d) => d.day_number === day.day_number);
+            const parsedTags = parseItineraryTags(day.tags);
             return (
               <div className="flex-1 space-y-3">
                 <div className="flex items-center justify-between">
@@ -119,13 +135,39 @@ export function ItineraryTab({ form, updateField }: ItineraryTabProps) {
                   />
                 </FormField>
 
-                <FormField label="Tags" hint="Type and press Enter to add. Drag to reorder. Visible as chips on the website.">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <FormField label="Meals">
+                    <input
+                      type="text"
+                      className={INPUT}
+                      value={parsedTags.meals}
+                      onChange={(e) =>
+                        updateDayTagMeta(idx, { meals: e.target.value })
+                      }
+                      placeholder="eg - Breakfast, Lunch, Dinner"
+                    />
+                  </FormField>
+                  <FormField label="Accommodation">
+                    <input
+                      type="text"
+                      className={INPUT}
+                      value={parsedTags.accommodation}
+                      onChange={(e) =>
+                        updateDayTagMeta(idx, {
+                          accommodation: e.target.value,
+                        })
+                      }
+                      placeholder="eg - Hotel in Sohra"
+                    />
+                  </FormField>
+                </div>
+
+                <FormField label="Tags">
                   <ChipInput
-                    value={(day.tags ?? "")
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean)}
-                    onChange={(next) => updateDay(idx, { tags: next.length ? next.join(", ") : null })}
+                    value={parsedTags.genericTags}
+                    onChange={(next) =>
+                      updateDayTagMeta(idx, { genericTags: next })
+                    }
                     placeholder="e.g. Trekking, Photography stop, Local cuisine"
                   />
                 </FormField>
