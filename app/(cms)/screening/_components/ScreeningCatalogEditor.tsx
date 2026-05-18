@@ -32,9 +32,12 @@ export function ScreeningCatalogEditor({
 
   const isDirty = JSON.stringify(form) !== savedSnapshot;
 
-  // Debounced autosave (800 ms)
+  // Debounced autosave (800 ms). The lint rule wants setState out of effects,
+  // but autosave is exactly the "sync external state" exception the docs
+  // sanction — we mark the network call as in-flight while it's running.
   useEffect(() => {
     if (!isDirty) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus("saving");
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {

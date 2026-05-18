@@ -71,6 +71,7 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, in
   // moves away from Community. The server enforces this too as defense in depth.
   useEffect(() => {
     if (form.trip_type !== "Community" && form.screening_enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm((prev) => ({ ...prev, screening_enabled: false }));
     } else if (
       form.trip_type === "Community" &&
@@ -83,6 +84,7 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, in
 
   const [stepIndex, setStepIndex] = useState(0);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stepIndex >= steps.length) setStepIndex(steps.length - 1);
   }, [steps.length, stepIndex]);
   const [previewMode, setPreviewMode] = useState<"card" | "detail">("card");

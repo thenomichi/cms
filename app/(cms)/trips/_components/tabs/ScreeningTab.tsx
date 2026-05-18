@@ -22,7 +22,7 @@ export function ScreeningTab({ enabled, onEnabledChange, activeCatalog }: Screen
             <h3 className="text-sm font-semibold text-ink">What is the Trip Fit Check?</h3>
             <p className="mt-1 text-sm text-mid">
               A short questionnaire shown to customers between Traveller Details and Payment.
-              Customers whose answers don't fit a Soulful Escapes vibe are flagged — they can't pay
+              Customers whose answers don&apos;t fit a Soulful Escapes vibe are flagged — they can&apos;t pay
               until the Ops team reviews.
             </p>
           </div>

@@ -30,13 +30,6 @@ describe("countTripsWithScreeningEnabled", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns the count", async () => {
-    const from = vi.fn().mockReturnValue({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis().mockImplementationOnce(function (this: unknown) {
-        return this;
-      }),
-    });
-    // Replace with a chain that resolves at the second .eq()
     const finalEq = vi.fn().mockResolvedValue({ count: 7, error: null });
     const firstEq = vi.fn().mockReturnValue({ eq: finalEq });
     const select = vi.fn().mockReturnValue({ eq: firstEq });
