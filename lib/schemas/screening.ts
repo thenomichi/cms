@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 export const SCREENING_TAGS = ["green", "yellow", "red"] as const;
-export const SCREENING_KINDS = ["single", "multi", "textarea"] as const;
+// "text" is the long-answer kind in the live DB; "textarea" is its alias
+// historically used in some specs. The website's CHECK constraint accepts
+// "text" — we mirror that to avoid round-trip rejection of seeded questions.
+export const SCREENING_KINDS = ["single", "multi", "text"] as const;
 
 export type ScreeningTag = (typeof SCREENING_TAGS)[number];
 export type ScreeningKind = (typeof SCREENING_KINDS)[number];
@@ -37,7 +40,7 @@ export const screeningQuestionInputSchema = z
         });
       }
     }
-    if (v.kind === "textarea" && v.options.length > 0) {
+    if (v.kind === "text" && v.options.length > 0) {
       ctx.addIssue({
         code: "custom",
         path: ["options"],

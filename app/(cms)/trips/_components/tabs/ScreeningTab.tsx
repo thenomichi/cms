@@ -56,14 +56,14 @@ export function ScreeningTab({ enabled, onEnabledChange, activeCatalog }: Screen
                   <p className="font-medium text-ink">
                     {i + 1}. {q.prompt}
                   </p>
-                  {q.kind !== "textarea" && (
+                  {q.kind !== "text" && (
                     <ul className="ml-5 mt-1 list-disc text-mid">
                       {q.options.map((o) => (
                         <li key={o.option_id}>{o.label}</li>
                       ))}
                     </ul>
                   )}
-                  {q.kind === "textarea" && (
+                  {q.kind === "text" && (
                     <p className="ml-5 mt-1 italic text-mid">(long answer)</p>
                   )}
                 </li>

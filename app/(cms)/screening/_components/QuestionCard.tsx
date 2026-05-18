@@ -12,7 +12,7 @@ import type { OptionFormState, QuestionFormState } from "./types";
 const KIND_OPTIONS = [
   { value: "single", label: "○ Pick one" },
   { value: "multi", label: "☑ Pick many" },
-  { value: "textarea", label: "✎ Long answer" },
+  { value: "text", label: "✎ Long answer" },
 ];
 
 const TAG_OPTIONS = [
@@ -69,14 +69,14 @@ export function QuestionCard({
     onChange({
       ...question,
       kind: newKind as QuestionFormState["kind"],
-      options: newKind === "textarea" ? [] : question.options,
+      options: newKind === "text" ? [] : question.options,
     });
     setPendingKind(null);
   };
 
   const handleKindChange = (newKind: string) => {
     if (newKind === question.kind) return;
-    if (question.options.length > 0 && (newKind === "textarea" || question.kind === "textarea")) {
+    if (question.options.length > 0 && (newKind === "text" || question.kind === "text")) {
       setPendingKind(newKind);
     } else {
       applyKindChange(newKind);
@@ -166,7 +166,7 @@ export function QuestionCard({
         </label>
       </div>
 
-      {question.kind !== "textarea" && (
+      {question.kind !== "text" && (
         <div className="mt-5">
           <p className="mb-2 text-xs font-semibold text-mid">Answer choices</p>
           <div className="space-y-2">

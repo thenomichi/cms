@@ -104,10 +104,10 @@ describe("screeningQuestionInputSchema", () => {
     });
     expect(r.success).toBe(true);
   });
-  it("accepts kind=textarea with zero options", () => {
+  it("accepts kind=text with zero options", () => {
     const r = screeningQuestionInputSchema.safeParse({
       prompt: "Anything else to share?",
-      kind: "textarea",
+      kind: "text",
       is_scored: false,
       is_required: false,
       options: [],
@@ -141,6 +141,6 @@ describe("constants", () => {
     expect(SCREENING_TAGS).toEqual(["green", "yellow", "red"]);
   });
   it("exposes SCREENING_KINDS", () => {
-    expect(SCREENING_KINDS).toEqual(["single", "multi", "textarea"]);
+    expect(SCREENING_KINDS).toEqual(["single", "multi", "text"]);
   });
 });

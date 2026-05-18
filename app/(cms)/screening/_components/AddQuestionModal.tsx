@@ -11,7 +11,7 @@ import type { ScreeningKind } from "@/lib/schemas/screening";
 const KIND_OPTIONS = [
   { value: "single", label: "○ Pick one" },
   { value: "multi", label: "☑ Pick many" },
-  { value: "textarea", label: "✎ Long answer" },
+  { value: "text", label: "✎ Long answer" },
 ];
 
 interface AddQuestionModalProps {
@@ -34,7 +34,7 @@ export function AddQuestionModal({ open, onClose, onAdd }: AddQuestionModalProps
       return;
     }
     const options =
-      kind === "textarea"
+      kind === "text"
         ? []
         : [
             { label: "Option 1", tag: null, is_deal_breaker: false },

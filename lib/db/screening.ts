@@ -112,8 +112,28 @@ export async function saveDraftCatalog(
     .eq("catalog_version_id", draftVersionId);
   if (upErr) throw new Error(`saveDraftCatalog (version update) failed: ${upErr.message}`);
 
-  // Replace-and-upsert: delete all questions for this draft, then re-insert.
-  // The draft is short (~12 questions) so this is simple and correct.
+  // Replace-and-upsert: delete options first, then questions, then re-insert.
+  // Direct cascade-delete hits a trigger bug in the website's
+  // nm_block_published_catalog_child_edits() — when a question is deleted,
+  // its options' BEFORE DELETE trigger can't resolve the parent question
+  // (already gone in the same statement) and raises "belonging to a <NULL>
+  // catalog version". Deleting options first sidesteps that path.
+  const { data: existingQs } = await db
+    .from("screening_questions")
+    .select("question_id")
+    .eq("catalog_version_id", draftVersionId);
+  const existingQuestionIds = (existingQs ?? []).map(
+    (q) => (q as { question_id: string }).question_id,
+  );
+  if (existingQuestionIds.length > 0) {
+    const { error: delOptsErr } = await db
+      .from("screening_options")
+      .delete()
+      .in("question_id", existingQuestionIds);
+    if (delOptsErr) {
+      throw new Error(`saveDraftCatalog (delete options) failed: ${delOptsErr.message}`);
+    }
+  }
   const { error: delErr } = await db
     .from("screening_questions")
     .delete()
@@ -138,9 +158,9 @@ export async function saveDraftCatalog(
       kind: q.kind,
       is_scored: q.is_scored,
       is_required: q.is_required,
-      multi_select_rule: q.kind === "multi" ? "worst_color" : null,
+      multi_select_rule: q.kind === "multi" ? "worst_tag" : null,
       placeholder: null,
-      max_length: q.kind === "textarea" ? 500 : null,
+      max_length: q.kind === "text" ? 500 : null,
       sort_order: qi,
     });
     if (qErr) throw new Error(`saveDraftCatalog (insert question ${qi}) failed: ${qErr.message}`);
