@@ -12,6 +12,18 @@ import {
   type ExclusionInput,
 } from "@/lib/db/trip-inclusions";
 import { saveTripFaqs, type FaqInput } from "@/lib/db/trip-faqs";
+import {
+  upsertVariantAxis,
+  deleteVariantAxis,
+  upsertVariantOption,
+  deleteVariantOption,
+  reorderVariantOptions,
+  getVariantAxesForGroup,
+} from "@/lib/db/trip-variants";
+import {
+  variantAxisInputSchema,
+  variantOptionInputSchema,
+} from "@/lib/schemas/trip-variants";
 import { revalidateTrip } from "@/lib/revalidate";
 import { revalidatePath } from "next/cache";
 import { logActivity } from "@/lib/audit";
@@ -239,6 +251,26 @@ export async function updateTripAction(
     // If the user moves status to a non-listable state, force the flags off
     // so a trip can never be marked Draft/Cancelled while still public.
     const canBePublic = isPubliclyListable(payload.settings.status);
+
+    // Publish guard — when a trip with variants is promoted out of Draft,
+    // every axis must have at least 2 active options.
+    const currentTrip = await getTripById(tripId);
+    const isPromoting =
+      currentTrip &&
+      currentTrip.status === "Draft" &&
+      ["Upcoming", "Ongoing"].includes(payload.settings.status);
+    if (isPromoting && currentTrip.group_slug) {
+      const axes = await getVariantAxesForGroup(currentTrip.group_slug);
+      for (const axis of axes) {
+        const activeCount = axis.options.filter((o) => o.is_active).length;
+        if (activeCount < 2) {
+          return {
+            success: false,
+            error: `Variant axis "${axis.axis_label}" needs at least 2 active options before publish.`,
+          };
+        }
+      }
+    }
 
     // Update trip record
     await updateTrip(tripId, {
@@ -528,4 +560,110 @@ export async function autosaveTripAction(
     console.error("[autosaveTripAction]", err);
     return { success: false, error: err instanceof Error ? err.message : "Autosave failed" };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Trip Variants — server actions
+// ---------------------------------------------------------------------------
+
+export async function upsertVariantAxisAction(
+  groupSlug: string,
+  tripSlug: string,
+  rawInput: unknown,
+): Promise<{ ok: true; axisId: string } | { ok: false; error: string }> {
+  const parsed = variantAxisInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+  try {
+    const axisId = await upsertVariantAxis(groupSlug, parsed.data);
+    await revalidateTrip(tripSlug);
+    logActivityAsync({
+      table_name: "trip_variant_axes",
+      record_id: axisId,
+      action: parsed.data.variant_axis_id ? "UPDATE" : "INSERT",
+      new_values: { axis_label: parsed.data.axis_label, group_slug: groupSlug },
+    });
+    return { ok: true, axisId };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function deleteVariantAxisAction(
+  axisId: string,
+  tripSlug: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await deleteVariantAxis(axisId);
+    await revalidateTrip(tripSlug);
+    logActivityAsync({
+      table_name: "trip_variant_axes",
+      record_id: axisId,
+      action: "DELETE",
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function upsertVariantOptionAction(
+  axisId: string,
+  tripSlug: string,
+  rawInput: unknown,
+): Promise<{ ok: true; optionId: string } | { ok: false; error: string }> {
+  const parsed = variantOptionInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0].message };
+  }
+  try {
+    const optionId = await upsertVariantOption({ ...parsed.data, variant_axis_id: axisId });
+    await revalidateTrip(tripSlug);
+    logActivityAsync({
+      table_name: "trip_variant_options",
+      record_id: optionId,
+      action: parsed.data.variant_option_id ? "UPDATE" : "INSERT",
+      new_values: { option_label: parsed.data.option_label, price_per_pax: parsed.data.price_per_pax },
+    });
+    return { ok: true, optionId };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function deleteVariantOptionAction(
+  optionId: string,
+  tripSlug: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await deleteVariantOption(optionId);
+    await revalidateTrip(tripSlug);
+    logActivityAsync({
+      table_name: "trip_variant_options",
+      record_id: optionId,
+      action: "DELETE",
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function reorderVariantOptionsAction(
+  axisId: string,
+  tripSlug: string,
+  orderedIds: string[],
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    await reorderVariantOptions(axisId, orderedIds);
+    await revalidateTrip(tripSlug);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}
+
+export async function refreshVariantAxesAction(groupSlug: string) {
+  return getVariantAxesForGroup(groupSlug);
 }
