@@ -16,6 +16,7 @@ function makeState(overrides: Partial<TripFormState> = {}): TripFormState {
     itinerary: [], inclusions: [], exclusions: [], faqs: [],
     status: "Draft", is_listed: false, show_on_homepage: false,
     dossier_url: "",
+    screening_enabled: false,
     ...overrides,
   };
 }

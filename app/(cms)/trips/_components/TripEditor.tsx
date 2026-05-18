@@ -18,6 +18,10 @@ import { InclusionsTab } from "./tabs/InclusionsTab";
 import { FaqsTab } from "./tabs/FaqsTab";
 import { SettingsTab } from "./tabs/SettingsTab";
 import { GalleryTab } from "./tabs/GalleryTab";
+import { ScreeningTab } from "./tabs/ScreeningTab";
+import { VariantsTab } from "./tabs/VariantsTab";
+import type { FullCatalogVersion } from "@/lib/db/screening";
+import type { FullVariantAxis } from "@/lib/db/trip-variants";
 import { PreviewControls } from "./preview/PreviewControls";
 import { PreviewFrame } from "./preview/PreviewFrame";
 import { usePreviewBridge } from "./preview/usePreviewBridge";
@@ -41,9 +45,11 @@ interface TripEditorProps {
   inclusionChips: DbInclusionChip[];
   websiteUrl: string;
   userId: string;
+  activeCatalog: FullCatalogVersion | null;
+  initialVariantAxes: FullVariantAxis[];
 }
 
-export function TripEditor({ trip, destinations, departureCities, exclusions, inclusionChips, websiteUrl, userId }: TripEditorProps) {
+export function TripEditor({ trip, destinations, departureCities, exclusions, inclusionChips, websiteUrl, userId, activeCatalog, initialVariantAxes }: TripEditorProps) {
   const router = useRouter();
   const isEditing = !!trip;
 
@@ -449,6 +455,25 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, in
             )}
             {activeStep === "faqs" && (
               <FaqsTab form={form} updateField={updateField} />
+            )}
+            {activeStep === "variants" && (
+              <VariantsTab
+                groupSlug={form.group_slug}
+                tripSlug={form.slug}
+                initialAxes={initialVariantAxes}
+                onGotoBasic={() =>
+                  setStepIndex(steps.findIndex((s) => s.id === "basic"))
+                }
+              />
+            )}
+            {activeStep === "screening" && (
+              <ScreeningTab
+                enabled={form.screening_enabled}
+                onEnabledChange={(v) =>
+                  setForm((prev) => ({ ...prev, screening_enabled: v }))
+                }
+                activeCatalog={activeCatalog}
+              />
             )}
             {activeStep === "gallery" && isEditing && (
               <GalleryTab

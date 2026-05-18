@@ -2,6 +2,7 @@ import { listDepartureCities } from "@/lib/db/departure-cities";
 import { listExclusions } from "@/lib/db/exclusions";
 import { listInclusionChips } from "@/lib/db/inclusion-chips";
 import { findResumableDraft, CMS_SHARED_OWNER_ID } from "@/lib/db/trips";
+import { getActiveCatalog } from "@/lib/db/screening";
 import { getServiceClient } from "@/lib/supabase/server";
 import type { DbDestination } from "@/lib/types";
 import { NewTripWrapper } from "./NewTripWrapper";
@@ -12,17 +13,19 @@ import { NewTripWrapper } from "./NewTripWrapper";
 
 export default async function NewTripPage() {
   const sb = getServiceClient();
-  const [destRes, departureCities, exclusions, inclusionChips, resumable] = await Promise.all([
-    sb
-      .from("destinations")
-      .select("*")
-      .eq("is_active", true)
-      .order("destination_name"),
-    listDepartureCities(),
-    listExclusions(),
-    listInclusionChips(),
-    findResumableDraft(CMS_SHARED_OWNER_ID),
-  ]);
+  const [destRes, departureCities, exclusions, inclusionChips, resumable, activeCatalog] =
+    await Promise.all([
+      sb
+        .from("destinations")
+        .select("*")
+        .eq("is_active", true)
+        .order("destination_name"),
+      listDepartureCities(),
+      listExclusions(),
+      listInclusionChips(),
+      findResumableDraft(CMS_SHARED_OWNER_ID),
+      getActiveCatalog(),
+    ]);
 
   return (
     <NewTripWrapper
@@ -33,6 +36,7 @@ export default async function NewTripPage() {
       inclusionChips={inclusionChips}
       websiteUrl={process.env.WEBSITE_URL ?? "http://localhost:3000"}
       resumable={resumable}
+      activeCatalog={activeCatalog}
     />
   );
 }

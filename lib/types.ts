@@ -39,6 +39,7 @@ export interface DbTrip {
   departure_airport: string | null;
   booking_kind: string;
   currency_code: string | null;
+  screening_enabled: boolean;
   trip_captain_id: string | null;
   cancellation_policy_id: string | null;
   source_draft_id: string | null;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { TripEditor } from "../_components/TripEditor";
 import { ResumeDraftModal } from "../_components/ResumeDraftModal";
 import type { DbTrip, DbDepartureCity, DbDestination, DbExclusion, DbInclusionChip } from "@/lib/types";
+import type { FullCatalogVersion } from "@/lib/db/screening";
 
 interface Props {
   userId: string;
@@ -13,6 +14,7 @@ interface Props {
   inclusionChips: DbInclusionChip[];
   websiteUrl: string;
   resumable: DbTrip | null;
+  activeCatalog: FullCatalogVersion | null;
 }
 
 export function NewTripWrapper({
@@ -23,6 +25,7 @@ export function NewTripWrapper({
   inclusionChips,
   websiteUrl,
   resumable,
+  activeCatalog,
 }: Props) {
   const [showResume, setShowResume] = useState(!!resumable);
   return (
@@ -38,6 +41,8 @@ export function NewTripWrapper({
         inclusionChips={inclusionChips}
         websiteUrl={websiteUrl}
         userId={userId}
+        activeCatalog={activeCatalog}
+        initialVariantAxes={[]}
       />
     </>
   );

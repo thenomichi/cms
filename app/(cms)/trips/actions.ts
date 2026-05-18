@@ -154,6 +154,11 @@ export async function createTripAction(
       slug,
       // Keep total_seats and total_slots in sync
       total_slots: parsed.data.total_slots,
+      // Force-off when trip_type is not Community. UI also enforces this.
+      screening_enabled:
+        parsed.data.trip_type === "Community"
+          ? (parsed.data.screening_enabled ?? false)
+          : false,
       status: payload.settings.status,
       is_listed: canBePublic ? payload.settings.is_listed : false,
       show_on_homepage: canBePublic ? payload.settings.show_on_homepage : false,
@@ -240,6 +245,10 @@ export async function updateTripAction(
       ...parsed.data,
       slug,
       total_slots: parsed.data.total_slots,
+      screening_enabled:
+        parsed.data.trip_type === "Community"
+          ? (parsed.data.screening_enabled ?? false)
+          : false,
       status: payload.settings.status,
       is_listed: canBePublic ? payload.settings.is_listed : false,
       show_on_homepage: canBePublic ? payload.settings.show_on_homepage : false,
