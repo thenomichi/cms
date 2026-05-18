@@ -36,3 +36,10 @@ export const revalidateHome = () => revalidateWebsite(["/"]);
 export const revalidateAbout = () => revalidateWebsite(["/about"]);
 
 export const revalidateCareers = () => revalidateWebsite(["/careers"]);
+
+/**
+ * Invalidate the website's cached active screening catalog after a publish.
+ * Triggers tag-based revalidate on the website's /api/revalidate route.
+ */
+export const revalidateScreeningCatalog = () =>
+  revalidateWebsite([], ["screening:active-catalog"]);
