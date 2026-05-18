@@ -9,13 +9,17 @@ import type {
 
 // ---------- Row types ----------
 
+export type ScreeningCatalogStatus = "draft" | "published" | "archived";
+
 export interface DbScreeningCatalogVersion {
   catalog_version_id: string;
   version_label: string;
+  status: ScreeningCatalogStatus;
   is_active: boolean;
   flag_if_red_at_least: number;
   flag_if_yellow_at_least: number;
-  is_immutable: boolean;
+  published_at: string | null;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -67,11 +71,13 @@ export async function getActiveCatalog(): Promise<FullCatalogVersion | null> {
 
 export async function getOrCreateDraftCatalog(): Promise<FullCatalogVersion> {
   const db = getServiceClient();
+  // Look for the most recent draft. A draft is mutable by definition; once
+  // a version is published or archived, it becomes read-only via a DB
+  // trigger and we create a new draft on demand.
   const { data: existing, error: dErr } = await db
     .from("screening_catalog_versions")
     .select("*")
-    .eq("is_active", false)
-    .eq("is_immutable", false)
+    .eq("status", "draft")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -87,11 +93,11 @@ export async function saveDraftCatalog(
   const db = getServiceClient();
   const { data: v, error: vErr } = await db
     .from("screening_catalog_versions")
-    .select("catalog_version_id, is_immutable, is_active")
+    .select("catalog_version_id, status")
     .eq("catalog_version_id", draftVersionId)
     .single();
   if (vErr || !v) throw new Error(`saveDraftCatalog: version not found`);
-  if (v.is_immutable || v.is_active) {
+  if (v.status !== "draft") {
     throw new Error(
       "saveDraftCatalog: this version is no longer editable. Reload the page.",
     );
@@ -167,8 +173,11 @@ export async function publishCatalog(
   draftVersionId: string,
 ): Promise<{ newDraftId: string }> {
   const db = getServiceClient();
+  // The RPC takes (p_catalog_version_id, p_published_by). We don't have a
+  // per-user actor yet, so pass null.
   const { error: rpcErr } = await db.rpc("nm_publish_screening_catalog", {
     p_catalog_version_id: draftVersionId,
+    p_published_by: null,
   });
   if (rpcErr) throw new Error(`publishCatalog: RPC failed: ${rpcErr.message}`);
   const fresh = await cloneActiveIntoDraft();
@@ -258,10 +267,10 @@ async function cloneActiveIntoDraft(): Promise<FullCatalogVersion> {
   const { error: insErr } = await db.from("screening_catalog_versions").insert({
     catalog_version_id: newVersionId,
     version_label: versionLabel,
+    status: "draft",
     is_active: false,
     flag_if_red_at_least: flagRed,
     flag_if_yellow_at_least: flagYellow,
-    is_immutable: false,
   });
   if (insErr) throw new Error(`cloneActiveIntoDraft (insert version) failed: ${insErr.message}`);
 
