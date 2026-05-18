@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback, useRef, useEffect } from "react";
+import { useState, useTransition, useCallback, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
@@ -46,14 +46,39 @@ interface TripEditorProps {
 export function TripEditor({ trip, destinations, departureCities, exclusions, inclusionChips, websiteUrl, userId }: TripEditorProps) {
   const router = useRouter();
   const isEditing = !!trip;
-  const steps = isEditing ? STEPS_EDIT : STEPS_CREATE;
 
   const [form, setForm] = useState<TripFormState>(() => buildInitialState(trip));
   const [initialForm, setInitialForm] = useState<TripFormState>(() => buildInitialState(trip));
 
   useDerivedTripFields(form, setForm);
 
+  // Steps depend on trip_type: the Fit Check step only appears for Community
+  // trips. Filter dynamically so toggling the type updates the wizard.
+  const steps = useMemo(() => {
+    const base = isEditing ? STEPS_EDIT : STEPS_CREATE;
+    return form.trip_type === "Community"
+      ? base
+      : base.filter((s) => s.id !== "screening");
+  }, [isEditing, form.trip_type]);
+
+  // Auto-enable screening for NEW Community trips; force-off when the type
+  // moves away from Community. The server enforces this too as defense in depth.
+  useEffect(() => {
+    if (form.trip_type !== "Community" && form.screening_enabled) {
+      setForm((prev) => ({ ...prev, screening_enabled: false }));
+    } else if (
+      form.trip_type === "Community" &&
+      !trip &&
+      !form.screening_enabled
+    ) {
+      setForm((prev) => ({ ...prev, screening_enabled: true }));
+    }
+  }, [form.trip_type, form.screening_enabled, trip]);
+
   const [stepIndex, setStepIndex] = useState(0);
+  useEffect(() => {
+    if (stepIndex >= steps.length) setStepIndex(steps.length - 1);
+  }, [steps.length, stepIndex]);
   const [previewMode, setPreviewMode] = useState<"card" | "detail">("card");
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
   const [darkMode, setDarkMode] = useState(false);
@@ -96,6 +121,7 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, in
       departure_airport: f.departure_airport || null,
       booking_kind: f.booking_kind,
       currency_code: f.currency_code,
+      screening_enabled: f.screening_enabled,
     }),
     [],
   );

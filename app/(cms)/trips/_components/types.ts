@@ -38,6 +38,7 @@ export interface TripFormState {
   departure_airport: string;
   booking_kind: string;
   currency_code: string;
+  screening_enabled: boolean;
   overview: string;
   tagline: string;
   highlights: string[];
@@ -62,6 +63,8 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
       discount_pct: null, discount_amount: null, quoted_price: null, advance_pct: 50, total_slots: null,
       batch_number: "", group_slug: null, departure_city: "", departure_airport: "",
       booking_kind: "trip", currency_code: "INR",
+      // Default OFF here; the wizard auto-enables for new Community trips via an effect.
+      screening_enabled: false,
       overview: "", tagline: "", highlights: [],
       itinerary: [], inclusions: [], exclusions: [], faqs: [],
       status: "Draft", is_listed: false, show_on_homepage: false,
@@ -90,6 +93,8 @@ export function buildInitialState(trip: TripFull | null): TripFormState {
     group_slug: trip.group_slug ?? null,
     departure_city: trip.departure_city ?? "", departure_airport: trip.departure_airport ?? "",
     booking_kind: trip.booking_kind ?? "trip", currency_code: trip.currency_code ?? "INR",
+    screening_enabled:
+      (trip as unknown as { screening_enabled?: boolean }).screening_enabled ?? false,
     overview: contentOf("overview"),
     tagline: contentOf("tagline"), highlights,
     itinerary: trip.itinerary.map((d) => ({
@@ -130,7 +135,9 @@ export const STEPS_CREATE: StepDef[] = [
   { id: "itinerary", label: "Itinerary", desc: "Day-by-day plan", num: "3" },
   { id: "inclusions", label: "What's Included", desc: "Inclusions & exclusions", num: "4" },
   { id: "faqs", label: "FAQs", desc: "Common questions & answers", num: "5" },
-  { id: "settings", label: "Review & Publish", desc: "Status & visibility", num: "6" },
+  { id: "variants", label: "Price Options", desc: "Optional choices customers pick at booking", num: "6" },
+  { id: "screening", label: "Fit Check", desc: "Questionnaire shown before payment", num: "7" },
+  { id: "settings", label: "Review & Publish", desc: "Status & visibility", num: "8" },
 ];
 
 export const STEPS_EDIT: StepDef[] = [
@@ -139,8 +146,10 @@ export const STEPS_EDIT: StepDef[] = [
   { id: "itinerary", label: "Itinerary", desc: "Day-by-day plan", num: "3" },
   { id: "inclusions", label: "What's Included", desc: "Inclusions & exclusions", num: "4" },
   { id: "faqs", label: "FAQs", desc: "Common questions & answers", num: "5" },
-  { id: "gallery", label: "Gallery", desc: "Trip images & cover photo", num: "6" },
-  { id: "settings", label: "Publish Settings", desc: "Status & visibility", num: "7" },
+  { id: "variants", label: "Price Options", desc: "Optional choices customers pick at booking", num: "6" },
+  { id: "screening", label: "Fit Check", desc: "Questionnaire shown before payment", num: "7" },
+  { id: "gallery", label: "Gallery", desc: "Trip images & cover photo", num: "8" },
+  { id: "settings", label: "Publish Settings", desc: "Status & visibility", num: "9" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -170,6 +179,10 @@ export function validateStep(step: string, form: TripFormState): string | null {
           return `FAQ #${i + 1}: answer is required (min 3 chars)`;
         }
       }
+      return null;
+    case "variants":
+      return null;
+    case "screening":
       return null;
     case "settings":
       return null;
