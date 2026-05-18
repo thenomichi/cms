@@ -113,6 +113,9 @@ export const tripBasicSchema = z.object({
   departure_airport: z.string().nullable().optional(),
   booking_kind: z.string().default("trip"),
   currency_code: z.string().default("INR"),
+  // Default false; the trip wizard auto-enables for new Community trips and
+  // the server forces it to false for non-Community trips.
+  screening_enabled: z.coerce.boolean().optional().default(false),
 }).refine(
   (v) => v.discount_pct == null || v.discount_amount == null,
   { message: "Use either discount % or flat amount, not both", path: ["discount_amount"] },
