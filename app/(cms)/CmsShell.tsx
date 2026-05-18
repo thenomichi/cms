@@ -13,6 +13,11 @@ interface Props {
 const PAGE_TITLES: Record<string, { title: string; subtitle?: string }> = {
   "/dashboard": { title: "Dashboard", subtitle: "Welcome back — here's what's happening" },
   "/trips": { title: "Trips", subtitle: "Manage all trip listings" },
+  "/screening": {
+    title: "Trip Fit Check Questions",
+    subtitle:
+      "The questionnaire customers fill in before paying. Applies to all Soulful Escapes trips with Fit Check turned on.",
+  },
   "/destinations": { title: "Destinations", subtitle: "Locations & regions" },
   "/announcements": { title: "Announcements", subtitle: "Homepage banners & promos" },
   "/reviews": { title: "Reviews", subtitle: "Manage traveller testimonials" },

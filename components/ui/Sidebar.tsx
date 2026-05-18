@@ -15,6 +15,7 @@ import {
   Activity,
   LogOut,
   ImagePlay,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "trips", label: "Trips", icon: MapPin },
+  { id: "screening", label: "Fit Check", icon: ShieldCheck },
   { id: "destinations", label: "Destinations", icon: Globe },
   { id: "announcements", label: "Announcements", icon: Megaphone },
   { id: "reviews", label: "Reviews", icon: Star },
