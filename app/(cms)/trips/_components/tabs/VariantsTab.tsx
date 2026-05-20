@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, memo } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Info, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Toggle } from "@/components/ui/Toggle";
 import { FilterPills } from "@/components/ui/FilterPills";
 import { AddVariantAxisModal, type AddAxisResult } from "./AddVariantAxisModal";
 import { getPresetByAxisKey } from "./variant-presets";
@@ -430,7 +429,7 @@ interface OptionRowProps {
   onDelete: () => void;
 }
 
-function OptionRow({
+function OptionRowInner({
   axis,
   option,
   index,
@@ -506,13 +505,6 @@ function OptionRow({
             <option key={label} value={label}>{label}</option>
           ))}
         </select>
-        <label className="flex items-center gap-1">
-          <Toggle
-            checked={option.is_active}
-            onChange={(v) => onChange({ is_active: v })}
-          />
-          <span className="text-xs text-mid">Show to customers</span>
-        </label>
         <button
           type="button"
           onClick={onDelete}
@@ -524,7 +516,7 @@ function OptionRow({
       </div>
 
       {/* Mode picker + copy-from-above */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="mb-1 text-xs font-semibold text-mid">How is this priced?</p>
           <FilterPills
@@ -544,6 +536,14 @@ function OptionRow({
           </button>
         )}
       </div>
+      <p className="mb-3 text-xs text-mid">
+        {option.discount_mode === "percent" &&
+          "Enter the MRP and a discount %. The selling price is calculated automatically."}
+        {option.discount_mode === "flat" &&
+          "Enter the MRP and a flat ₹ discount. The selling price is calculated automatically."}
+        {option.discount_mode === "exact" &&
+          "Enter the MRP and the exact selling price. The discount is calculated from the difference."}
+      </p>
 
       {/* Pricing grid: MRP | (mode-specific input) | selling */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -552,6 +552,7 @@ function OptionRow({
           <div className="flex items-center gap-1">
             <span className="text-sm text-mid">₹</span>
             <DraftNumericInput
+              key={`mrp:${option.variant_option_id}:${option.mrp_per_pax}`}
               value={option.mrp_per_pax}
               onCommit={handleMrpChange}
               min={0}
@@ -566,6 +567,7 @@ function OptionRow({
             <label className="mb-1 block text-xs font-semibold text-mid">Discount %</label>
             <div className="flex items-center gap-1">
               <DraftNumericInput
+                key={`pct:${option.variant_option_id}:${option.discount_pct ?? 0}`}
                 value={option.discount_pct ?? 0}
                 onCommit={handlePctChange}
                 min={0}
@@ -582,6 +584,7 @@ function OptionRow({
             <div className="flex items-center gap-1">
               <span className="text-sm text-mid">₹</span>
               <DraftNumericInput
+                key={`flat:${option.variant_option_id}:${option.discount_amount ?? 0}`}
                 value={option.discount_amount ?? 0}
                 onCommit={handleFlatChange}
                 min={0}
@@ -597,6 +600,7 @@ function OptionRow({
             <div className="flex items-center gap-1">
               <span className="text-sm text-mid">₹</span>
               <DraftNumericInput
+                key={`exact:${option.variant_option_id}:${option.price_per_pax}`}
                 value={option.price_per_pax}
                 onCommit={handleExactChange}
                 min={0}
@@ -634,6 +638,37 @@ function OptionRow({
   );
 }
 
+// Memoize so parent re-renders (caused by sibling typing) don't repaint
+// every row. Custom comparator: ignore callback identity, compare option
+// fields shallowly.
+const OptionRow = memo(OptionRowInner, (prev, next) => {
+  if (prev.index !== next.index) return false;
+  if (prev.allowedLabels !== next.allowedLabels) return false;
+  if (prev.axis.options.length !== next.axis.options.length) return false;
+  // Compare other options' labels because they affect the dropdown filter.
+  const prevOtherLabels = prev.axis.options
+    .filter((o) => o.variant_option_id !== prev.option.variant_option_id)
+    .map((o) => o.option_label)
+    .join("|");
+  const nextOtherLabels = next.axis.options
+    .filter((o) => o.variant_option_id !== next.option.variant_option_id)
+    .map((o) => o.option_label)
+    .join("|");
+  if (prevOtherLabels !== nextOtherLabels) return false;
+  const a = prev.option;
+  const b = next.option;
+  return (
+    a.variant_option_id === b.variant_option_id &&
+    a.option_label === b.option_label &&
+    a.mrp_per_pax === b.mrp_per_pax &&
+    a.price_per_pax === b.price_per_pax &&
+    a.discount_pct === b.discount_pct &&
+    a.discount_amount === b.discount_amount &&
+    a.discount_mode === b.discount_mode &&
+    a.is_active === b.is_active
+  );
+});
+
 // ---------- DraftNumericInput ----------
 
 /**
@@ -656,14 +691,11 @@ interface DraftNumericInputProps {
 }
 
 function DraftNumericInput({ value, onCommit, min, max, className }: DraftNumericInputProps) {
+  // Local draft seeded from the parent value at mount. External changes
+  // (copy-from-above, mode switch) force a fresh mount via the parent's
+  // `key` prop — no effect needed, avoiding double-renders that make the
+  // input feel laggy.
   const [draft, setDraft] = useState<string>(String(value));
-
-  // When the parent's value changes from outside (e.g. mode switch, copy
-  // from above, autosave round-trip), sync the local draft.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDraft(String(value));
-  }, [value]);
 
   const commitIfValid = (raw: string) => {
     if (raw === "") {
