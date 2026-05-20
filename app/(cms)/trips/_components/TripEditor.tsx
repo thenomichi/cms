@@ -430,7 +430,7 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, in
                               : "bg-surface3 text-mid"
                         }`}
                       >
-                        {isCompleted ? "\u2713" : step.num}
+                        {isCompleted ? "\u2713" : i + 1}
                       </span>
                       <span className="hidden sm:inline">{step.label}</span>
                     </button>
