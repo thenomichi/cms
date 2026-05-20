@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// 'exact' is legacy: removed from the user-facing UI but kept on existing
+// DB rows. The schema accepts it on read; new writes always use 'percent'
+// or 'flat'. If we ever want to remove the DB CHECK, we'd backfill first.
 export const VARIANT_DISCOUNT_MODES = ["percent", "flat", "exact"] as const;
 export type VariantDiscountMode = (typeof VARIANT_DISCOUNT_MODES)[number];
 

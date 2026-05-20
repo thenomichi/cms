@@ -32,30 +32,29 @@ interface VariantsTabProps {
 const MODE_PILLS = [
   { value: "percent", label: "Discount %" },
   { value: "flat", label: "Flat discount" },
-  { value: "exact", label: "Exact price" },
 ];
 
 // ---------- Helpers ----------
 
 const FMT = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
-/** Apply a discount-mode change to an option, recomputing dependent fields. */
+/**
+ * Apply a discount-mode change to an option, recomputing dependent fields.
+ * Legacy 'exact' rows in the DB are coerced to 'percent' (selling price stays
+ * as-is; discount % derived from current MRP and selling).
+ */
 function applyMode(
   opt: DbVariantOption,
   mode: VariantDiscountMode,
 ): Partial<DbVariantOption> {
   if (mode === "percent") {
-    // Move whatever the current discount is into discount_pct
     const pct = opt.mrp_per_pax > 0
       ? Math.round(((opt.mrp_per_pax - opt.price_per_pax) / opt.mrp_per_pax) * 100)
       : 0;
     return { discount_mode: "percent", discount_pct: pct, discount_amount: null };
   }
-  if (mode === "flat") {
-    const amt = opt.mrp_per_pax - opt.price_per_pax;
-    return { discount_mode: "flat", discount_amount: amt, discount_pct: null };
-  }
-  return { discount_mode: "exact", discount_pct: 0, discount_amount: 0 };
+  const amt = opt.mrp_per_pax - opt.price_per_pax;
+  return { discount_mode: "flat", discount_amount: amt, discount_pct: null };
 }
 
 /** Recompute price_per_pax from mode-specific fields when MRP / discount changes. */
@@ -64,15 +63,11 @@ function recomputeSelling(
   mode: VariantDiscountMode,
   pct: number | null,
   amt: number | null,
-  exactSelling: number,
 ): number {
   if (mode === "percent") {
     return Math.max(0, Math.round(mrp * (1 - (pct ?? 0) / 100)));
   }
-  if (mode === "flat") {
-    return Math.max(0, mrp - (amt ?? 0));
-  }
-  return Math.min(mrp, exactSelling);
+  return Math.max(0, mrp - (amt ?? 0));
 }
 
 /** True if the trip group has multi-axis variants. For "Starts from" we sum the cheapest active option per axis. */
@@ -193,7 +188,9 @@ export function VariantsTab({
     const prev = axis.options[axis.options.length - 1];
     const mrp = prev?.mrp_per_pax ?? baseMrp ?? 0;
     const selling = prev?.price_per_pax ?? baseSelling ?? mrp;
-    const mode = (prev?.discount_mode ?? "percent") as VariantDiscountMode;
+    // Coerce legacy 'exact' rows to 'percent' on next add.
+    const prevMode = prev?.discount_mode;
+    const mode: VariantDiscountMode = prevMode === "flat" ? "flat" : "percent";
     const pct = mrp > 0 ? Math.round(((mrp - selling) / mrp) * 100) : 0;
     const res = await upsertVariantOptionAction(axis.variant_axis_id, tripSlug, {
       option_label: next,
@@ -457,32 +454,31 @@ function OptionRowInner({
   const isOverDiscount = savingsPct >= 50 && option.is_active;
   const showsAsNoDiscount = savings === 0 && option.is_active;
 
+  // Legacy 'exact' rows (from earlier versions of this UI) get treated as
+  // 'percent' here. The user-facing row only ever shows 'percent' or 'flat'.
+  const effectiveMode: VariantDiscountMode =
+    option.discount_mode === "flat" ? "flat" : "percent";
+
   const handleMrpChange = (mrp: number) => {
     const newSelling = recomputeSelling(
       mrp,
-      option.discount_mode,
+      effectiveMode,
       option.discount_pct,
       option.discount_amount,
-      option.price_per_pax,
     );
     onChange({ mrp_per_pax: mrp, price_per_pax: newSelling });
   };
 
   const handlePctChange = (pct: number) => {
     const safe = Math.max(0, Math.min(99, pct));
-    const newSelling = recomputeSelling(option.mrp_per_pax, "percent", safe, null, 0);
+    const newSelling = recomputeSelling(option.mrp_per_pax, "percent", safe, null);
     onChange({ discount_pct: safe, discount_amount: null, price_per_pax: newSelling });
   };
 
   const handleFlatChange = (amt: number) => {
     const safe = Math.max(0, Math.min(option.mrp_per_pax, amt));
-    const newSelling = recomputeSelling(option.mrp_per_pax, "flat", null, safe, 0);
+    const newSelling = recomputeSelling(option.mrp_per_pax, "flat", null, safe);
     onChange({ discount_amount: safe, discount_pct: null, price_per_pax: newSelling });
-  };
-
-  const handleExactChange = (selling: number) => {
-    const safe = Math.max(0, Math.min(option.mrp_per_pax, selling));
-    onChange({ price_per_pax: safe, discount_pct: 0, discount_amount: 0 });
   };
 
   const handleModeChange = (mode: VariantDiscountMode) => {
@@ -521,7 +517,7 @@ function OptionRowInner({
           <p className="mb-1 text-xs font-semibold text-mid">How is this priced?</p>
           <FilterPills
             options={MODE_PILLS}
-            value={option.discount_mode}
+            value={effectiveMode}
             onChange={(v) => handleModeChange(v as VariantDiscountMode)}
           />
         </div>
@@ -537,12 +533,9 @@ function OptionRowInner({
         )}
       </div>
       <p className="mb-3 text-xs text-mid">
-        {option.discount_mode === "percent" &&
-          "Enter the MRP and a discount %. The selling price is calculated automatically."}
-        {option.discount_mode === "flat" &&
-          "Enter the MRP and a flat ₹ discount. The selling price is calculated automatically."}
-        {option.discount_mode === "exact" &&
-          "Enter the MRP and the exact selling price. The discount is calculated from the difference."}
+        {effectiveMode === "percent"
+          ? "Enter the MRP and a discount %. The selling price is calculated automatically."
+          : "Enter the MRP and a flat ₹ discount. The selling price is calculated automatically."}
       </p>
 
       {/* Pricing grid: MRP | (mode-specific input) | selling */}
@@ -562,7 +555,7 @@ function OptionRowInner({
           <p className="mt-1 text-[10px] text-mid">Press Tab or Enter to save</p>
         </div>
 
-        {option.discount_mode === "percent" && (
+        {effectiveMode === "percent" && (
           <div>
             <label className="mb-1 block text-xs font-semibold text-mid">Discount %</label>
             <div className="flex items-center gap-1">
@@ -578,7 +571,7 @@ function OptionRowInner({
           </div>
         )}
 
-        {option.discount_mode === "flat" && (
+        {effectiveMode === "flat" && (
           <div>
             <label className="mb-1 block text-xs font-semibold text-mid">Flat discount</label>
             <div className="flex items-center gap-1">
@@ -587,22 +580,6 @@ function OptionRowInner({
                 key={`flat:${option.variant_option_id}:${option.discount_amount ?? 0}`}
                 value={option.discount_amount ?? 0}
                 onCommit={handleFlatChange}
-                min={0}
-                max={option.mrp_per_pax}
-              />
-            </div>
-          </div>
-        )}
-
-        {option.discount_mode === "exact" && (
-          <div>
-            <label className="mb-1 block text-xs font-semibold text-mid">Selling price</label>
-            <div className="flex items-center gap-1">
-              <span className="text-sm text-mid">₹</span>
-              <DraftNumericInput
-                key={`exact:${option.variant_option_id}:${option.price_per_pax}`}
-                value={option.price_per_pax}
-                onCommit={handleExactChange}
                 min={0}
                 max={option.mrp_per_pax}
               />
