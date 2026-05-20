@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { NumericInput } from "@/components/ui/NumericInput";
 import { Toggle } from "@/components/ui/Toggle";
 import { AddVariantAxisModal, type AddAxisResult } from "./AddVariantAxisModal";
+import { getPresetByAxisKey } from "./variant-presets";
 import {
   upsertVariantAxisAction,
   deleteVariantAxisAction,
@@ -53,28 +54,23 @@ export function VariantsTab({
   };
 
   const handleAdd = async (preset: AddAxisResult) => {
-    const axisInput =
-      "custom" in preset
-        ? { axis_label: preset.axis_label, axis_description: null, is_required: true }
-        : {
-            axis_label: preset.axis_label,
-            axis_description: preset.axis_description,
-            is_required: true,
-          };
+    const axisInput = {
+      axis_label: preset.axis_label,
+      axis_description: preset.axis_description,
+      is_required: true,
+    };
     const res = await upsertVariantAxisAction(groupSlug, tripSlug, axisInput);
     if (!res.ok) {
       toast.error(res.error);
       return;
     }
-    if (!("custom" in preset)) {
-      for (const opt of preset.starter_options) {
-        await upsertVariantOptionAction(res.axisId, tripSlug, {
-          option_label: opt.label,
-          option_sublabel: null,
-          price_per_pax: opt.price,
-          is_active: true,
-        });
-      }
+    for (const opt of preset.starter_options) {
+      await upsertVariantOptionAction(res.axisId, tripSlug, {
+        option_label: opt.label,
+        option_sublabel: null,
+        price_per_pax: opt.price,
+        is_active: true,
+      });
     }
     await refresh();
     toast.success("Price choice added");
@@ -102,9 +98,19 @@ export function VariantsTab({
     await refresh();
   };
 
-  const handleAddOption = async (axisId: string) => {
-    const res = await upsertVariantOptionAction(axisId, tripSlug, {
-      option_label: "New option",
+  /**
+   * Append the next unused allowlist value as a new option. The +Add
+   * option button is disabled when all allowlist values are already
+   * present, so this should never be called from a "full" axis.
+   */
+  const handleAddOption = async (axis: FullVariantAxis) => {
+    const preset = getPresetByAxisKey(axis.axis_key);
+    if (!preset) return;
+    const used = new Set(axis.options.map((o) => o.option_label));
+    const next = preset.allowed_option_labels.find((l) => !used.has(l));
+    if (!next) return;
+    const res = await upsertVariantOptionAction(axis.variant_axis_id, tripSlug, {
+      option_label: next,
       option_sublabel: null,
       price_per_pax: 0,
       is_active: true,
@@ -132,6 +138,8 @@ export function VariantsTab({
     await refresh();
   };
 
+  const usedAxisKeys = axes.map((a) => a.axis_key);
+
   if (axes.length === 0) {
     return (
       <>
@@ -145,6 +153,7 @@ export function VariantsTab({
           open={addOpen}
           onClose={() => setAddOpen(false)}
           onAdd={(p) => void handleAdd(p)}
+          usedAxisKeys={usedAxisKeys}
         />
       </>
     );
@@ -154,11 +163,23 @@ export function VariantsTab({
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-ink">Trip Variants</h3>
-        <Button onClick={() => setAddOpen(true)}>+ Add price choice</Button>
+        <Button
+          onClick={() => setAddOpen(true)}
+          disabled={usedAxisKeys.length >= 2}
+        >
+          + Add price choice
+        </Button>
       </div>
 
       {axes.map((axis) => {
         const activeCount = axis.options.filter((o) => o.is_active).length;
+        const preset = getPresetByAxisKey(axis.axis_key);
+        const allowedLabels = preset?.allowed_option_labels ?? [];
+        const remaining = allowedLabels.filter(
+          (l) => !axis.options.some((o) => o.option_label === l),
+        );
+        const canAddOption = remaining.length > 0;
+
         return (
           <div key={axis.variant_axis_id} className="rounded-xl border border-line bg-surface p-5">
             <div className="mb-3 flex items-start justify-between">
@@ -185,74 +206,98 @@ export function VariantsTab({
             </div>
 
             <div className="space-y-2">
-              {axis.options.map((opt) => (
-                <div
-                  key={opt.variant_option_id}
-                  className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface3 p-3"
-                >
-                  <input
-                    type="text"
-                    defaultValue={opt.option_label}
-                    onBlur={(e) => {
-                      const next = e.target.value;
-                      if (next !== opt.option_label) {
-                        void handleUpdateOption(
-                          axis.variant_axis_id,
-                          opt.variant_option_id,
-                          { option_label: next },
-                        );
-                      }
-                    }}
-                    className="min-w-[160px] flex-1 rounded border border-line bg-surface px-2 py-1 text-sm"
-                  />
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm text-mid">₹</span>
-                    <NumericInput
-                      value={opt.price_per_pax}
-                      onChange={(v) =>
-                        void handleUpdateOption(
-                          axis.variant_axis_id,
-                          opt.variant_option_id,
-                          { price_per_pax: Math.max(0, v ?? 0) },
-                        )
-                      }
-                      min={0}
-                      max={1_000_000}
-                      className="w-28"
-                      showSteppers={false}
-                    />
-                  </div>
-                  <label className="flex items-center gap-1">
-                    <Toggle
-                      checked={opt.is_active}
-                      onChange={(v) =>
-                        void handleUpdateOption(
-                          axis.variant_axis_id,
-                          opt.variant_option_id,
-                          { is_active: v },
-                        )
-                      }
-                    />
-                    <span className="text-xs text-mid">Show</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setDeletingOptionId(opt.variant_option_id)}
-                    className="rounded p-1 text-mid hover:bg-line"
-                    aria-label="Delete option"
+              {axis.options.map((opt) => {
+                // Other options on this axis — exclude their labels from
+                // this option's dropdown so each allowlist value can only
+                // be used once.
+                const otherLabels = new Set(
+                  axis.options
+                    .filter((o) => o.variant_option_id !== opt.variant_option_id)
+                    .map((o) => o.option_label),
+                );
+                const choices = allowedLabels.length > 0
+                  ? allowedLabels.filter(
+                      (l) => l === opt.option_label || !otherLabels.has(l),
+                    )
+                  : [opt.option_label];
+
+                return (
+                  <div
+                    key={opt.variant_option_id}
+                    className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface3 p-3"
                   >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
+                    <select
+                      value={opt.option_label}
+                      onChange={(e) => {
+                        const next = e.target.value;
+                        if (next !== opt.option_label) {
+                          void handleUpdateOption(
+                            axis.variant_axis_id,
+                            opt.variant_option_id,
+                            { option_label: next },
+                          );
+                        }
+                      }}
+                      className="min-w-[180px] flex-1 rounded border border-line bg-surface px-2 py-1 text-sm"
+                    >
+                      {choices.map((label) => (
+                        <option key={label} value={label}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm text-mid">₹</span>
+                      <NumericInput
+                        value={opt.price_per_pax}
+                        onChange={(v) =>
+                          void handleUpdateOption(
+                            axis.variant_axis_id,
+                            opt.variant_option_id,
+                            { price_per_pax: Math.max(0, v ?? 0) },
+                          )
+                        }
+                        min={0}
+                        max={1_000_000}
+                        className="w-28"
+                        showSteppers={false}
+                      />
+                    </div>
+                    <label className="flex items-center gap-1">
+                      <Toggle
+                        checked={opt.is_active}
+                        onChange={(v) =>
+                          void handleUpdateOption(
+                            axis.variant_axis_id,
+                            opt.variant_option_id,
+                            { is_active: v },
+                          )
+                        }
+                      />
+                      <span className="text-xs text-mid">Show</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setDeletingOptionId(opt.variant_option_id)}
+                      className="rounded p-1 text-mid hover:bg-line"
+                      aria-label="Delete option"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             <Button
               variant="ghost"
-              onClick={() => void handleAddOption(axis.variant_axis_id)}
+              onClick={() => void handleAddOption(axis)}
               className="mt-3"
+              disabled={!canAddOption}
             >
-              + Add option
+              {canAddOption
+                ? "+ Add option"
+                : "All options added"}
             </Button>
 
             {activeCount < 2 && (
@@ -273,6 +318,7 @@ export function VariantsTab({
         open={addOpen}
         onClose={() => setAddOpen(false)}
         onAdd={(p) => void handleAdd(p)}
+        usedAxisKeys={usedAxisKeys}
       />
 
       <ConfirmDialog
