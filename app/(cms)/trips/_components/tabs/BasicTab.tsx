@@ -201,7 +201,7 @@ export function BasicTab({ form, updateField, destinations, departureCities }: B
         ) : (
           // Community / Beyond Ordinary — fixed pricing with optional discount
           <div className="space-y-4">
-            <FormField label="Trip Price" hint="Per person" required>
+            <FormField label="MRP (strikethrough)" hint="Per person — the list price shown crossed out on the website" required>
               <NumericInput
                 value={form.mrp_price}
                 onChange={(val) => updateField("mrp_price", val)}
