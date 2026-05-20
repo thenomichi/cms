@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { AlertTriangle, Info, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { NumericInput } from "@/components/ui/NumericInput";
 import { Toggle } from "@/components/ui/Toggle";
 import { FilterPills } from "@/components/ui/FilterPills";
 import { AddVariantAxisModal, type AddAxisResult } from "./AddVariantAxisModal";
@@ -552,28 +551,25 @@ function OptionRow({
           <label className="mb-1 block text-xs font-semibold text-mid">MRP (strikethrough)</label>
           <div className="flex items-center gap-1">
             <span className="text-sm text-mid">₹</span>
-            <NumericInput
+            <DraftNumericInput
               value={option.mrp_per_pax}
-              onChange={(v) => handleMrpChange(Math.max(0, v ?? 0))}
+              onCommit={handleMrpChange}
               min={0}
               max={1_000_000}
-              className="w-full"
-              showSteppers={false}
             />
           </div>
+          <p className="mt-1 text-[10px] text-mid">Press Tab or Enter to save</p>
         </div>
 
         {option.discount_mode === "percent" && (
           <div>
             <label className="mb-1 block text-xs font-semibold text-mid">Discount %</label>
             <div className="flex items-center gap-1">
-              <NumericInput
+              <DraftNumericInput
                 value={option.discount_pct ?? 0}
-                onChange={(v) => handlePctChange(v ?? 0)}
+                onCommit={handlePctChange}
                 min={0}
                 max={99}
-                className="w-full"
-                showSteppers={false}
               />
               <span className="text-sm text-mid">%</span>
             </div>
@@ -585,13 +581,11 @@ function OptionRow({
             <label className="mb-1 block text-xs font-semibold text-mid">Flat discount</label>
             <div className="flex items-center gap-1">
               <span className="text-sm text-mid">₹</span>
-              <NumericInput
+              <DraftNumericInput
                 value={option.discount_amount ?? 0}
-                onChange={(v) => handleFlatChange(v ?? 0)}
+                onCommit={handleFlatChange}
                 min={0}
                 max={option.mrp_per_pax}
-                className="w-full"
-                showSteppers={false}
               />
             </div>
           </div>
@@ -602,13 +596,11 @@ function OptionRow({
             <label className="mb-1 block text-xs font-semibold text-mid">Selling price</label>
             <div className="flex items-center gap-1">
               <span className="text-sm text-mid">₹</span>
-              <NumericInput
+              <DraftNumericInput
                 value={option.price_per_pax}
-                onChange={(v) => handleExactChange(v ?? 0)}
+                onCommit={handleExactChange}
                 min={0}
                 max={option.mrp_per_pax}
-                className="w-full"
-                showSteppers={false}
               />
             </div>
           </div>
@@ -639,5 +631,78 @@ function OptionRow({
         </p>
       )}
     </div>
+  );
+}
+
+// ---------- DraftNumericInput ----------
+
+/**
+ * Numeric input that holds a local draft while the user types, so the
+ * field can be cleared and retyped without firing autosave (and the
+ * server-side active-option-≥0 validation) on every keystroke.
+ *
+ * Commits to the parent only when:
+ *   - The user blurs the field with a valid number, OR
+ *   - The user presses Enter with a valid number.
+ *
+ * If the field is empty on blur, we revert to the parent's last value.
+ */
+interface DraftNumericInputProps {
+  value: number;
+  onCommit: (next: number) => void;
+  min?: number;
+  max?: number;
+  className?: string;
+}
+
+function DraftNumericInput({ value, onCommit, min, max, className }: DraftNumericInputProps) {
+  const [draft, setDraft] = useState<string>(String(value));
+
+  // When the parent's value changes from outside (e.g. mode switch, copy
+  // from above, autosave round-trip), sync the local draft.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDraft(String(value));
+  }, [value]);
+
+  const commitIfValid = (raw: string) => {
+    if (raw === "") {
+      // Empty on blur — revert to last committed value.
+      setDraft(String(value));
+      return;
+    }
+    const num = parseInt(raw, 10);
+    if (Number.isNaN(num)) {
+      setDraft(String(value));
+      return;
+    }
+    let clamped = num;
+    if (min !== undefined && clamped < min) clamped = min;
+    if (max !== undefined && clamped > max) clamped = max;
+    setDraft(String(clamped));
+    if (clamped !== value) onCommit(clamped);
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={draft}
+      onChange={(e) => {
+        // Allow any keystroke (digits + empty); local state only — no
+        // upstream commit until blur / Enter.
+        const stripped = e.target.value.replace(/[^0-9]/g, "");
+        setDraft(stripped);
+      }}
+      onFocus={(e) => e.target.select()}
+      onBlur={(e) => commitIfValid(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className={`h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm text-ink outline-none transition-colors focus:border-rust focus:ring-1 focus:ring-rust/20 ${className ?? ""}`}
+    />
   );
 }
