@@ -193,17 +193,18 @@ export function QuestionCard({
                     })
                   }
                 />
-                <label
-                  className="flex items-center gap-1"
-                  title={o.tag !== "red" ? "Only 'Not a fit' answers can block payment" : ""}
-                >
-                  <Toggle
-                    checked={o.is_deal_breaker}
-                    onChange={(v) => updateOption(i, { ...o, is_deal_breaker: v })}
-                    disabled={o.tag !== "red"}
-                  />
-                  <span className="text-xs text-mid">Block</span>
-                </label>
+                {o.tag === "red" && (
+                  <label
+                    className="flex items-center gap-1"
+                    title="If a customer picks this answer, they can't proceed to payment."
+                  >
+                    <Toggle
+                      checked={o.is_deal_breaker}
+                      onChange={(v) => updateOption(i, { ...o, is_deal_breaker: v })}
+                    />
+                    <span className="text-xs text-mid">Block payment</span>
+                  </label>
+                )}
                 <button
                   type="button"
                   onClick={() => deleteOption(i)}
