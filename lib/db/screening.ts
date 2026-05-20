@@ -140,6 +140,37 @@ export async function saveDraftCatalog(
     .eq("catalog_version_id", draftVersionId);
   if (delErr) throw new Error(`saveDraftCatalog (delete questions) failed: ${delErr.message}`);
 
+  // Build all question + option rows first, then bulk-insert in two
+  // statements so the trigger sees every parent question committed by the
+  // time the options statement runs. The previous one-at-a-time approach
+  // intermittently raised "<NULL> catalog version" because the trigger's
+  // parent-question SELECT didn't see the just-inserted row in some
+  // connection-pooling paths.
+  const questionRows: Array<{
+    question_id: string;
+    catalog_version_id: string;
+    question_key: string;
+    prompt: string;
+    prompt_highlight: null;
+    step: number;
+    kind: string;
+    is_scored: boolean;
+    is_required: boolean;
+    multi_select_rule: string | null;
+    placeholder: null;
+    max_length: number | null;
+    sort_order: number;
+  }> = [];
+  const optionRows: Array<{
+    option_id: string;
+    question_id: string;
+    option_key: string;
+    label: string;
+    tag: string | null;
+    is_deal_breaker: boolean;
+    sort_order: number;
+  }> = [];
+
   for (let qi = 0; qi < patch.questions.length; qi++) {
     const q = patch.questions[qi];
     const questionId = await nextSequentialId(
@@ -148,7 +179,7 @@ export async function saveDraftCatalog(
       "NM-SCRQ",
     );
     const questionKey = toSlug(q.prompt) || `q${qi + 1}`;
-    const { error: qErr } = await db.from("screening_questions").insert({
+    questionRows.push({
       question_id: questionId,
       catalog_version_id: draftVersionId,
       question_key: questionKey,
@@ -163,7 +194,6 @@ export async function saveDraftCatalog(
       max_length: q.kind === "text" ? 500 : null,
       sort_order: qi,
     });
-    if (qErr) throw new Error(`saveDraftCatalog (insert question ${qi}) failed: ${qErr.message}`);
 
     for (let oi = 0; oi < q.options.length; oi++) {
       const o = q.options[oi];
@@ -173,7 +203,7 @@ export async function saveDraftCatalog(
         "NM-SCRO",
       );
       const optionKey = toSlug(o.label) || `opt${oi + 1}`;
-      const { error: oErr } = await db.from("screening_options").insert({
+      optionRows.push({
         option_id: optionId,
         question_id: questionId,
         option_key: optionKey,
@@ -182,9 +212,19 @@ export async function saveDraftCatalog(
         is_deal_breaker: o.is_deal_breaker,
         sort_order: oi,
       });
-      if (oErr) {
-        throw new Error(`saveDraftCatalog (insert option ${qi}.${oi}) failed: ${oErr.message}`);
-      }
+    }
+  }
+
+  if (questionRows.length > 0) {
+    const { error: qErr } = await db.from("screening_questions").insert(questionRows);
+    if (qErr) {
+      throw new Error(`saveDraftCatalog (bulk insert questions) failed: ${qErr.message}`);
+    }
+  }
+  if (optionRows.length > 0) {
+    const { error: oErr } = await db.from("screening_options").insert(optionRows);
+    if (oErr) {
+      throw new Error(`saveDraftCatalog (bulk insert options) failed: ${oErr.message}`);
     }
   }
 }
@@ -300,9 +340,19 @@ async function cloneActiveIntoDraft(): Promise<FullCatalogVersion> {
       .select("*")
       .eq("catalog_version_id", active.catalog_version_id)
       .order("sort_order", { ascending: true });
-    for (const q of (oldQs ?? []) as DbScreeningQuestion[]) {
+    const sourceQuestions = (oldQs ?? []) as DbScreeningQuestion[];
+
+    // Build all new question + option rows in memory, then bulk-insert in
+    // two statements so the trigger sees every parent question when the
+    // options statement runs.
+    const newQuestionRows: Record<string, unknown>[] = [];
+    const newOptionRows: Record<string, unknown>[] = [];
+    const oldToNewQId = new Map<string, string>();
+
+    for (const q of sourceQuestions) {
       const newQId = await nextSequentialId("screening_questions", "question_id", "NM-SCRQ");
-      await db.from("screening_questions").insert({
+      oldToNewQId.set(q.question_id, newQId);
+      newQuestionRows.push({
         question_id: newQId,
         catalog_version_id: newVersionId,
         question_key: q.question_key,
@@ -317,14 +367,20 @@ async function cloneActiveIntoDraft(): Promise<FullCatalogVersion> {
         max_length: q.max_length,
         sort_order: q.sort_order,
       });
+    }
+
+    if (sourceQuestions.length > 0) {
+      const oldQIds = sourceQuestions.map((q) => q.question_id);
       const { data: oldOpts } = await db
         .from("screening_options")
         .select("*")
-        .eq("question_id", q.question_id)
+        .in("question_id", oldQIds)
         .order("sort_order", { ascending: true });
       for (const o of (oldOpts ?? []) as DbScreeningOption[]) {
+        const newQId = oldToNewQId.get(o.question_id);
+        if (!newQId) continue;
         const newOId = await nextSequentialId("screening_options", "option_id", "NM-SCRO");
-        await db.from("screening_options").insert({
+        newOptionRows.push({
           option_id: newOId,
           question_id: newQId,
           option_key: o.option_key,
@@ -333,6 +389,19 @@ async function cloneActiveIntoDraft(): Promise<FullCatalogVersion> {
           is_deal_breaker: o.is_deal_breaker,
           sort_order: o.sort_order,
         });
+      }
+    }
+
+    if (newQuestionRows.length > 0) {
+      const { error: insQErr } = await db.from("screening_questions").insert(newQuestionRows);
+      if (insQErr) {
+        throw new Error(`cloneActiveIntoDraft (bulk insert questions) failed: ${insQErr.message}`);
+      }
+    }
+    if (newOptionRows.length > 0) {
+      const { error: insOErr } = await db.from("screening_options").insert(newOptionRows);
+      if (insOErr) {
+        throw new Error(`cloneActiveIntoDraft (bulk insert options) failed: ${insOErr.message}`);
       }
     }
   }
