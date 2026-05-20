@@ -180,7 +180,8 @@ export function VariantsTab({
 
             <div className="mb-3 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5" />
-              Price options apply to all batches in this group — not just this batch.
+              Price options are shared across all batches in this trip group. To charge a different
+              price for a specific batch, change that batch&apos;s base price on the Trip Info tab.
             </div>
 
             <div className="space-y-2">
