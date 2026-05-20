@@ -463,6 +463,8 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, in
                 groupSlug={form.group_slug}
                 tripSlug={form.slug}
                 initialAxes={initialVariantAxes}
+                baseMrp={form.mrp_price}
+                baseSelling={form.selling_price}
                 onGotoBasic={() =>
                   setStepIndex(steps.findIndex((s) => s.id === "basic"))
                 }

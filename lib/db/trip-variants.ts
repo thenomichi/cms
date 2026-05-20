@@ -19,7 +19,11 @@ export interface DbVariantOption {
   option_key: string;
   option_label: string;
   option_sublabel: string | null;
+  mrp_per_pax: number;
   price_per_pax: number;
+  discount_pct: number | null;
+  discount_amount: number | null;
+  discount_mode: "percent" | "flat" | "exact";
   sort_order: number;
   is_active: boolean;
 }
@@ -128,7 +132,11 @@ export async function upsertVariantOption(
       .update({
         option_label: input.option_label,
         option_sublabel: input.option_sublabel,
+        mrp_per_pax: input.mrp_per_pax,
         price_per_pax: input.price_per_pax,
+        discount_pct: input.discount_pct,
+        discount_amount: input.discount_amount,
+        discount_mode: input.discount_mode,
         is_active: input.is_active,
       })
       .eq("variant_option_id", input.variant_option_id);
@@ -152,7 +160,11 @@ export async function upsertVariantOption(
     option_key: optionKey,
     option_label: input.option_label,
     option_sublabel: input.option_sublabel,
+    mrp_per_pax: input.mrp_per_pax,
     price_per_pax: input.price_per_pax,
+    discount_pct: input.discount_pct,
+    discount_amount: input.discount_amount,
+    discount_mode: input.discount_mode,
     sort_order: nextSortOrder,
     is_active: input.is_active,
   });
