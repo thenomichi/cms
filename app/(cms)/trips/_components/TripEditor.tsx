@@ -64,7 +64,7 @@ export function TripEditor({ trip, destinations, departureCities, exclusions, in
     const base = isEditing ? STEPS_EDIT : STEPS_CREATE;
     return form.trip_type === "Community"
       ? base
-      : base.filter((s) => s.id !== "screening");
+      : base.filter((s) => s.id !== "screening" && s.id !== "variants");
   }, [isEditing, form.trip_type]);
 
   // Auto-enable screening for NEW Community trips; force-off when the type
