@@ -509,10 +509,11 @@ export async function autosaveTripAction(
     const payload = parseTripFormData(formData);
     const parsed = tripBasicSchema.safeParse(payload.basic);
     if (!parsed.success) {
-      console.error("[autosaveTripAction] validation failed:", parsed.error.issues);
-      const issue = parsed.error.issues[0];
-      const field = issue.path.length > 0 ? issue.path.join(".") : "field";
-      return { success: false, error: `${field}: ${issue.message}` };
+      // The user is still filling out the form — required fields are not
+      // yet populated. Don't surface this as a server error; the client
+      // treats VALIDATION_PENDING the same as DESTINATION_REQUIRED (mirror
+      // locally, no scary banner).
+      return { success: false, error: "VALIDATION_PENDING" };
     }
 
     // Auth is enforced upstream by the CMS layout (cms_session cookie).

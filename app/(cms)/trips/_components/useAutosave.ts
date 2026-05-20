@@ -97,7 +97,7 @@ export function useAutosave({
       setStatus("saved");
       return;
     }
-    if (res.error === "DESTINATION_REQUIRED") {
+    if (res.error === "DESTINATION_REQUIRED" || res.error === "VALIDATION_PENDING") {
       setStatus("localOnly");
       return;
     }
